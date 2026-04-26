@@ -336,11 +336,15 @@ export default function Profile() {
           >
             <div className="flex items-center justify-between">
               <div>
-                <h1 className="font-display text-3xl sm:text-4xl tracking-wide text-black" data-testid="text-page-title">
+                <div className="flex items-baseline gap-4 mb-3">
+                  <span className="text-[11px] font-mono tracking-[0.32em] uppercase text-polen-orange tabular-nums">01 / Üye Paneli</span>
+                  <span className="h-px w-10 bg-polen-orange/40" />
+                </div>
+                <h1 className="font-display text-3xl sm:text-4xl lg:text-5xl tracking-[0.005em] text-black leading-[0.98]" data-testid="text-page-title">
                   HESABIM
                 </h1>
-                <p className="text-black/55 mt-2">
-                  Hoş geldin, {user.firstName || user.email.split('@')[0]}
+                <p className="text-black/55 mt-3 text-sm">
+                  Hoş geldin, <span className="text-black font-medium">{user.firstName || user.email.split('@')[0]}</span>
                 </p>
               </div>
               <button
