@@ -135,7 +135,7 @@ export function Header() {
               <motion.img
                 src={polenLogo}
                 alt="Polen Stone — Doğal Taş & Mermer"
-                animate={{ height: scrolled ? 52 : 64 }}
+                animate={{ height: scrolled ? 60 : 72 }}
                 transition={{ duration: 0.35, ease: [0.33, 1, 0.68, 1] }}
                 className="w-auto object-contain"
                 data-testid="img-logo-mobile-header"
