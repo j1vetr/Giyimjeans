@@ -333,12 +333,16 @@ export default function Home() {
   }));
 
   const featuredProducts = allProducts.slice(0, 13);
+
+  const toTimestamp = (value: Date | string | number | null | undefined): number => {
+    if (!value) return 0;
+    if (value instanceof Date) return value.getTime();
+    const parsed = typeof value === 'number' ? value : Date.parse(value);
+    return Number.isFinite(parsed) ? parsed : 0;
+  };
+
   const newArrivals = [...allProducts]
-    .sort((a, b) => {
-      const ta = a.createdAt ? new Date(a.createdAt as any).getTime() : 0;
-      const tb = b.createdAt ? new Date(b.createdAt as any).getTime() : 0;
-      return tb - ta;
-    })
+    .sort((a, b) => toTimestamp(b.createdAt) - toTimestamp(a.createdAt))
     .slice(0, 12);
   const discountedProducts = allProducts.filter(p => p.discountBadge).slice(0, 8);
   const fallbackHighlights = allProducts.slice(13, 21);

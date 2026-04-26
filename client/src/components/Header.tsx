@@ -302,7 +302,7 @@ export function Header() {
                 </DropdownMenu>
               ) : (
                 <div className="flex items-center gap-1 ml-1 pl-3 border-l border-black/10">
-                  <Link href="/giris" data-testid="button-account" aria-label="Giriş Yap">
+                  <Link href="/giris" data-testid="link-header-giris" aria-label="Giriş Yap">
                     <motion.span
                       whileTap={{ scale: 0.97 }}
                       className="inline-flex items-center px-3 py-2 text-[11px] tracking-[0.18em] uppercase font-medium text-black/70 hover:text-polen-orange transition-colors cursor-pointer"
