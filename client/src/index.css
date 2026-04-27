@@ -214,7 +214,7 @@
 }
 
 .animate-marquee-slow {
-  animation: marquee 60s linear infinite;
+  animation: marquee 110s linear infinite;
 }
 
 @keyframes marquee-right {

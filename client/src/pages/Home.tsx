@@ -6,9 +6,7 @@ import { ArrowRight, Truck, RotateCcw, Shield, Zap } from 'lucide-react';
 import { Link } from 'wouter';
 import { useState, useEffect, useRef } from 'react';
 import { motion, useScroll, useTransform, useInView, AnimatePresence } from 'framer-motion';
-import heroImage1 from '@assets/generated_images/polen-hero-dark-1.png';
-import heroImage2 from '@assets/generated_images/polen-hero-dark-2.png';
-import heroImage3 from '@assets/generated_images/polen-hero-dark-3.png';
+import heroPosterImage from '@assets/generated_images/polen-hero-dark-1.png';
 import categoryMermer from '@assets/generated_images/polen-category-mermer.png';
 import { useProducts, useCategories } from '@/hooks/useProducts';
 import { getOriginalPrice } from '@/lib/discountPrice';
@@ -21,11 +19,8 @@ const defaultCategoryImages: Record<string, string> = {
   'bazalt': categoryMermer,
 };
 
-const heroSlides = [
-  { img: heroImage1, stone: 'NERO MARQUINA', origin: 'AFYON · TR', edition: 'No. 001' },
-  { img: heroImage2, stone: 'EMPERADOR DARK', origin: 'BURSA · TR',  edition: 'No. 002' },
-  { img: heroImage3, stone: 'CALACATTA BLACK', origin: 'MUĞLA · TR', edition: 'No. 003' },
-];
+const HERO_VIDEO_DESKTOP = '/videos/polen-hero.mp4';
+const HERO_VIDEO_MOBILE = '/videos/polen-hero-mobile.mp4';
 
 const tickerWords = Array(12).fill(
   ['MERMER', 'GRANİT', 'POLEN STONE', 'TRAVERTEN', 'DOĞAL TAŞ']
@@ -318,7 +313,6 @@ function ManifestoProductSlider({ products }: { products: Product[] }) {
 }
 
 export default function Home() {
-  const [activeSlide, setActiveSlide] = useState(0);
   const heroRef = useRef<HTMLElement>(null);
   const productsSectionRef = useRef<HTMLDivElement>(null);
   const productsInView = useInView(productsSectionRef, { once: true, margin: '-100px' });
@@ -354,20 +348,25 @@ export default function Home() {
   const highlightEyebrow = hasDiscounts ? 'Kampanya' : 'Seçki';
 
   const [reducedMotion, setReducedMotion] = useState(false);
+  const [heroVideoSrc, setHeroVideoSrc] = useState<string | null>(null);
   useEffect(() => {
     if (typeof window === 'undefined') return;
     const mq = window.matchMedia('(prefers-reduced-motion: reduce)');
-    const update = () => setReducedMotion(mq.matches);
-    update();
-    mq.addEventListener?.('change', update);
-    return () => mq.removeEventListener?.('change', update);
-  }, []);
+    const updateRM = () => setReducedMotion(mq.matches);
+    updateRM();
+    mq.addEventListener?.('change', updateRM);
 
-  useEffect(() => {
-    if (reducedMotion) return;
-    const t = setInterval(() => setActiveSlide(p => (p + 1) % heroSlides.length), 6000);
-    return () => clearInterval(t);
-  }, [reducedMotion]);
+    // Choose video source based on viewport + Save-Data; fall back to poster on slow networks
+    const conn = (navigator as any).connection;
+    const saveData = conn?.saveData === true;
+    const slow = conn?.effectiveType && /^(slow-2g|2g|3g)$/.test(conn.effectiveType);
+    if (saveData || slow) {
+      setHeroVideoSrc(null);
+    } else {
+      setHeroVideoSrc(window.matchMedia('(max-width: 767px)').matches ? HERO_VIDEO_MOBILE : HERO_VIDEO_DESKTOP);
+    }
+    return () => mq.removeEventListener?.('change', updateRM);
+  }, []);
 
   return (
     <div className="min-h-screen bg-white overflow-x-hidden">
@@ -387,37 +386,35 @@ export default function Home() {
         style={{ height: 'clamp(580px, 100svh, 720px)' }}
         data-testid="section-hero"
       >
-        {/* ── Slides with crossfade + slow ken-burns ── */}
+        {/* ── Cinematic background video (with poster fallback) ── */}
         <motion.div className="absolute inset-0" style={{ y: heroImgY }}>
-          {heroSlides.map((slide, i) => {
-            const isActive = activeSlide === i;
-            return (
-              <div
-                key={i}
-                className={`absolute inset-0 transition-opacity ease-[cubic-bezier(0.4,0,0.2,1)] ${
-                  reducedMotion
-                    ? `${isActive ? 'opacity-100' : 'opacity-0'} duration-200`
-                    : `${isActive ? 'opacity-100 duration-[1600ms]' : 'opacity-0 duration-[1200ms]'}`
-                }`}
-              >
-                <motion.img
-                  src={slide.img}
-                  alt={slide.stone}
-                  className="absolute inset-0 w-full h-full object-cover object-center"
-                  initial={false}
-                  animate={reducedMotion ? { scale: 1.04 } : isActive ? { scale: 1.12 } : { scale: 1.04 }}
-                  transition={{ duration: reducedMotion ? 0 : 9, ease: 'linear' }}
-                  data-testid={`img-hero-${i}`}
-                />
-              </div>
-            );
-          })}
+          {reducedMotion || !heroVideoSrc ? (
+            <img
+              src={heroPosterImage}
+              alt="Polen Stone — Doğal taş ve mermer"
+              className="absolute inset-0 w-full h-full object-cover object-center"
+              data-testid="img-hero-poster"
+            />
+          ) : (
+            <video
+              key={heroVideoSrc}
+              src={heroVideoSrc}
+              poster={heroPosterImage}
+              autoPlay
+              muted
+              loop
+              playsInline
+              preload="metadata"
+              className="absolute inset-0 w-full h-full object-cover object-center"
+              data-testid="video-hero"
+            />
+          )}
         </motion.div>
 
-        {/* ── Cinematic overlays ── */}
-        <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-black/30" />
-        <div className="absolute inset-0 bg-gradient-to-r from-black/80 via-black/20 to-black/55" />
-        <div className="absolute inset-0 hidden lg:block" style={{ background: 'radial-gradient(ellipse at 30% 55%, transparent 0%, rgba(0,0,0,0.55) 75%)' }} />
+        {/* ── Cinematic overlays — refined for video legibility ── */}
+        <div className="absolute inset-0 bg-gradient-to-t from-black/95 via-black/55 to-black/40" />
+        <div className="absolute inset-0 bg-gradient-to-r from-black/85 via-black/30 to-black/45" />
+        <div className="absolute inset-0 hidden lg:block" style={{ background: 'radial-gradient(ellipse at 28% 50%, transparent 0%, rgba(0,0,0,0.6) 78%)' }} />
         {/* Subtle film grain (SVG noise) */}
         <div
           className="absolute inset-0 mix-blend-overlay opacity-[0.18] pointer-events-none"
@@ -426,17 +423,6 @@ export default function Home() {
               "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='220' height='220'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.95' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0.7 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E\")",
           }}
         />
-
-        {/* ── Top-right: slide counter (minimal, refined) ── */}
-        <div className="absolute top-5 sm:top-7 lg:top-9 right-5 sm:right-8 lg:right-12 z-20 flex items-center gap-3">
-          <span className="text-white/85 text-[11px] tracking-[0.32em] font-medium tabular-nums">
-            {String(activeSlide + 1).padStart(2, '0')}
-          </span>
-          <span className="w-4 h-px bg-white/30" />
-          <span className="text-white/40 text-[11px] tracking-[0.32em] font-medium tabular-nums">
-            {String(heroSlides.length).padStart(2, '0')}
-          </span>
-        </div>
 
         {/* ── Main content: vertically centered, generous breathing room ── */}
         <div
@@ -528,32 +514,13 @@ export default function Home() {
           </div>
         </div>
 
-        {/* ── Bottom-left: slide indicators (above marquee) ── */}
-        <div className="absolute bottom-[120px] sm:bottom-[130px] left-6 sm:left-10 lg:left-16 z-30 flex items-center gap-2.5">
-          {heroSlides.map((_, i) => (
-            <button
-              key={i}
-              onClick={() => setActiveSlide(i)}
-              aria-label={`Slayt ${i + 1}`}
-              className="group relative h-4 flex items-center"
-              data-testid={`button-slide-${i}`}
-            >
-              <span
-                className={`h-px transition-all duration-700 ease-out ${
-                  activeSlide === i ? 'w-10 bg-polen-orange' : 'w-5 bg-white/35 group-hover:bg-white/70'
-                }`}
-              />
-            </button>
-          ))}
-        </div>
-
         {/* ── Bottom: integrated product marquee inside hero ── */}
         {allProducts.length > 0 && (
           <div
             className="absolute bottom-0 left-0 right-0 z-20 bg-black/55 backdrop-blur-sm border-t border-white/10"
             data-testid="section-hero-marquee"
           >
-            <div className="relative h-[100px] sm:h-[110px] overflow-hidden">
+            <div className="relative h-[140px] sm:h-[155px] overflow-hidden">
               {/* Edge fades */}
               <div className="absolute inset-y-0 left-0 w-20 sm:w-28 z-10 pointer-events-none" style={{ background: 'linear-gradient(to right, rgba(0,0,0,0.9), transparent)' }} />
               <div className="absolute inset-y-0 right-0 w-20 sm:w-28 z-10 pointer-events-none" style={{ background: 'linear-gradient(to left, rgba(0,0,0,0.9), transparent)' }} />
@@ -566,10 +533,10 @@ export default function Home() {
                     <Link
                       key={`${p.id}-${i}`}
                       href={`/urun/${p.slug}`}
-                      className="group flex-shrink-0 mx-3 flex flex-col items-center gap-2 cursor-pointer"
+                      className="group flex-shrink-0 mx-3 sm:mx-4 flex flex-col items-center gap-2 cursor-pointer"
                       data-testid={`link-hero-scroll-${p.id}-${i}`}
                     >
-                      <div className="relative w-[72px] h-[100px] sm:w-[78px] sm:h-[108px] overflow-hidden bg-white/5 border border-white/10 group-hover:border-polen-orange/60 transition-colors duration-400">
+                      <div className="relative w-[88px] h-[120px] sm:w-[96px] sm:h-[130px] overflow-hidden bg-white/5 border border-white/10 group-hover:border-polen-orange/60 transition-colors duration-400">
                         {img ? (
                           <img
                             src={img}
