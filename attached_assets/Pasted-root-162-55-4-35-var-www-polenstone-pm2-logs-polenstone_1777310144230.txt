@@ -1,0 +1,35 @@
+root@162-55-4-35:/var/www/polenstone# pm2 logs polenstone --lines 30 --nostream
+[TAILING] Tailing last 30 lines for [polenstone] process (change the value with --lines option)
+/var/log/pm2/polenstone-err.log last 30 lines:
+22|polenst | 2026-04-27T20:13:35: Error: DATABASE_URL environment variable is not set
+22|polenst | 2026-04-27T20:13:35:     at /var/www/polenstone/dist/index.cjs:70:128894
+22|polenst | 2026-04-27T20:13:35:     at /var/www/polenstone/dist/index.cjs:1:225
+22|polenst | 2026-04-27T20:13:35:     at /var/www/polenstone/dist/index.cjs:70:129065
+22|polenst | 2026-04-27T20:13:35:     at /var/www/polenstone/dist/index.cjs:1:225
+22|polenst | 2026-04-27T20:13:35:     at Object.<anonymous> (/var/www/polenstone/dist/index.cjs:551:80881)
+22|polenst | 2026-04-27T20:13:35:     at Module._compile (node:internal/modules/cjs/loader:1705:14)
+22|polenst | 2026-04-27T20:13:35:     at Object..js (node:internal/modules/cjs/loader:1838:10)
+22|polenst | 2026-04-27T20:13:35:     at Module.load (node:internal/modules/cjs/loader:1441:32)
+22|polenst | 2026-04-27T20:13:35:     at Function._load (node:internal/modules/cjs/loader:1263:12)
+22|polenst | 2026-04-27T20:13:35:     at TracingChannel.traceSync (node:diagnostics_channel:328:14)
+22|polenst | 2026-04-27T20:15:01: Warning: OPENAI_API_KEY is not set. AI description generation will not work.
+
+/var/log/pm2/polenstone-out.log last 30 lines:
+22|polenst | 2026-04-27T20:15:01: [scheduler] marketplace cron jobs registered (delta hourly, full @ 03:00)
+22|polenst | 2026-04-27T20:15:01: 8:15:01 PM [express] serving on port 5023
+
+root@162-55-4-35:/var/www/polenstone# curl -I http://127.0.0.1:5023
+HTTP/1.1 200 OK
+X-Powered-By: Express
+Cache-Control: no-cache, no-store, must-revalidate
+Accept-Ranges: bytes
+Last-Modified: Mon, 27 Apr 2026 17:10:06 GMT
+ETag: W/"1005-19dcfeb6fff"
+Content-Type: text/html; charset=UTF-8
+Content-Length: 4101
+Vary: Accept-Encoding
+Date: Mon, 27 Apr 2026 17:15:25 GMT
+Connection: keep-alive
+Keep-Alive: timeout=5
+
+root@162-55-4-35:/var/www/polenstone#
