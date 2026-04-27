@@ -21,6 +21,8 @@ import {
   PageHeader,
   Card,
   EmptyState,
+  LoadingState,
+  InlineAlert,
   SearchInput,
   SelectInput,
   PrimaryButton,
@@ -43,6 +45,8 @@ interface ProductsTabProps {
   setShowBulkAIModal: (b: boolean) => void;
   setBulkPreselectedIds?: (ids: string[]) => void;
   deleteProductMutation: { mutate: (id: string) => void };
+  productsLoading?: boolean;
+  productsError?: unknown;
 }
 
 type StatusFilter = 'all' | 'active' | 'inactive' | 'out';
@@ -260,6 +264,8 @@ export default function ProductsTab({
   setShowBulkAIModal,
   setBulkPreselectedIds,
   deleteProductMutation,
+  productsLoading,
+  productsError,
 }: ProductsTabProps) {
   const queryClient = useQueryClient();
 
@@ -548,7 +554,16 @@ export default function ProductsTab({
         </div>
       )}
 
-      {pagedProducts.length === 0 ? (
+      {productsError ? (
+        <InlineAlert tone="error">
+          <span className="font-medium">Ürünler yüklenemedi.</span> Bağlantınızı kontrol edip
+          sayfayı yenileyin.
+        </InlineAlert>
+      ) : productsLoading && products.length === 0 ? (
+        <Card>
+          <LoadingState label="Ürünler yükleniyor…" />
+        </Card>
+      ) : pagedProducts.length === 0 ? (
         <Card className="py-2">
           {filtersActive ? (
             <EmptyState

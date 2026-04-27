@@ -34,7 +34,8 @@ export default function BulkAIModal({
   const [style, setStyle] = useState('natural');
   const [categoryId, setCategoryId] = useState('');
   const [mode, setMode] = useState<'empty' | 'overwrite'>('empty');
-  const hasPreselection = !!preselectedProductIds && preselectedProductIds.length > 0;
+  const hasPreselection =
+    preselectedProductIds !== undefined && preselectedProductIds.length > 0;
   const [progress, setProgress] = useState<{
     running: boolean;
     done: boolean;

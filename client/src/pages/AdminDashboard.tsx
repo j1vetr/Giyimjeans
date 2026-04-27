@@ -50,7 +50,7 @@ export default function AdminDashboard() {
   const [showBulkPriceModal, setShowBulkPriceModal] = useState(false);
   const [showBulkBadgeModal, setShowBulkBadgeModal] = useState(false);
   const [showBulkAIModal, setShowBulkAIModal] = useState(false);
-  const [bulkPreselectedIds, setBulkPreselectedIds] = useState<string[]>([]);
+  const [bulkPreselectedIds, setBulkPreselectedIds] = useState<string[] | undefined>(undefined);
 
   const data = useAdminDashboardData({
     searchQuery,
@@ -159,6 +159,8 @@ export default function AdminDashboard() {
             setShowBulkAIModal={setShowBulkAIModal}
             setBulkPreselectedIds={setBulkPreselectedIds}
             deleteProductMutation={deleteProductMutation}
+            productsLoading={productsLoading}
+            productsError={productsError}
           />
         )}
         {activeTab === 'categories' && (
@@ -225,11 +227,11 @@ export default function AdminDashboard() {
           preselectedProductIds={bulkPreselectedIds}
           onClose={() => {
             setShowBulkPriceModal(false);
-            setBulkPreselectedIds([]);
+            setBulkPreselectedIds(undefined);
           }}
           onSuccess={() => {
             setShowBulkPriceModal(false);
-            setBulkPreselectedIds([]);
+            setBulkPreselectedIds(undefined);
             queryClient.invalidateQueries({ queryKey: ['admin', 'products'] });
           }}
         />
@@ -241,11 +243,11 @@ export default function AdminDashboard() {
           preselectedProductIds={bulkPreselectedIds}
           onClose={() => {
             setShowBulkBadgeModal(false);
-            setBulkPreselectedIds([]);
+            setBulkPreselectedIds(undefined);
           }}
           onSuccess={() => {
             setShowBulkBadgeModal(false);
-            setBulkPreselectedIds([]);
+            setBulkPreselectedIds(undefined);
             queryClient.invalidateQueries({ queryKey: ['admin', 'products'] });
           }}
         />
@@ -256,7 +258,7 @@ export default function AdminDashboard() {
           preselectedProductIds={bulkPreselectedIds}
           onClose={() => {
             setShowBulkAIModal(false);
-            setBulkPreselectedIds([]);
+            setBulkPreselectedIds(undefined);
           }}
         />
       )}

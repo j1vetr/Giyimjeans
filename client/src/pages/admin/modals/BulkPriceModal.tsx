@@ -26,7 +26,7 @@ export default function BulkPriceModal({
   onSuccess: () => void;
   preselectedProductIds?: string[];
 }) {
-  const hasPreselection = !!preselectedProductIds && preselectedProductIds.length > 0;
+  const hasPreselection = preselectedProductIds !== undefined;
   const [filterMode, setFilterMode] = useState<'all' | 'category' | 'select'>(
     hasPreselection ? 'select' : 'all',
   );
