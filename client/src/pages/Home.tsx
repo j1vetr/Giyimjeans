@@ -379,12 +379,12 @@ export default function Home() {
       <Header />
 
       {/* ════════════════════════════════════════════
-          HERO — editorial cinematic, off-center
+          HERO — editorial cinematic, refined
       ════════════════════════════════════════════ */}
       <section
         ref={heroRef}
         className="relative overflow-hidden bg-black text-white"
-        style={{ height: 'calc(100svh - 0px)', minHeight: 640, maxHeight: 980 }}
+        style={{ height: 'clamp(580px, 100svh, 720px)' }}
         data-testid="section-hero"
       >
         {/* ── Slides with crossfade + slow ken-burns ── */}
@@ -394,7 +394,11 @@ export default function Home() {
             return (
               <div
                 key={i}
-                className={`absolute inset-0 transition-opacity ease-[cubic-bezier(0.4,0,0.2,1)] ${isActive ? 'opacity-100 duration-[1600ms]' : 'opacity-0 duration-[1200ms]'}`}
+                className={`absolute inset-0 transition-opacity ease-[cubic-bezier(0.4,0,0.2,1)] ${
+                  reducedMotion
+                    ? `${isActive ? 'opacity-100' : 'opacity-0'} duration-200`
+                    : `${isActive ? 'opacity-100 duration-[1600ms]' : 'opacity-0 duration-[1200ms]'}`
+                }`}
               >
                 <motion.img
                   src={slide.img}
@@ -423,86 +427,124 @@ export default function Home() {
           }}
         />
 
-        {/* ── Top-right: slide counter only (minimal) ── */}
-        <div className="absolute top-5 lg:top-8 right-5 lg:right-10 z-20 flex items-center gap-2.5">
-          <span className="text-white/80 text-[11px] tracking-[0.3em] font-medium tabular-nums">
+        {/* ── Top-right: slide counter (minimal, refined) ── */}
+        <div className="absolute top-5 sm:top-7 lg:top-9 right-5 sm:right-8 lg:right-12 z-20 flex items-center gap-3">
+          <span className="text-white/85 text-[11px] tracking-[0.32em] font-medium tabular-nums">
             {String(activeSlide + 1).padStart(2, '0')}
           </span>
-          <span className="w-3 h-px bg-white/30" />
-          <span className="text-white/35 text-[11px] tracking-[0.3em] font-medium tabular-nums">
+          <span className="w-4 h-px bg-white/30" />
+          <span className="text-white/40 text-[11px] tracking-[0.32em] font-medium tabular-nums">
             {String(heroSlides.length).padStart(2, '0')}
           </span>
         </div>
 
-        {/* ── Main content: off-center left ── */}
-        <div className="absolute inset-0 z-10 flex items-center px-5 lg:px-16 pb-[210px] lg:pb-[230px]">
-          <div className="max-w-[640px] w-full">
-            {/* Headline (one semantic h1, two visual lines) */}
-            <h1
-              className="font-display leading-[1.05] tracking-[0.01em]"
-              style={{ fontSize: 'clamp(2.8rem, 9vw, 9rem)' }}
-              aria-label="Doğanın İhtişamı"
-            >
-              <motion.span
-                initial={{ opacity: 0, y: 28 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.95, ease: [0.16, 1, 0.3, 1] }}
-                className="block text-white"
+        {/* ── Main content: vertically centered, generous breathing room ── */}
+        <div
+          className="absolute inset-0 z-10 flex items-center"
+          style={{ paddingBottom: 'clamp(180px, 24vh, 230px)' }}
+        >
+          <div className="w-full max-w-[1400px] mx-auto px-6 sm:px-10 lg:px-16">
+            <div className="max-w-[680px]">
+              {/* Tiny eyebrow rule */}
+              <motion.div
+                initial={{ opacity: 0, x: -10 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ duration: 0.7, delay: 0.15 }}
+                className="flex items-center gap-3 mb-5 sm:mb-7"
               >
-                DOĞANIN
-              </motion.span>
-              <motion.span
-                initial={{ opacity: 0, y: 28 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.95, delay: 0.15, ease: [0.16, 1, 0.3, 1] }}
-                className="block"
-                style={{
-                  color: 'transparent',
-                  WebkitTextStroke: '1.4px hsl(var(--polen-orange))',
-                }}
-              >
-                İHTİŞAMI
-              </motion.span>
-            </h1>
-
-            {/* Description */}
-            <motion.div
-              initial={{ opacity: 0, y: 14 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.9, delay: 0.5 }}
-              className="mt-7 lg:mt-9 max-w-[480px]"
-            >
-              <p className="text-white/70 text-[13px] lg:text-[14px] font-body leading-[1.7]">
-                Anadolu'nun ocaklarından, mimarın masasına. Mermer, granit,
-                traverten ve oniks koleksiyonumuzla mekânlarınıza bin yıllık
-                taş mirasını taşıyoruz.
-              </p>
-            </motion.div>
-
-            {/* CTAs */}
-            <motion.div
-              initial={{ opacity: 0, y: 16 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.8, delay: 0.65 }}
-              className="mt-7 lg:mt-9 flex flex-wrap items-center gap-x-5 lg:gap-x-7 gap-y-3"
-            >
-              <Link href="/magaza" data-testid="button-hero-shop">
-                <motion.span
-                  whileHover={{ x: 4 }}
-                  whileTap={{ scale: 0.97 }}
-                  className="group inline-flex items-center gap-4 bg-polen-orange text-white text-[11px] tracking-[0.22em] uppercase font-semibold px-7 py-4 lg:px-9 lg:py-[16px] cursor-pointer hover:bg-[hsl(var(--polen-orange-deep))] transition-colors"
-                >
-                  Koleksiyonu Keşfet
-                  <ArrowRight className="w-3.5 h-3.5 transition-transform group-hover:translate-x-1.5" />
-                </motion.span>
-              </Link>
-              <Link href="/magaza">
-                <span className="text-[11px] tracking-[0.18em] uppercase text-white/70 hover:text-white transition-colors font-medium border-b border-white/30 hover:border-white pb-1.5">
-                  Tüm Ürünler
+                <span className="w-8 h-px bg-polen-orange" />
+                <span className="text-white/60 text-[10px] sm:text-[11px] tracking-[0.32em] uppercase font-medium">
+                  Polen Stone
                 </span>
-              </Link>
-            </motion.div>
+              </motion.div>
+
+              {/* Headline — two lines, generous spacing, no overflow clipping */}
+              <h1
+                className="font-display tracking-[0.005em] text-white"
+                style={{
+                  fontSize: 'clamp(2.1rem, 7vw, 6.5rem)',
+                  lineHeight: 1.08,
+                }}
+                aria-label="Doğanın İhtişamı"
+              >
+                <motion.span
+                  initial={{ opacity: 0, y: 24 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.95, ease: [0.16, 1, 0.3, 1] }}
+                  className="block"
+                >
+                  Doğanın
+                </motion.span>
+                <motion.span
+                  initial={{ opacity: 0, y: 24 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.95, delay: 0.18, ease: [0.16, 1, 0.3, 1] }}
+                  className="block mt-2 sm:mt-3"
+                  style={{
+                    color: 'transparent',
+                    WebkitTextStroke: '1.2px hsl(var(--polen-orange))',
+                  }}
+                >
+                  İhtişamı.
+                </motion.span>
+              </h1>
+
+              {/* Description — short, refined */}
+              <motion.p
+                initial={{ opacity: 0, y: 12 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.85, delay: 0.55 }}
+                className="mt-6 sm:mt-8 lg:mt-10 max-w-[460px] text-white/65 text-[13px] sm:text-[14px] font-body leading-[1.7]"
+              >
+                Anadolu'nun ocaklarından mimarın masasına. Mermer, granit ve
+                traverten koleksiyonumuzla mekânlarınıza bin yıllık taş mirasını
+                taşıyoruz.
+              </motion.p>
+
+              {/* CTAs */}
+              <motion.div
+                initial={{ opacity: 0, y: 14 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.85, delay: 0.7 }}
+                className="mt-7 sm:mt-9 lg:mt-11 flex flex-wrap items-center gap-x-6 gap-y-4"
+              >
+                <Link href="/magaza" data-testid="button-hero-shop">
+                  <motion.span
+                    whileHover={{ x: 4 }}
+                    whileTap={{ scale: 0.97 }}
+                    className="group inline-flex items-center gap-4 bg-polen-orange text-white text-[11px] tracking-[0.22em] uppercase font-semibold px-7 py-[15px] sm:px-9 sm:py-[17px] cursor-pointer hover:bg-[hsl(var(--polen-orange-deep))] transition-colors"
+                  >
+                    Koleksiyonu Keşfet
+                    <ArrowRight className="w-3.5 h-3.5 transition-transform group-hover:translate-x-1.5" />
+                  </motion.span>
+                </Link>
+                <Link href="/magaza">
+                  <span className="text-[11px] tracking-[0.2em] uppercase text-white/70 hover:text-white transition-colors font-medium border-b border-white/25 hover:border-white pb-1.5">
+                    Tüm Ürünler
+                  </span>
+                </Link>
+              </motion.div>
+            </div>
           </div>
+        </div>
+
+        {/* ── Bottom-left: slide indicators (above marquee) ── */}
+        <div className="absolute bottom-[120px] sm:bottom-[130px] left-6 sm:left-10 lg:left-16 z-30 flex items-center gap-2.5">
+          {heroSlides.map((_, i) => (
+            <button
+              key={i}
+              onClick={() => setActiveSlide(i)}
+              aria-label={`Slayt ${i + 1}`}
+              className="group relative h-4 flex items-center"
+              data-testid={`button-slide-${i}`}
+            >
+              <span
+                className={`h-px transition-all duration-700 ease-out ${
+                  activeSlide === i ? 'w-10 bg-polen-orange' : 'w-5 bg-white/35 group-hover:bg-white/70'
+                }`}
+              />
+            </button>
+          ))}
         </div>
 
         {/* ── Bottom: integrated product marquee inside hero ── */}
@@ -511,29 +553,10 @@ export default function Home() {
             className="absolute bottom-0 left-0 right-0 z-20 bg-black/55 backdrop-blur-sm border-t border-white/10"
             data-testid="section-hero-marquee"
           >
-            {/* Slide indicator dots above marquee */}
-            <div className="absolute -top-9 left-5 lg:left-10 hidden md:flex items-center gap-2 z-10">
-              {heroSlides.map((_, i) => (
-                <button
-                  key={i}
-                  onClick={() => setActiveSlide(i)}
-                  aria-label={`Slide ${i + 1}`}
-                  className="group relative h-3 flex items-center"
-                  data-testid={`button-slide-${i}`}
-                >
-                  <span
-                    className={`h-px transition-all duration-700 ease-out ${
-                      activeSlide === i ? 'w-10 bg-polen-orange' : 'w-5 bg-white/30 group-hover:bg-white/60'
-                    }`}
-                  />
-                </button>
-              ))}
-            </div>
-
-            <div className="relative h-[170px] lg:h-[185px] overflow-hidden">
+            <div className="relative h-[100px] sm:h-[110px] overflow-hidden">
               {/* Edge fades */}
-              <div className="absolute inset-y-0 left-0 w-24 z-10 pointer-events-none" style={{ background: 'linear-gradient(to right, rgba(0,0,0,0.95), transparent)' }} />
-              <div className="absolute inset-y-0 right-0 w-24 z-10 pointer-events-none" style={{ background: 'linear-gradient(to left, rgba(0,0,0,0.95), transparent)' }} />
+              <div className="absolute inset-y-0 left-0 w-20 sm:w-28 z-10 pointer-events-none" style={{ background: 'linear-gradient(to right, rgba(0,0,0,0.9), transparent)' }} />
+              <div className="absolute inset-y-0 right-0 w-20 sm:w-28 z-10 pointer-events-none" style={{ background: 'linear-gradient(to left, rgba(0,0,0,0.9), transparent)' }} />
 
               <div className="flex animate-marquee-slow h-full items-center" style={{ width: 'max-content' }}>
                 {[...allProducts, ...allProducts, ...allProducts].map((p, i) => {
@@ -546,7 +569,7 @@ export default function Home() {
                       className="group flex-shrink-0 mx-3 flex flex-col items-center gap-2 cursor-pointer"
                       data-testid={`link-hero-scroll-${p.id}-${i}`}
                     >
-                      <div className="relative w-[80px] h-[112px] overflow-hidden bg-white/5 border border-white/10 group-hover:border-polen-orange/60 transition-colors duration-400">
+                      <div className="relative w-[72px] h-[100px] sm:w-[78px] sm:h-[108px] overflow-hidden bg-white/5 border border-white/10 group-hover:border-polen-orange/60 transition-colors duration-400">
                         {img ? (
                           <img
                             src={img}
@@ -563,7 +586,7 @@ export default function Home() {
                           </div>
                         )}
                       </div>
-                      <p className="text-[11px] text-white/65 group-hover:text-white transition-colors font-medium tabular-nums">
+                      <p className="text-[10px] sm:text-[11px] text-white/70 group-hover:text-white transition-colors font-medium tabular-nums">
                         {price.toLocaleString('tr-TR')} ₺
                       </p>
                     </Link>
