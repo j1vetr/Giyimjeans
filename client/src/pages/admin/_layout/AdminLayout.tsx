@@ -1,6 +1,7 @@
 import { useState, type ReactNode, type ComponentType } from 'react';
 import { ExternalLink, LogOut, Menu, X } from 'lucide-react';
 import type { TabType } from '../_shared/types';
+import toovLogo from '@assets/TOOV_1777332650369.png';
 
 export type SidebarItem = {
   id: TabType;
@@ -59,17 +60,13 @@ export default function AdminLayout({
         `}
       >
         <div className="px-5 h-14 border-b border-neutral-200 flex items-center justify-between shrink-0">
-          <div className="flex items-center gap-2">
-            <div className="w-7 h-7 rounded-md bg-neutral-900 text-white flex items-center justify-center text-[11px] font-semibold tracking-wide">
-              PS
-            </div>
-            <h1
-              className="text-[13px] font-semibold tracking-tight text-neutral-900"
-              data-testid="text-admin-brand"
-            >
-              Polen Stone
-            </h1>
-          </div>
+          <img
+            src={toovLogo}
+            alt="TOOV"
+            className="h-5 w-auto object-contain select-none"
+            draggable={false}
+            data-testid="text-admin-brand"
+          />
           <button
             onClick={() => setMobileMenuOpen(false)}
             className="p-1.5 hover:bg-neutral-100 rounded-md md:hidden"
