@@ -25,6 +25,16 @@ import {
   sendAbandonedCartEmail 
 } from "./emailService";
 import {
+  sendOrderReceivedToCustomer,
+  sendOrderReceivedToAdmin,
+  sendOrderPreparingToCustomer,
+  sendOrderShippedToCustomer,
+  sendOrderDeliveredToCustomer,
+  sendOrderCancelledToCustomer,
+  sendOrderCancelledToAdmin,
+  sendTestWhatsApp,
+} from "./whatsappService";
+import {
   createCheckoutFormInitialize,
   retrieveCheckoutForm,
   isIyzicoConfigured,
@@ -2251,6 +2261,10 @@ export async function registerRoutes(
         sendOrderConfirmationEmail(order, orderItems).catch(err => console.error('[Email] Order confirmation failed:', err));
         sendAdminOrderNotificationEmail(order, orderItems).catch(err => console.error('[Email] Admin notification failed:', err));
 
+        // Send WhatsApp notifications (best-effort, never blocks order flow)
+        sendOrderReceivedToCustomer(order).catch(err => console.error('[WhatsApp] Order received (customer) failed:', err));
+        sendOrderReceivedToAdmin(order).catch(err => console.error('[WhatsApp] Order received (admin) failed:', err));
+
         // Fetch variant SKUs for invoice
         const variantSkus = new Map<string, string>();
         for (const item of orderItems) {
@@ -2657,6 +2671,10 @@ export async function registerRoutes(
       sendOrderConfirmationEmail(order, orderItems).catch(err => console.error('[Email] Order confirmation failed:', err));
       sendAdminOrderNotificationEmail(order, orderItems).catch(err => console.error('[Email] Admin notification failed:', err));
 
+      // Send WhatsApp notifications (best-effort, never blocks order flow)
+      sendOrderReceivedToCustomer(order).catch(err => console.error('[WhatsApp] Order received (customer) failed:', err));
+      sendOrderReceivedToAdmin(order).catch(err => console.error('[WhatsApp] Order received (admin) failed:', err));
+
       res.status(201).json(order);
     } catch (error) {
       console.error('Order creation error:', error);
@@ -2695,7 +2713,29 @@ export async function registerRoutes(
           console.error('[Email] Shipping notification failed:', err)
         );
       }
-      
+
+      // Send WhatsApp status notifications (best-effort)
+      if (status === 'processing') {
+        sendOrderPreparingToCustomer(order).catch(err =>
+          console.error('[WhatsApp] Preparing notification failed:', err)
+        );
+      } else if (status === 'shipped') {
+        sendOrderShippedToCustomer(order).catch(err =>
+          console.error('[WhatsApp] Shipping notification failed:', err)
+        );
+      } else if (status === 'delivered') {
+        sendOrderDeliveredToCustomer(order).catch(err =>
+          console.error('[WhatsApp] Delivered notification failed:', err)
+        );
+      } else if (status === 'cancelled' || status === 'refunded') {
+        sendOrderCancelledToCustomer(order).catch(err =>
+          console.error('[WhatsApp] Cancelled notification (customer) failed:', err)
+        );
+        sendOrderCancelledToAdmin(order).catch(err =>
+          console.error('[WhatsApp] Cancelled notification (admin) failed:', err)
+        );
+      }
+
       res.json(order);
     } catch (error) {
       console.error('Order status update error:', error);
@@ -4063,9 +4103,12 @@ export async function registerRoutes(
   app.get("/api/admin/settings", requireAdmin, async (req, res) => {
     try {
       const settings = await storage.getSiteSettings();
-      // Mask password for security
+      // Mask sensitive credentials
       if (settings.smtp_pass) {
         settings.smtp_pass = '••••••••';
+      }
+      if (settings.wpileti_api_key) {
+        settings.wpileti_api_key = '••••••••';
       }
       res.json(settings);
     } catch (error) {
@@ -4076,9 +4119,12 @@ export async function registerRoutes(
   app.post("/api/admin/settings", requireAdmin, async (req, res) => {
     try {
       const settings = req.body;
-      // Don't update password if it's masked
+      // Don't update masked credentials
       if (settings.smtp_pass === '••••••••') {
         delete settings.smtp_pass;
+      }
+      if (settings.wpileti_api_key === '••••••••') {
+        delete settings.wpileti_api_key;
       }
       await storage.setSiteSettings(settings);
       res.json({ success: true });
@@ -4098,6 +4144,23 @@ export async function registerRoutes(
       }
     } catch (error: any) {
       res.status(500).json({ error: error.message || "Test e-postası gönderilemedi" });
+    }
+  });
+
+  app.post("/api/admin/whatsapp/test", requireAdmin, async (req, res) => {
+    try {
+      const { phone, message } = req.body || {};
+      if (!phone || typeof phone !== 'string') {
+        return res.status(400).json({ success: false, error: "Telefon numarası gerekli" });
+      }
+      const result = await sendTestWhatsApp(phone, typeof message === 'string' ? message : undefined);
+      if (result.success) {
+        res.json({ success: true, message: "Test WhatsApp mesajı gönderildi" });
+      } else {
+        res.status(400).json({ success: false, error: result.error || "Test mesajı gönderilemedi" });
+      }
+    } catch (error: any) {
+      res.status(500).json({ success: false, error: error.message || "Test mesajı gönderilemedi" });
     }
   });
 

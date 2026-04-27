@@ -1,9 +1,77 @@
 import { useQuery } from '@tanstack/react-query';
 import { useState, useEffect } from 'react';
-import { Settings, Mail, Loader2, CheckCircle2, XCircle, Send, Server, CreditCard, Copy, AlertTriangle, Wrench } from 'lucide-react';
+import { Settings, Mail, Loader2, CheckCircle2, XCircle, Send, Server, CreditCard, Copy, AlertTriangle, Wrench, MessageCircle } from 'lucide-react';
+
+type WhatsAppEvent =
+  | 'order_received_customer'
+  | 'order_received_admin'
+  | 'order_preparing_customer'
+  | 'order_shipped_customer'
+  | 'order_delivered_customer'
+  | 'order_cancelled_customer'
+  | 'order_cancelled_admin';
+
+const WHATSAPP_EVENTS: { key: WhatsAppEvent; label: string; defaultTpl: string }[] = [
+  {
+    key: 'order_received_customer',
+    label: 'Sipariş alındı (müşteriye)',
+    defaultTpl:
+      'Merhaba {{musteriAdi}},\n\n{{siteAdi}}\'dan {{siparisNo}} numaralı siparişiniz alındı. Toplam tutar: {{toplam}} TL.\n\nSiparişiniz hazırlanmaya başladığında size tekrar haber vereceğiz.\n\nTeşekkürler!',
+  },
+  {
+    key: 'order_received_admin',
+    label: 'Yeni sipariş bildirimi (yöneticiye)',
+    defaultTpl:
+      'Yeni sipariş geldi!\n\nSipariş No: {{siparisNo}}\nMüşteri: {{musteriAdi}}\nTelefon: {{musteriTelefon}}\nTutar: {{toplam}} TL',
+  },
+  {
+    key: 'order_preparing_customer',
+    label: 'Sipariş hazırlanıyor (müşteriye)',
+    defaultTpl:
+      'Merhaba {{musteriAdi}},\n\n{{siparisNo}} numaralı siparişiniz hazırlanmaya başladı. En kısa sürede kargoya teslim edilecek.\n\n{{siteAdi}}',
+  },
+  {
+    key: 'order_shipped_customer',
+    label: 'Kargoya verildi (müşteriye)',
+    defaultTpl:
+      'Merhaba {{musteriAdi}},\n\n{{siparisNo}} numaralı siparişiniz kargoya verildi.\n\nKargo Firması: {{kargoFirma}}\nTakip No: {{kargoTakipNo}}\nTakip Linki: {{kargoTakipLink}}\n\n{{siteAdi}}',
+  },
+  {
+    key: 'order_delivered_customer',
+    label: 'Teslim edildi (müşteriye)',
+    defaultTpl:
+      'Merhaba {{musteriAdi}},\n\n{{siparisNo}} numaralı siparişiniz teslim edildi. Bizi tercih ettiğiniz için teşekkür ederiz.\n\n{{siteAdi}}',
+  },
+  {
+    key: 'order_cancelled_customer',
+    label: 'Sipariş iptal edildi (müşteriye)',
+    defaultTpl:
+      'Merhaba {{musteriAdi}},\n\n{{siparisNo}} numaralı siparişiniz iptal edilmiştir. Detaylı bilgi için bizimle iletişime geçebilirsiniz.\n\n{{siteAdi}}',
+  },
+  {
+    key: 'order_cancelled_admin',
+    label: 'Sipariş iptal edildi (yöneticiye)',
+    defaultTpl:
+      'Sipariş iptal edildi!\n\nSipariş No: {{siparisNo}}\nMüşteri: {{musteriAdi}}\nTutar: {{toplam}} TL',
+  },
+];
+
+const WHATSAPP_VARIABLES = [
+  '{{musteriAdi}}',
+  '{{musteriTelefon}}',
+  '{{musteriEposta}}',
+  '{{siparisNo}}',
+  '{{toplam}}',
+  '{{araToplam}}',
+  '{{kargoUcreti}}',
+  '{{kargoTakipNo}}',
+  '{{kargoTakipLink}}',
+  '{{kargoFirma}}',
+  '{{siteAdi}}',
+];
 
 export default function SettingsPanel() {
-  const [settings, setSettings] = useState({
+  const [settings, setSettings] = useState<Record<string, string>>({
     smtp_host: '',
     smtp_port: '587',
     smtp_user: '',
@@ -11,6 +79,15 @@ export default function SettingsPanel() {
     smtp_secure: 'false',
     admin_email: '',
     site_url: '',
+    site_name: '',
+    wpileti_enabled: 'false',
+    wpileti_api_key: '',
+    wpileti_endpoint: 'http://127.0.0.1:3225/api/send-message',
+    wpileti_admin_phone: '',
+    ...Object.fromEntries(WHATSAPP_EVENTS.flatMap(({ key, defaultTpl }) => [
+      [`wpileti_evt_${key}`, 'true'],
+      [`wpileti_tpl_${key}`, defaultTpl],
+    ])),
   });
   const [isSaving, setIsSaving] = useState(false);
   const [isTesting, setIsTesting] = useState(false);
@@ -19,6 +96,9 @@ export default function SettingsPanel() {
   const [iyzicoSaving, setIyzicoSaving] = useState(false);
   const [callbackCopied, setCallbackCopied] = useState(false);
   const [maintenanceSaving, setMaintenanceSaving] = useState(false);
+  const [waTesting, setWaTesting] = useState(false);
+  const [waTestPhone, setWaTestPhone] = useState('');
+  const [waTestMessage, setWaTestMessage] = useState('');
 
   const { data: maintenanceData, refetch: refetchMaintenance } = useQuery<{ enabled: boolean }>({
     queryKey: ['/api/admin/maintenance'],
@@ -105,28 +185,27 @@ export default function SettingsPanel() {
     }
   };
 
-  const { data: savedSettings, isLoading } = useQuery<{
-    smtp_host?: string;
-    smtp_port?: string;
-    smtp_user?: string;
-    smtp_pass?: string;
-    smtp_secure?: string;
-    admin_email?: string;
-    site_url?: string;
-  }>({
+  const { data: savedSettings, isLoading } = useQuery<Record<string, string>>({
     queryKey: ['/api/admin/settings'],
   });
 
   useEffect(() => {
     if (savedSettings) {
-      setSettings(prev => ({
-        ...prev,
-        ...savedSettings,
-      }));
+      setSettings(prev => {
+        const next: Record<string, string> = { ...prev };
+        for (const [k, v] of Object.entries(savedSettings)) {
+          if (v !== undefined && v !== null) next[k] = String(v);
+        }
+        return next;
+      });
       if (savedSettings.admin_email) {
         setTestEmail(savedSettings.admin_email);
       }
+      if (savedSettings.wpileti_admin_phone && !waTestPhone) {
+        setWaTestPhone(savedSettings.wpileti_admin_phone);
+      }
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [savedSettings]);
 
   const handleSave = async () => {
@@ -149,6 +228,33 @@ export default function SettingsPanel() {
       setMessage({ type: 'error', text: 'Bir hata oluştu' });
     } finally {
       setIsSaving(false);
+    }
+  };
+
+  const handleTestWhatsApp = async () => {
+    if (!waTestPhone.trim()) {
+      setMessage({ type: 'error', text: 'Test için telefon numarası girin (90XXXXXXXXXX formatında)' });
+      return;
+    }
+    setWaTesting(true);
+    setMessage(null);
+    try {
+      const res = await fetch('/api/admin/whatsapp/test', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ phone: waTestPhone, message: waTestMessage || undefined }),
+        credentials: 'include',
+      });
+      const data = await res.json().catch(() => ({}));
+      if (res.ok && data.success) {
+        setMessage({ type: 'success', text: 'Test WhatsApp mesajı gönderildi!' });
+      } else {
+        setMessage({ type: 'error', text: data.error || 'Test mesajı gönderilemedi' });
+      }
+    } catch {
+      setMessage({ type: 'error', text: 'Bir hata oluştu' });
+    } finally {
+      setWaTesting(false);
     }
   };
 
@@ -530,6 +636,171 @@ export default function SettingsPanel() {
             {isTesting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
             Test Gönder
           </button>
+        </div>
+      </div>
+
+      <div className="bg-white border border-neutral-200 rounded-xl p-6" data-testid="card-whatsapp-settings">
+        <div className="flex items-center gap-3 mb-6">
+          <div className="p-2 bg-emerald-50 rounded-lg">
+            <MessageCircle className="w-5 h-5 text-emerald-600" />
+          </div>
+          <div className="flex-1">
+            <h3 className="text-lg font-semibold text-neutral-900">WhatsApp Bildirimleri (wpileti)</h3>
+            <p className="text-sm text-neutral-500">
+              Sipariş aşamalarında müşteriye ve yöneticiye otomatik WhatsApp mesajı gönderir.
+            </p>
+          </div>
+          <label className="flex items-center gap-2 cursor-pointer">
+            <input
+              type="checkbox"
+              checked={settings.wpileti_enabled === 'true'}
+              onChange={(e) =>
+                setSettings(s => ({ ...s, wpileti_enabled: e.target.checked ? 'true' : 'false' }))
+              }
+              className="w-5 h-5 rounded"
+              data-testid="checkbox-wpileti-enabled"
+            />
+            <span className="text-sm font-medium text-neutral-900">Etkin</span>
+          </label>
+        </div>
+
+        <div className="grid md:grid-cols-2 gap-4 mb-5">
+          <div>
+            <label className="block text-sm font-medium text-neutral-500 mb-2">wpileti API Anahtarı</label>
+            <input
+              type="password"
+              value={settings.wpileti_api_key}
+              onChange={(e) => setSettings(s => ({ ...s, wpileti_api_key: e.target.value }))}
+              placeholder="••••••••"
+              className="w-full px-4 py-3 bg-neutral-50 border border-neutral-200 rounded-lg text-neutral-900"
+              data-testid="input-wpileti-apikey"
+              autoComplete="off"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-neutral-500 mb-2">wpileti Endpoint URL</label>
+            <input
+              type="text"
+              value={settings.wpileti_endpoint}
+              onChange={(e) => setSettings(s => ({ ...s, wpileti_endpoint: e.target.value }))}
+              placeholder="http://127.0.0.1:3225/api/send-message"
+              className="w-full px-4 py-3 bg-neutral-50 border border-neutral-200 rounded-lg text-neutral-900 text-sm font-mono"
+              data-testid="input-wpileti-endpoint"
+            />
+            <p className="text-xs text-neutral-500 mt-1">
+              wpileti sunucunuzun adresi. Yerel kuruluysa varsayılan değeri bırakın.
+            </p>
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-neutral-500 mb-2">Yönetici WhatsApp Numarası</label>
+            <input
+              type="text"
+              value={settings.wpileti_admin_phone}
+              onChange={(e) => setSettings(s => ({ ...s, wpileti_admin_phone: e.target.value }))}
+              placeholder="905551234567"
+              className="w-full px-4 py-3 bg-neutral-50 border border-neutral-200 rounded-lg text-neutral-900"
+              data-testid="input-wpileti-admin-phone"
+            />
+            <p className="text-xs text-neutral-500 mt-1">
+              Başında 90 ülke kodu olmalı. Yeni sipariş ve iptal mesajları bu numaraya gider.
+            </p>
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-neutral-500 mb-2">Site Adı (mesajlarda kullanılır)</label>
+            <input
+              type="text"
+              value={settings.site_name}
+              onChange={(e) => setSettings(s => ({ ...s, site_name: e.target.value }))}
+              placeholder="Polen Stone"
+              className="w-full px-4 py-3 bg-neutral-50 border border-neutral-200 rounded-lg text-neutral-900"
+              data-testid="input-site-name"
+            />
+          </div>
+        </div>
+
+        <div className="bg-neutral-50 border border-neutral-200 rounded-lg p-4 mb-5">
+          <p className="text-xs font-medium text-neutral-700 mb-2">Şablonlarda kullanabileceğiniz değişkenler:</p>
+          <div className="flex flex-wrap gap-1.5">
+            {WHATSAPP_VARIABLES.map(v => (
+              <code key={v} className="px-2 py-0.5 bg-white border border-neutral-200 rounded text-[11px] text-neutral-700 font-mono">
+                {v}
+              </code>
+            ))}
+          </div>
+        </div>
+
+        <div className="space-y-4">
+          {WHATSAPP_EVENTS.map(({ key, label, defaultTpl }) => {
+            const enabledKey = `wpileti_evt_${key}`;
+            const tplKey = `wpileti_tpl_${key}`;
+            const evtEnabled = settings[enabledKey] !== 'false';
+            return (
+              <div
+                key={key}
+                className="border border-neutral-200 rounded-lg p-4"
+                data-testid={`section-whatsapp-event-${key}`}
+              >
+                <div className="flex items-center justify-between mb-3">
+                  <span className="text-sm font-medium text-neutral-900">{label}</span>
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={evtEnabled}
+                      onChange={(e) =>
+                        setSettings(s => ({ ...s, [enabledKey]: e.target.checked ? 'true' : 'false' }))
+                      }
+                      className="w-4 h-4 rounded"
+                      data-testid={`checkbox-whatsapp-evt-${key}`}
+                    />
+                    <span className="text-xs text-neutral-600">{evtEnabled ? 'Açık' : 'Kapalı'}</span>
+                  </label>
+                </div>
+                <textarea
+                  value={settings[tplKey] ?? defaultTpl}
+                  onChange={(e) => setSettings(s => ({ ...s, [tplKey]: e.target.value }))}
+                  rows={4}
+                  className="w-full px-3 py-2 bg-neutral-50 border border-neutral-200 rounded-lg text-sm text-neutral-900 font-mono"
+                  placeholder={defaultTpl}
+                  data-testid={`textarea-whatsapp-tpl-${key}`}
+                  disabled={!evtEnabled}
+                />
+              </div>
+            );
+          })}
+        </div>
+
+        <div className="mt-6 pt-5 border-t border-neutral-200">
+          <h4 className="text-sm font-semibold text-neutral-900 mb-3">Test Mesajı Gönder</h4>
+          <p className="text-xs text-neutral-500 mb-3">
+            Önce yukarıdaki ayarları kaydedin, ardından buradan test mesajı gönderin.
+          </p>
+          <div className="grid md:grid-cols-[1fr_2fr_auto] gap-3">
+            <input
+              type="text"
+              value={waTestPhone}
+              onChange={(e) => setWaTestPhone(e.target.value)}
+              placeholder="905551234567"
+              className="px-4 py-3 bg-neutral-50 border border-neutral-200 rounded-lg text-neutral-900"
+              data-testid="input-whatsapp-test-phone"
+            />
+            <input
+              type="text"
+              value={waTestMessage}
+              onChange={(e) => setWaTestMessage(e.target.value)}
+              placeholder="Test mesajı (boş bırakırsanız otomatik metin gönderilir)"
+              className="px-4 py-3 bg-neutral-50 border border-neutral-200 rounded-lg text-neutral-900"
+              data-testid="input-whatsapp-test-message"
+            />
+            <button
+              onClick={handleTestWhatsApp}
+              disabled={waTesting || !waTestPhone}
+              className="flex items-center gap-2 px-6 py-3 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors disabled:opacity-50 font-medium"
+              data-testid="button-whatsapp-test"
+            >
+              {waTesting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
+              Test Gönder
+            </button>
+          </div>
         </div>
       </div>
 
