@@ -49,7 +49,7 @@ export default function AdminModal({
       }}
     >
       <DialogContent
-        className={`admin-content bg-white text-neutral-900 border-neutral-200 ${SIZE_CLASS[size]} max-h-[90vh] overflow-hidden flex flex-col p-0 gap-0`}
+        className={`admin-content bg-white text-neutral-900 border-neutral-200 ${SIZE_CLASS[size]} max-h-[90vh] overflow-hidden flex flex-col p-0 gap-0 max-sm:!left-0 max-sm:!top-auto max-sm:!bottom-0 max-sm:!translate-x-0 max-sm:!translate-y-0 max-sm:!w-full max-sm:!max-w-none max-sm:!max-h-[95vh] max-sm:!rounded-t-2xl max-sm:!rounded-b-none max-sm:!border-x-0 max-sm:!border-b-0 max-sm:data-[state=open]:!slide-in-from-bottom max-sm:data-[state=closed]:!slide-out-to-bottom`}
         data-testid={testId}
         onInteractOutside={(e) => {
           if (!closeOnOutsideClick) e.preventDefault();
