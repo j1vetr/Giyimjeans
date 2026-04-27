@@ -1,11 +1,11 @@
 import { useState, useEffect } from 'react';
-import { useParams, Link, useLocation } from 'wouter';
-import { 
-  ChevronLeft, 
-  Package, 
-  Truck, 
-  Clock, 
-  CheckCircle, 
+import { useParams, Link } from 'wouter';
+import {
+  ChevronLeft,
+  Package,
+  Truck,
+  Clock,
+  CheckCircle,
   XCircle,
   User,
   MapPin,
@@ -17,8 +17,24 @@ import {
   MessageSquare,
   ExternalLink,
   Loader2,
-  FileText
+  FileText,
+  Banknote,
+  CheckCircle2,
 } from 'lucide-react';
+import {
+  Card,
+  PrimaryButton,
+  SecondaryButton,
+  GhostButton,
+  StatusBadge,
+  FormField,
+  TextInput,
+  TextArea,
+  SectionHeading,
+  InlineAlert,
+  SelectInput,
+} from './admin/_ui/AdminUI';
+import AdminModal from './admin/_ui/AdminModal';
 
 interface OrderItem {
   id: string;
@@ -66,64 +82,124 @@ interface Order {
   items: OrderItem[];
 }
 
-const statusOptions = [
-  { value: 'pending', label: 'Beklemede', color: 'bg-yellow-500', icon: Clock },
-  { value: 'processing', label: 'Hazırlanıyor', color: 'bg-blue-500', icon: Package },
-  { value: 'shipped', label: 'Kargoya Verildi', color: 'bg-purple-500', icon: Truck },
-  { value: 'delivered', label: 'Teslim Edildi', color: 'bg-green-500', icon: CheckCircle },
-  { value: 'cancelled', label: 'İptal Edildi', color: 'bg-red-500', icon: XCircle },
+type StatusTone = 'neutral' | 'amber' | 'blue' | 'indigo' | 'emerald' | 'red' | 'orange';
+
+const statusOptions: {
+  value: string;
+  label: string;
+  tone: StatusTone;
+  icon: React.ElementType;
+}[] = [
+  { value: 'confirmed', label: 'Yeni Sipariş', tone: 'orange', icon: Banknote },
+  { value: 'pending', label: 'Beklemede', tone: 'amber', icon: Clock },
+  { value: 'processing', label: 'Hazırlanıyor', tone: 'blue', icon: Package },
+  { value: 'shipped', label: 'Kargoya Verildi', tone: 'indigo', icon: Truck },
+  { value: 'completed', label: 'Tamamlandı', tone: 'emerald', icon: CheckCircle2 },
+  { value: 'delivered', label: 'Teslim Edildi', tone: 'emerald', icon: CheckCircle },
+  { value: 'cancelled', label: 'İptal Edildi', tone: 'red', icon: XCircle },
 ];
+
+function formatCurrency(amount: string | number): string {
+  return Number(amount).toLocaleString('tr-TR', {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  });
+}
+
+function DetailSkeleton() {
+  return (
+    <div className="min-h-screen bg-neutral-50">
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 py-6 sm:py-8 animate-pulse">
+        <div className="h-3 w-32 rounded bg-neutral-200 mb-5" />
+        <div className="bg-white border border-neutral-200 rounded-lg p-5 mb-5">
+          <div className="flex items-center justify-between">
+            <div className="space-y-2">
+              <div className="h-5 w-48 rounded bg-neutral-100" />
+              <div className="h-3 w-36 rounded bg-neutral-100" />
+            </div>
+            <div className="h-5 w-24 rounded-full bg-neutral-100" />
+          </div>
+        </div>
+        <div className="grid lg:grid-cols-[1fr_320px] gap-5">
+          <div className="space-y-5">
+            <div className="bg-white border border-neutral-200 rounded-lg h-64" />
+            <div className="bg-white border border-neutral-200 rounded-lg h-40" />
+          </div>
+          <div className="space-y-5">
+            <div className="bg-white border border-neutral-200 rounded-lg h-32" />
+            <div className="bg-white border border-neutral-200 rounded-lg h-44" />
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
 
 export default function AdminOrderDetail() {
   const params = useParams<{ id: string }>();
-  const [, setLocation] = useLocation();
   const [order, setOrder] = useState<Order | null>(null);
   const [notes, setNotes] = useState<OrderNote[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [status, setStatus] = useState('');
   const [trackingNumber, setTrackingNumber] = useState('');
   const [trackingUrl, setTrackingUrl] = useState('');
   const [cancelReason, setCancelReason] = useState('');
-  const [showCancelConfirm, setShowCancelConfirm] = useState(false);
+  const [showCancelModal, setShowCancelModal] = useState(false);
   const [isUpdating, setIsUpdating] = useState(false);
   const [newNote, setNewNote] = useState('');
-  const [couponInfo, setCouponInfo] = useState<{ isInfluencerCode: boolean; influencerInstagram?: string } | null>(null);
+  const [couponInfo, setCouponInfo] = useState<{
+    isInfluencerCode: boolean;
+    influencerInstagram?: string;
+  } | null>(null);
   const [isSendingInvoice, setIsSendingInvoice] = useState(false);
-  const [invoiceResult, setInvoiceResult] = useState<{ success: boolean; message: string } | null>(null);
+  const [invoiceResult, setInvoiceResult] = useState<{
+    success: boolean;
+    message: string;
+  } | null>(null);
 
   useEffect(() => {
+    let cancelled = false;
     const fetchOrder = async () => {
       try {
-        const res = await fetch(`/api/admin/orders/${params.id}`, { credentials: 'include' });
+        const res = await fetch(`/api/admin/orders/${params.id}`, {
+          credentials: 'include',
+        });
         if (!res.ok) {
-          setLocation('/toov-admin');
+          if (!cancelled) setLoadError('Sipariş bulunamadı.');
           return;
         }
         const data = await res.json();
+        if (cancelled) return;
         setOrder(data);
         setStatus(data.status);
         setTrackingNumber(data.trackingNumber || '');
         setTrackingUrl(data.trackingUrl || '');
-        
+
         if (data.couponCode) {
-          const couponRes = await fetch(`/api/admin/coupons/by-code/${data.couponCode}`, { credentials: 'include' });
-          if (couponRes.ok) {
+          const couponRes = await fetch(
+            `/api/admin/coupons/by-code/${data.couponCode}`,
+            { credentials: 'include' },
+          );
+          if (couponRes.ok && !cancelled) {
             const couponData = await couponRes.json();
             setCouponInfo(couponData);
           }
         }
       } catch (error) {
         console.error('Failed to fetch order:', error);
-        setLocation('/toov-admin');
+        if (!cancelled) setLoadError('Sipariş yüklenemedi.');
       } finally {
-        setIsLoading(false);
+        if (!cancelled) setIsLoading(false);
       }
     };
 
     const fetchNotes = async () => {
       try {
-        const res = await fetch(`/api/admin/orders/${params.id}/notes`, { credentials: 'include' });
-        if (res.ok) {
+        const res = await fetch(`/api/admin/orders/${params.id}/notes`, {
+          credentials: 'include',
+        });
+        if (res.ok && !cancelled) {
           const data = await res.json();
           setNotes(data);
         }
@@ -134,24 +210,25 @@ export default function AdminOrderDetail() {
 
     fetchOrder();
     fetchNotes();
-  }, [params.id, setLocation]);
+    return () => {
+      cancelled = true;
+    };
+  }, [params.id]);
 
   const handleStatusUpdate = async () => {
     if (!order) return;
     setIsUpdating(true);
     try {
-      const payload: any = { status };
+      const payload: Record<string, unknown> = { status };
       if (status === 'shipped' && trackingNumber) {
         payload.trackingNumber = trackingNumber;
       }
-      
       await fetch(`/api/admin/orders/${order.id}/status`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
         credentials: 'include',
       });
-      
       setOrder({ ...order, status });
     } catch (error) {
       console.error('Status update failed:', error);
@@ -164,19 +241,21 @@ export default function AdminOrderDetail() {
     if (!order) return;
     setIsUpdating(true);
     try {
-      const finalTrackingUrl = trackingUrl || `https://www.dhl.com/tr-tr/home/takip.html?tracking-id=${trackingNumber}`;
-      
+      const finalTrackingUrl =
+        trackingUrl ||
+        `https://www.dhl.com/tr-tr/home/takip.html?tracking-id=${trackingNumber}`;
+
       await fetch(`/api/admin/orders/${order.id}/tracking`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
-          trackingNumber, 
+        body: JSON.stringify({
+          trackingNumber,
           trackingUrl: finalTrackingUrl,
-          shippingCarrier: 'DHL E-Commerce'
+          shippingCarrier: 'DHL E-Commerce',
         }),
         credentials: 'include',
       });
-      
+
       let newStatus = status;
       if (status !== 'shipped' && status !== 'delivered') {
         await fetch(`/api/admin/orders/${order.id}/status`, {
@@ -188,8 +267,13 @@ export default function AdminOrderDetail() {
         newStatus = 'shipped';
         setStatus('shipped');
       }
-      
-      setOrder({ ...order, status: newStatus, trackingNumber, trackingUrl: finalTrackingUrl });
+
+      setOrder({
+        ...order,
+        status: newStatus,
+        trackingNumber,
+        trackingUrl: finalTrackingUrl,
+      });
     } catch (error) {
       console.error('Tracking update failed:', error);
     } finally {
@@ -209,7 +293,7 @@ export default function AdminOrderDetail() {
       });
       setStatus('cancelled');
       setOrder({ ...order, status: 'cancelled' });
-      setShowCancelConfirm(false);
+      setShowCancelModal(false);
     } catch (error) {
       console.error('Cancel order failed:', error);
     } finally {
@@ -245,9 +329,15 @@ export default function AdminOrderDetail() {
       });
       const data = await res.json();
       if (res.ok) {
-        setInvoiceResult({ success: true, message: data.message || 'Fatura gönderildi!' });
+        setInvoiceResult({
+          success: true,
+          message: data.message || 'Fatura gönderildi!',
+        });
       } else {
-        setInvoiceResult({ success: false, message: data.error || 'Fatura gönderilemedi' });
+        setInvoiceResult({
+          success: false,
+          message: data.error || 'Fatura gönderilemedi',
+        });
       }
     } catch (error) {
       console.error('Send invoice failed:', error);
@@ -257,352 +347,560 @@ export default function AdminOrderDetail() {
     }
   };
 
-  const currentStatus = statusOptions.find(s => s.value === status);
-  const StatusIcon = currentStatus?.icon || Clock;
+  if (isLoading) return <DetailSkeleton />;
 
-  if (isLoading) {
+  if (loadError || !order) {
     return (
-      <div className="min-h-screen bg-black flex items-center justify-center">
-        <Loader2 className="w-8 h-8 animate-spin text-white" />
-      </div>
-    );
-  }
-
-  if (!order) {
-    return (
-      <div className="min-h-screen bg-black flex items-center justify-center">
-        <div className="text-center">
-          <p className="text-white text-lg mb-4">Sipariş bulunamadı</p>
-          <Link href="/toov-admin?tab=orders" className="text-purple-400 hover:underline">
-            Siparişlere Dön
+      <div className="min-h-screen bg-neutral-50 flex items-center justify-center px-4">
+        <Card className="max-w-md w-full p-8 text-center">
+          <div className="w-10 h-10 rounded-full bg-neutral-100 border border-neutral-200 mx-auto mb-3 flex items-center justify-center">
+            <Package className="w-4 h-4 text-neutral-400" />
+          </div>
+          <p className="text-[14px] font-semibold text-neutral-900 mb-1">
+            {loadError || 'Sipariş bulunamadı'}
+          </p>
+          <p className="text-[12px] text-neutral-500 mb-4">
+            Sipariş silinmiş ya da erişim izniniz olmayabilir.
+          </p>
+          <Link href="/toov-admin?tab=orders">
+            <SecondaryButton data-testid="button-back-to-orders">
+              <ChevronLeft className="w-3.5 h-3.5" />
+              Siparişlere Dön
+            </SecondaryButton>
           </Link>
-        </div>
+        </Card>
       </div>
     );
   }
+
+  const currentStatus =
+    statusOptions.find((s) => s.value === status) || statusOptions[1];
+  const StatusIcon = currentStatus.icon;
+  const canShip = status !== 'cancelled' && status !== 'delivered';
+  const canCancel = status !== 'cancelled' && status !== 'delivered';
+  const isInfluencer = order.couponCode && couponInfo?.isInfluencerCode;
 
   return (
-    <div className="min-h-screen bg-black">
-      <div className="max-w-6xl mx-auto px-4 py-8">
-        <Link href="/toov-admin?tab=orders" className="inline-flex items-center gap-2 text-zinc-400 hover:text-white mb-6 transition-colors">
-          <ChevronLeft className="w-5 h-5" />
+    <div className="min-h-screen bg-neutral-50 pb-24 sm:pb-8">
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 py-6 sm:py-8">
+        {/* Back link */}
+        <Link
+          href="/toov-admin?tab=orders"
+          className="inline-flex items-center gap-1.5 text-[12px] text-neutral-500 hover:text-neutral-900 mb-4 transition-colors"
+          data-testid="link-back-to-orders"
+        >
+          <ChevronLeft className="w-3.5 h-3.5" />
           Siparişlere Dön
         </Link>
 
-        <div className="flex flex-col lg:flex-row gap-6">
-          <div className="flex-1 space-y-6">
-            <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-6">
-              <div className="flex items-center justify-between mb-6">
-                <div>
-                  <h1 className="text-2xl font-bold text-white mb-1">Sipariş #{order.orderNumber}</h1>
-                  <p className="text-zinc-400 text-sm flex items-center gap-2">
-                    <Calendar className="w-4 h-4" />
-                    {new Date(order.createdAt).toLocaleString('tr-TR')}
-                  </p>
-                </div>
-                <div className={`${currentStatus?.color} text-white px-4 py-2 rounded-full flex items-center gap-2`}>
-                  <StatusIcon className="w-4 h-4" />
-                  <span className="font-medium">{currentStatus?.label}</span>
-                </div>
+        {/* Header block */}
+        <Card className="p-5 sm:p-6 mb-5">
+          <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
+            <div className="min-w-0">
+              <div className="flex items-center gap-2 mb-1.5">
+                <h1
+                  className="text-[18px] sm:text-[20px] font-semibold tracking-tight text-neutral-900"
+                  data-testid="text-order-number"
+                >
+                  Sipariş {order.orderNumber}
+                </h1>
+                <StatusBadge tone={currentStatus.tone}>
+                  <StatusIcon className="w-3 h-3 mr-1" />
+                  {currentStatus.label}
+                </StatusBadge>
               </div>
-
-              <div className="grid md:grid-cols-2 gap-6">
-                <div className="space-y-4">
-                  <h3 className="text-lg font-semibold text-white flex items-center gap-2">
-                    <User className="w-5 h-5" />
-                    Müşteri Bilgileri
-                  </h3>
-                  <div className="bg-zinc-800/50 rounded-lg p-4 space-y-3">
-                    <p className="text-white font-medium">{order.customerName}</p>
-                    <p className="text-zinc-400 text-sm flex items-center gap-2">
-                      <Mail className="w-4 h-4" />
-                      {order.customerEmail}
-                    </p>
-                    <p className="text-zinc-400 text-sm flex items-center gap-2">
-                      <Phone className="w-4 h-4" />
-                      {order.customerPhone}
-                    </p>
-                  </div>
-                </div>
-
-                <div className="space-y-4">
-                  <h3 className="text-lg font-semibold text-white flex items-center gap-2">
-                    <MapPin className="w-5 h-5" />
-                    Teslimat Adresi
-                  </h3>
-                  <div className="bg-zinc-800/50 rounded-lg p-4 space-y-2">
-                    <p className="text-zinc-300">{order.shippingAddress?.address}</p>
-                    <p className="text-zinc-400 text-sm">
-                      {order.shippingAddress?.district}, {order.shippingAddress?.city}
-                    </p>
-                    {order.shippingAddress?.postalCode && (
-                      <p className="text-zinc-500 text-sm">{order.shippingAddress.postalCode}</p>
-                    )}
-                  </div>
-                </div>
-              </div>
+              <p className="text-[12px] text-neutral-500 flex flex-wrap items-center gap-x-3 gap-y-0.5">
+                <span className="inline-flex items-center gap-1">
+                  <User className="w-3 h-3" />
+                  {order.customerName}
+                </span>
+                <span className="inline-flex items-center gap-1">
+                  <Calendar className="w-3 h-3" />
+                  {new Date(order.createdAt).toLocaleString('tr-TR')}
+                </span>
+                <span className="inline-flex items-center gap-1 font-semibold text-neutral-700">
+                  ₺{formatCurrency(order.total)}
+                </span>
+              </p>
             </div>
+            <div className="hidden sm:flex items-center gap-2">
+              {canShip && (
+                <SecondaryButton
+                  onClick={() => {
+                    const el = document.getElementById('shipping-section');
+                    el?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                  }}
+                  data-testid="button-jump-shipping"
+                >
+                  <Truck className="w-3.5 h-3.5" />
+                  Kargo Bilgisi
+                </SecondaryButton>
+              )}
+              <PrimaryButton
+                onClick={handleSendInvoice}
+                disabled={isSendingInvoice}
+                data-testid="button-send-invoice-header"
+              >
+                {isSendingInvoice ? (
+                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                ) : (
+                  <FileText className="w-3.5 h-3.5" />
+                )}
+                Fatura Gönder
+              </PrimaryButton>
+            </div>
+          </div>
+        </Card>
 
-            <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-6">
-              <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
-                <Package className="w-5 h-5" />
-                Sipariş Kalemleri
-              </h3>
-              <div className="space-y-4">
+        <div className="grid lg:grid-cols-[1fr_320px] gap-5">
+          {/* LEFT COLUMN */}
+          <div className="space-y-5">
+            {/* Items + Summary */}
+            <Card className="p-5">
+              <SectionHeading
+                title="Sipariş Kalemleri"
+                description={`${order.items?.length ?? 0} ürün`}
+              />
+              <div className="space-y-2">
                 {order.items?.map((item, index) => (
-                  <div key={item.id || index} className="bg-zinc-800/50 rounded-lg p-4">
-                    <div className="flex justify-between items-start gap-4">
-                      <div className="flex gap-4 flex-1">
-                        {item.productImage && (
-                          <div className="w-16 h-16 rounded-lg overflow-hidden bg-zinc-700 shrink-0">
-                            <img 
-                              src={item.productImage} 
-                              alt={item.productName}
-                              className="w-full h-full object-cover"
-                            />
-                          </div>
-                        )}
-                        <div className="flex-1">
-                          <p className="text-white font-medium">{item.productName}</p>
-                          {item.variantDetails && (
-                            <p className="text-zinc-400 text-sm mt-1">{item.variantDetails}</p>
-                          )}
-                          {item.sku && (
-                            <p className="text-zinc-500 text-xs mt-1 flex items-center gap-1">
-                              <Hash className="w-3 h-3" />
-                              SKU: {item.sku}
-                            </p>
-                          )}
-                        </div>
+                  <div
+                    key={item.id || index}
+                    className="flex gap-3 items-start py-3 border-b border-neutral-100 last:border-0"
+                    data-testid={`row-order-item-${item.productId}`}
+                  >
+                    {item.productImage ? (
+                      <div className="w-14 h-14 rounded-md overflow-hidden bg-neutral-100 border border-neutral-200 shrink-0">
+                        <img
+                          src={item.productImage}
+                          alt={item.productName}
+                          className="w-full h-full object-cover"
+                        />
                       </div>
-                      <div className="text-right shrink-0">
-                        <p className="text-white font-medium">{item.quantity} x {parseFloat(item.price).toFixed(2)}₺</p>
-                        <p className="text-zinc-400 text-sm">{parseFloat(item.subtotal).toFixed(2)}₺</p>
+                    ) : (
+                      <div className="w-14 h-14 rounded-md bg-neutral-100 border border-neutral-200 flex items-center justify-center shrink-0">
+                        <Package className="w-4 h-4 text-neutral-400" />
                       </div>
+                    )}
+                    <div className="flex-1 min-w-0">
+                      <p className="text-[13px] font-medium text-neutral-900 leading-tight">
+                        {item.productName}
+                      </p>
+                      {item.variantDetails && (
+                        <p className="text-[11px] text-neutral-500 mt-1">
+                          {item.variantDetails}
+                        </p>
+                      )}
+                      {item.sku && (
+                        <p className="text-[11px] text-neutral-400 mt-0.5 inline-flex items-center gap-1">
+                          <Hash className="w-2.5 h-2.5" />
+                          {item.sku}
+                        </p>
+                      )}
+                    </div>
+                    <div className="text-right shrink-0">
+                      <p className="text-[12px] text-neutral-500 tabular-nums">
+                        {item.quantity} × ₺{formatCurrency(item.price)}
+                      </p>
+                      <p className="text-[13px] font-semibold text-neutral-900 tabular-nums mt-0.5">
+                        ₺{formatCurrency(item.subtotal)}
+                      </p>
                     </div>
                   </div>
                 ))}
               </div>
 
-              <div className="mt-6 pt-4 border-t border-zinc-700 space-y-2">
-                <div className="flex justify-between text-zinc-400">
+              <div className="mt-4 pt-4 border-t border-neutral-100 space-y-1.5">
+                <div className="flex justify-between text-[12px] text-neutral-600">
                   <span>Ara Toplam</span>
-                  <span>{parseFloat(order.subtotal).toFixed(2)}₺</span>
+                  <span className="tabular-nums">
+                    ₺{formatCurrency(order.subtotal)}
+                  </span>
                 </div>
-                <div className="flex justify-between text-zinc-400">
+                <div className="flex justify-between text-[12px] text-neutral-600">
                   <span>Kargo</span>
-                  <span>{parseFloat(order.shippingCost || '0').toFixed(2)}₺</span>
+                  <span className="tabular-nums">
+                    ₺{formatCurrency(order.shippingCost || '0')}
+                  </span>
                 </div>
                 {order.discountAmount && parseFloat(order.discountAmount) > 0 && (
-                  <div className="flex justify-between text-green-400">
-                    <span className="flex items-center gap-2">
-                      <Tag className="w-4 h-4" />
+                  <div className="flex justify-between text-[12px] text-emerald-700">
+                    <span className="inline-flex items-center gap-1">
+                      <Tag className="w-3 h-3" />
                       İndirim {order.couponCode && `(${order.couponCode})`}
                     </span>
-                    <span>-{parseFloat(order.discountAmount).toFixed(2)}₺</span>
+                    <span className="tabular-nums">
+                      −₺{formatCurrency(order.discountAmount)}
+                    </span>
                   </div>
                 )}
-                <div className="flex justify-between text-white text-xl font-bold pt-2 border-t border-zinc-700">
+                <div className="flex justify-between text-[14px] font-semibold text-neutral-900 pt-2 mt-2 border-t border-neutral-100">
                   <span>Toplam</span>
-                  <span>{parseFloat(order.total).toFixed(2)}₺</span>
+                  <span className="tabular-nums" data-testid="text-order-total">
+                    ₺{formatCurrency(order.total)}
+                  </span>
                 </div>
               </div>
 
-              {order.couponCode && couponInfo?.isInfluencerCode && (
-                <div className="mt-4 p-3 bg-purple-900/30 border border-purple-600/30 rounded-lg">
-                  <p className="text-purple-300 text-sm flex items-center gap-2">
-                    <Tag className="w-4 h-4" />
-                    Influencer Kodu Kullanıldı: <span className="font-bold">{order.couponCode}</span>
-                    {couponInfo.influencerInstagram && (
-                      <a 
+              {isInfluencer && (
+                <div className="mt-4">
+                  <InlineAlert tone="neutral">
+                    <span className="font-medium">Influencer kodu:</span>{' '}
+                    {order.couponCode}
+                    {couponInfo?.influencerInstagram && (
+                      <a
                         href={`https://instagram.com/${couponInfo.influencerInstagram.replace('@', '')}`}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="text-purple-400 hover:text-purple-300 flex items-center gap-1"
+                        className="ml-2 inline-flex items-center gap-0.5 text-neutral-700 hover:text-neutral-900 underline underline-offset-2"
                       >
                         @{couponInfo.influencerInstagram.replace('@', '')}
                         <ExternalLink className="w-3 h-3" />
                       </a>
                     )}
-                  </p>
+                  </InlineAlert>
                 </div>
               )}
-            </div>
+            </Card>
 
-            <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-6">
-              <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
-                <MessageSquare className="w-5 h-5" />
-                Notlar
-              </h3>
-              <div className="flex gap-2 mb-4">
-                <input
-                  type="text"
-                  placeholder="Not ekle..."
+            {/* Notes */}
+            <Card className="p-5">
+              <SectionHeading
+                title="Notlar"
+                description={
+                  notes.length > 0
+                    ? `${notes.length} not`
+                    : 'Henüz not eklenmemiş'
+                }
+              />
+              <div className="flex gap-2 mb-3">
+                <TextInput
+                  placeholder="Not ekle…"
                   value={newNote}
                   onChange={(e) => setNewNote(e.target.value)}
-                  className="flex-1 px-4 py-2 bg-zinc-800 border border-zinc-700 rounded-lg text-white focus:outline-none focus:border-zinc-600"
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') handleAddNote();
+                  }}
+                  data-testid="input-new-note"
+                  className="flex-1"
                 />
-                <button
+                <SecondaryButton
                   onClick={handleAddNote}
-                  className="px-4 py-2 bg-zinc-700 text-white rounded-lg hover:bg-zinc-600 transition-colors"
+                  disabled={!newNote.trim()}
+                  data-testid="button-add-note"
                 >
+                  <MessageSquare className="w-3.5 h-3.5" />
                   Ekle
-                </button>
+                </SecondaryButton>
               </div>
               {notes.length > 0 ? (
-                <div className="space-y-3 max-h-48 overflow-y-auto">
+                <div className="space-y-2 max-h-72 overflow-y-auto">
                   {notes.map((note) => (
-                    <div key={note.id} className="bg-zinc-800/50 rounded-lg p-3">
-                      <p className="text-white text-sm">{note.content}</p>
-                      <p className="text-zinc-500 text-xs mt-1">
+                    <div
+                      key={note.id}
+                      className="bg-neutral-50 border border-neutral-200 rounded-md p-3"
+                      data-testid={`note-${note.id}`}
+                    >
+                      <p className="text-[12.5px] text-neutral-800 leading-relaxed">
+                        {note.content}
+                      </p>
+                      <p className="text-[10.5px] text-neutral-400 mt-1.5">
                         {new Date(note.createdAt).toLocaleString('tr-TR')}
                       </p>
                     </div>
                   ))}
                 </div>
               ) : (
-                <p className="text-zinc-500 text-sm">Henüz not eklenmemiş.</p>
+                <p className="text-[12px] text-neutral-400 italic">
+                  Bu siparişe ait not bulunmuyor.
+                </p>
               )}
-            </div>
+            </Card>
           </div>
 
-          <div className="lg:w-80 space-y-6">
-            <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-6">
-              <h3 className="text-lg font-semibold text-white mb-4">Sipariş Durumu</h3>
-              <div className="space-y-3">
-                <select
+          {/* RIGHT COLUMN */}
+          <div className="space-y-5">
+            {/* Customer */}
+            <Card className="p-5">
+              <SectionHeading title="Müşteri" />
+              <div className="space-y-2">
+                <p className="text-[13px] font-medium text-neutral-900">
+                  {order.customerName}
+                </p>
+                <a
+                  href={`mailto:${order.customerEmail}`}
+                  className="text-[12px] text-neutral-600 hover:text-neutral-900 flex items-center gap-1.5 truncate"
+                  data-testid="link-customer-email"
+                >
+                  <Mail className="w-3 h-3 shrink-0" />
+                  <span className="truncate">{order.customerEmail}</span>
+                </a>
+                <a
+                  href={`tel:${order.customerPhone}`}
+                  className="text-[12px] text-neutral-600 hover:text-neutral-900 flex items-center gap-1.5"
+                  data-testid="link-customer-phone"
+                >
+                  <Phone className="w-3 h-3 shrink-0" />
+                  {order.customerPhone}
+                </a>
+              </div>
+            </Card>
+
+            {/* Shipping address */}
+            <Card className="p-5">
+              <SectionHeading title="Teslimat Adresi" />
+              <div className="text-[12.5px] text-neutral-700 space-y-1 leading-relaxed">
+                <p className="flex items-start gap-1.5">
+                  <MapPin className="w-3 h-3 text-neutral-400 mt-1 shrink-0" />
+                  <span>{order.shippingAddress?.address}</span>
+                </p>
+                <p className="text-neutral-500 ml-[18px]">
+                  {order.shippingAddress?.district}, {order.shippingAddress?.city}
+                  {order.shippingAddress?.postalCode &&
+                    ` · ${order.shippingAddress.postalCode}`}
+                </p>
+              </div>
+            </Card>
+
+            {/* Status */}
+            <Card className="p-5">
+              <SectionHeading title="Sipariş Durumu" />
+              <div className="space-y-2">
+                <SelectInput
                   value={status}
                   onChange={(e) => setStatus(e.target.value)}
                   disabled={status === 'cancelled'}
-                  className="w-full px-4 py-2 bg-zinc-800 border border-zinc-700 rounded-lg text-white focus:outline-none focus:border-zinc-600"
+                  className="w-full"
+                  data-testid="select-order-status"
                 >
-                  {statusOptions.map(opt => (
-                    <option key={opt.value} value={opt.value}>{opt.label}</option>
+                  {statusOptions.map((opt) => (
+                    <option key={opt.value} value={opt.value}>
+                      {opt.label}
+                    </option>
                   ))}
-                </select>
-                <button
+                </SelectInput>
+                <PrimaryButton
                   onClick={handleStatusUpdate}
-                  disabled={isUpdating || status === order.status || status === 'cancelled'}
-                  className="w-full px-4 py-2 bg-white text-black rounded-lg font-medium hover:bg-zinc-200 disabled:opacity-50 transition-colors"
+                  disabled={
+                    isUpdating || status === order.status || status === 'cancelled'
+                  }
+                  className="w-full"
+                  data-testid="button-update-status"
                 >
-                  {isUpdating ? 'Güncelleniyor...' : 'Durumu Güncelle'}
-                </button>
+                  {isUpdating ? (
+                    <>
+                      <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                      Güncelleniyor…
+                    </>
+                  ) : (
+                    'Durumu Güncelle'
+                  )}
+                </PrimaryButton>
               </div>
-            </div>
+            </Card>
 
-            <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-6">
-              <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
-                <Truck className="w-5 h-5" />
-                DHL E-Commerce Kargo
-              </h3>
-              <div className="space-y-3">
-                <input
-                  type="text"
-                  placeholder="Takip Numarası"
-                  value={trackingNumber}
-                  onChange={(e) => setTrackingNumber(e.target.value)}
-                  className="w-full px-4 py-2 bg-zinc-800 border border-zinc-700 rounded-lg text-white focus:outline-none focus:border-zinc-600"
-                />
-                <input
-                  type="text"
-                  placeholder="Takip URL (opsiyonel)"
-                  value={trackingUrl}
-                  onChange={(e) => setTrackingUrl(e.target.value)}
-                  className="w-full px-4 py-2 bg-zinc-800 border border-zinc-700 rounded-lg text-white focus:outline-none focus:border-zinc-600"
-                />
-                <button
+            {/* Shipping (DHL) */}
+            <div id="shipping-section">
+            <Card className="p-5">
+              <SectionHeading
+                title="DHL E-Commerce Kargo"
+                description="Takip bilgisi girildiğinde sipariş otomatik kargoya alınır."
+              />
+              <div className="space-y-2.5">
+                <FormField label="Takip Numarası">
+                  <TextInput
+                    placeholder="Örn. 1234567890"
+                    value={trackingNumber}
+                    onChange={(e) => setTrackingNumber(e.target.value)}
+                    data-testid="input-tracking-number"
+                  />
+                </FormField>
+                <FormField label="Takip URL" hint="Boş bırakılırsa DHL bağlantısı oluşturulur.">
+                  <TextInput
+                    placeholder="https://…"
+                    value={trackingUrl}
+                    onChange={(e) => setTrackingUrl(e.target.value)}
+                    data-testid="input-tracking-url"
+                  />
+                </FormField>
+                <PrimaryButton
                   onClick={handleTrackingUpdate}
                   disabled={isUpdating || !trackingNumber}
-                  className="w-full px-4 py-2 bg-purple-600 text-white rounded-lg font-medium hover:bg-purple-700 disabled:opacity-50 transition-colors"
+                  className="w-full"
+                  data-testid="button-save-tracking"
                 >
-                  Kargoya Ver
-                </button>
+                  {isUpdating ? (
+                    <>
+                      <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                      Kaydediliyor…
+                    </>
+                  ) : (
+                    <>
+                      <Truck className="w-3.5 h-3.5" />
+                      Kargoya Ver
+                    </>
+                  )}
+                </PrimaryButton>
                 {order.trackingNumber && order.trackingUrl && (
                   <a
                     href={order.trackingUrl}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="block w-full px-4 py-2 bg-zinc-800 text-zinc-300 rounded-lg text-center hover:bg-zinc-700 transition-colors"
+                    className="block w-full text-center h-9 leading-9 rounded-md border border-neutral-200 bg-white text-[12.5px] text-neutral-700 hover:bg-neutral-50 hover:text-neutral-900 transition-colors"
+                    data-testid="link-tracking"
                   >
-                    Kargo Takibi <ExternalLink className="w-4 h-4 inline ml-1" />
+                    Kargo Takibi
+                    <ExternalLink className="w-3 h-3 inline ml-1" />
                   </a>
                 )}
               </div>
+            </Card>
             </div>
 
-            <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-6">
-              <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
-                <FileText className="w-5 h-5" />
-                BizimHesap Fatura
-              </h3>
-              <div className="space-y-3">
-                <button
+            {/* Invoice */}
+            <Card className="p-5">
+              <SectionHeading
+                title="BizimHesap Fatura"
+                description="Fatura entegrasyonu üzerinden gönderilir."
+              />
+              <div className="space-y-2">
+                <SecondaryButton
                   onClick={handleSendInvoice}
                   disabled={isSendingInvoice}
-                  className="w-full px-4 py-2 bg-emerald-600 text-white rounded-lg font-medium hover:bg-emerald-700 disabled:opacity-50 transition-colors flex items-center justify-center gap-2"
+                  className="w-full"
+                  data-testid="button-send-invoice"
                 >
                   {isSendingInvoice ? (
                     <>
-                      <Loader2 className="w-4 h-4 animate-spin" />
-                      Gönderiliyor...
+                      <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                      Gönderiliyor…
                     </>
                   ) : (
                     <>
-                      <FileText className="w-4 h-4" />
+                      <FileText className="w-3.5 h-3.5" />
                       Fatura Gönder
                     </>
                   )}
-                </button>
+                </SecondaryButton>
                 {invoiceResult && (
-                  <p className={`text-sm ${invoiceResult.success ? 'text-green-400' : 'text-red-400'}`}>
+                  <InlineAlert tone={invoiceResult.success ? 'success' : 'error'}>
                     {invoiceResult.message}
-                  </p>
+                  </InlineAlert>
                 )}
               </div>
-            </div>
+            </Card>
 
-            {status !== 'cancelled' && status !== 'delivered' && (
-              <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-6">
-                <h3 className="text-lg font-semibold text-red-400 mb-4">Siparişi İptal Et</h3>
-                {!showCancelConfirm ? (
-                  <button
-                    onClick={() => setShowCancelConfirm(true)}
-                    className="w-full px-4 py-2 bg-red-600/20 text-red-400 border border-red-600/30 rounded-lg hover:bg-red-600/30 transition-colors"
-                  >
-                    Siparişi İptal Et
-                  </button>
-                ) : (
-                  <div className="space-y-3">
-                    <p className="text-red-400 text-sm">Siparişi iptal etmek istediğinize emin misiniz? Stok otomatik olarak iade edilecektir.</p>
-                    <input
-                      type="text"
-                      placeholder="İptal sebebi (opsiyonel)"
-                      value={cancelReason}
-                      onChange={(e) => setCancelReason(e.target.value)}
-                      className="w-full px-4 py-2 bg-zinc-800 border border-zinc-700 rounded-lg text-white focus:outline-none"
-                    />
-                    <div className="flex gap-2">
-                      <button
-                        onClick={() => setShowCancelConfirm(false)}
-                        className="flex-1 px-4 py-2 bg-zinc-700 text-white rounded-lg hover:bg-zinc-600 transition-colors"
-                      >
-                        Vazgeç
-                      </button>
-                      <button
-                        onClick={handleCancelOrder}
-                        disabled={isUpdating}
-                        className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50 transition-colors"
-                      >
-                        İptal Et
-                      </button>
-                    </div>
-                  </div>
-                )}
-              </div>
+            {/* Cancel */}
+            {canCancel && (
+              <Card className="p-5 border-red-100">
+                <SectionHeading
+                  title="Tehlikeli Bölge"
+                  description="İptal edilen siparişler için stok otomatik iade edilir."
+                />
+                <SecondaryButton
+                  onClick={() => setShowCancelModal(true)}
+                  className="w-full !text-red-600 !border-red-200 hover:!bg-red-50"
+                  data-testid="button-open-cancel-modal"
+                >
+                  <XCircle className="w-3.5 h-3.5" />
+                  Siparişi İptal Et
+                </SecondaryButton>
+              </Card>
             )}
           </div>
         </div>
       </div>
+
+      {/* Mobile sticky bottom action bar */}
+      <div className="sm:hidden fixed bottom-0 left-0 right-0 z-30 bg-white border-t border-neutral-200 px-3 py-2.5 flex items-center gap-2 shadow-[0_-4px_12px_rgba(0,0,0,0.04)]">
+        <SecondaryButton
+          onClick={() =>
+            document
+              .getElementById('shipping-section')
+              ?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+          }
+          className="flex-1 justify-center"
+          disabled={!canShip}
+          data-testid="button-mobile-shipping"
+        >
+          <Truck className="w-3.5 h-3.5" />
+          Kargo
+        </SecondaryButton>
+        <PrimaryButton
+          onClick={handleSendInvoice}
+          disabled={isSendingInvoice}
+          className="flex-1 justify-center"
+          data-testid="button-mobile-invoice"
+        >
+          {isSendingInvoice ? (
+            <Loader2 className="w-3.5 h-3.5 animate-spin" />
+          ) : (
+            <FileText className="w-3.5 h-3.5" />
+          )}
+          Fatura
+        </PrimaryButton>
+      </div>
+
+      {/* Cancel modal */}
+      {showCancelModal && (
+        <AdminModal
+          open
+          onClose={() => setShowCancelModal(false)}
+          title="Siparişi iptal et"
+          description="Stok otomatik iade edilir ve müşteri bilgilendirilir."
+          size="sm"
+          testId="modal-cancel-order"
+          footer={
+            <>
+              <GhostButton
+                type="button"
+                onClick={() => setShowCancelModal(false)}
+                disabled={isUpdating}
+                data-testid="button-cancel-cancel"
+              >
+                Vazgeç
+              </GhostButton>
+              <PrimaryButton
+                onClick={handleCancelOrder}
+                disabled={isUpdating}
+                className="!bg-red-600 hover:!bg-red-700"
+                data-testid="button-confirm-cancel"
+              >
+                {isUpdating ? (
+                  <>
+                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                    İptal ediliyor…
+                  </>
+                ) : (
+                  <>
+                    <XCircle className="w-3.5 h-3.5" />
+                    Siparişi İptal Et
+                  </>
+                )}
+              </PrimaryButton>
+            </>
+          }
+        >
+          <div className="space-y-3">
+            <InlineAlert tone="warning">
+              Bu işlem geri alınamaz. Sipariş{' '}
+              <span className="font-semibold">{order.orderNumber}</span> iptal
+              edilecektir.
+            </InlineAlert>
+            <FormField
+              label="İptal sebebi"
+              hint="Müşteri ve ekiple paylaşmak için kısa bir açıklama girebilirsiniz."
+            >
+              <TextArea
+                placeholder="Örn. Stokta kalmadı / Müşteri vazgeçti…"
+                value={cancelReason}
+                onChange={(e) => setCancelReason(e.target.value)}
+                rows={3}
+                data-testid="input-cancel-reason"
+              />
+            </FormField>
+          </div>
+        </AdminModal>
+      )}
     </div>
   );
 }

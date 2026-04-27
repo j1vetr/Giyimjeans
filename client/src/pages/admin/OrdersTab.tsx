@@ -2,10 +2,32 @@ import { useState, useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Link, useLocation } from 'wouter';
 import {
-  ShoppingBag, Clock, TrendingUp, CheckCircle2, XCircle,
-  Truck, Search, Eye, BarChart3, ArrowUpRight, ChevronDown,
-  Package, RefreshCw, Banknote
+  ShoppingBag,
+  Clock,
+  TrendingUp,
+  CheckCircle2,
+  XCircle,
+  Truck,
+  Eye,
+  BarChart3,
+  ArrowUpRight,
+  ChevronDown,
+  Package,
+  RefreshCw,
+  Banknote,
+  Loader2,
 } from 'lucide-react';
+import {
+  PageHeader,
+  Card,
+  EmptyState,
+  SearchInput,
+  SelectInput,
+  SecondaryButton,
+  StatusBadge,
+  TextInput,
+  Toolbar,
+} from './_ui/AdminUI';
 
 interface Order {
   id: string;
@@ -24,24 +46,36 @@ interface Order {
   createdAt: string;
 }
 
+type StatusTone = 'neutral' | 'amber' | 'blue' | 'indigo' | 'emerald' | 'red' | 'orange';
+
 const STATUS_OPTIONS = [
   { value: 'all', label: 'Tümü' },
-  { value: 'confirmed', label: 'Yeni Sipariş' },
+  { value: 'confirmed', label: 'Yeni' },
   { value: 'pending', label: 'Beklemede' },
-  { value: 'processing', label: 'İşleniyor' },
+  { value: 'processing', label: 'Hazırlanıyor' },
   { value: 'shipped', label: 'Kargoda' },
   { value: 'completed', label: 'Tamamlandı' },
   { value: 'cancelled', label: 'İptal' },
 ];
 
-const STATUS_CONFIG: Record<string, { label: string; color: string; bg: string; dot: string; icon: React.ElementType }> = {
-  confirmed:  { label: 'Yeni Sipariş', color: 'text-orange-400', bg: 'bg-orange-500/15 border-orange-500/30', dot: 'bg-orange-400', icon: Banknote },
-  pending:    { label: 'Beklemede',  color: 'text-amber-900',   bg: 'bg-amber-50 border-amber-300',   dot: 'bg-amber-500',   icon: Clock },
-  processing: { label: 'İşleniyor', color: 'text-blue-400',    bg: 'bg-blue-500/15 border-blue-500/30',     dot: 'bg-blue-400',    icon: RefreshCw },
-  shipped:    { label: 'Kargoda',   color: 'text-purple-400',  bg: 'bg-purple-500/15 border-purple-500/30', dot: 'bg-purple-400',  icon: Truck },
-  completed:  { label: 'Tamamlandı',color: 'text-emerald-400', bg: 'bg-emerald-500/15 border-emerald-500/30',dot: 'bg-emerald-400', icon: CheckCircle2 },
-  cancelled:  { label: 'İptal',     color: 'text-red-400',     bg: 'bg-red-500/15 border-red-500/30',       dot: 'bg-red-400',     icon: XCircle },
+const STATUS_CONFIG: Record<
+  string,
+  { label: string; tone: StatusTone; icon: React.ElementType }
+> = {
+  confirmed: { label: 'Yeni Sipariş', tone: 'orange', icon: Banknote },
+  pending: { label: 'Beklemede', tone: 'amber', icon: Clock },
+  processing: { label: 'Hazırlanıyor', tone: 'blue', icon: RefreshCw },
+  shipped: { label: 'Kargoda', tone: 'indigo', icon: Truck },
+  completed: { label: 'Tamamlandı', tone: 'emerald', icon: CheckCircle2 },
+  cancelled: { label: 'İptal', tone: 'red', icon: XCircle },
 };
+
+const SORT_OPTIONS = [
+  { value: 'date-desc', label: 'En yeni önce' },
+  { value: 'date-asc', label: 'En eski önce' },
+  { value: 'amount-desc', label: 'Yüksek tutar' },
+  { value: 'amount-asc', label: 'Düşük tutar' },
+];
 
 function timeAgo(dateStr: string): string {
   const diff = (Date.now() - new Date(dateStr).getTime()) / 1000;
@@ -49,67 +83,99 @@ function timeAgo(dateStr: string): string {
   if (diff < 3600) return `${Math.floor(diff / 60)} dk önce`;
   if (diff < 86400) return `${Math.floor(diff / 3600)} sa önce`;
   if (diff < 604800) return `${Math.floor(diff / 86400)} gün önce`;
-  return new Date(dateStr).toLocaleDateString('tr-TR', { day: 'numeric', month: 'short' });
+  return new Date(dateStr).toLocaleDateString('tr-TR', {
+    day: 'numeric',
+    month: 'short',
+  });
 }
 
 function formatCurrency(amount: string | number): string {
-  return Number(amount).toLocaleString('tr-TR', { minimumFractionDigits: 0, maximumFractionDigits: 0 });
+  return Number(amount).toLocaleString('tr-TR', {
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 0,
+  });
 }
 
 function getInitials(name: string): string {
-  return name.split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 2);
+  return name
+    .split(' ')
+    .map((w) => w[0])
+    .join('')
+    .toUpperCase()
+    .slice(0, 2);
 }
 
-const AVATAR_GRADIENTS = [
-  'from-violet-600 to-purple-600',
-  'from-blue-600 to-cyan-600',
-  'from-emerald-600 to-teal-600',
-  'from-orange-600 to-amber-600',
-  'from-rose-600 to-pink-600',
-  'from-indigo-600 to-blue-600',
-];
-
-function avatarGradient(name: string): string {
-  const idx = name.charCodeAt(0) % AVATAR_GRADIENTS.length;
-  return AVATAR_GRADIENTS[idx];
-}
-
-function StatusBadge({ status }: { status: string }) {
+function StatusPill({ status }: { status: string }) {
   const cfg = STATUS_CONFIG[status] || STATUS_CONFIG.pending;
-  return (
-    <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium border ${cfg.bg} ${cfg.color}`}>
-      <span className={`w-1.5 h-1.5 rounded-full ${cfg.dot} ${status === 'pending' ? 'animate-pulse' : ''}`} />
-      {cfg.label}
-    </span>
-  );
+  return <StatusBadge tone={cfg.tone}>{cfg.label}</StatusBadge>;
 }
 
-function StatusSelect({ orderId, currentStatus, onChange }: { orderId: string; currentStatus: string; onChange: (id: string, status: string) => void }) {
+function StatusSelect({
+  orderId,
+  currentStatus,
+  onChange,
+}: {
+  orderId: string;
+  currentStatus: string;
+  onChange: (id: string, status: string) => void;
+}) {
   const [open, setOpen] = useState(false);
   const cfg = STATUS_CONFIG[currentStatus] || STATUS_CONFIG.pending;
   return (
-    <div className="relative">
+    <div className="relative inline-flex">
       <button
-        onClick={(e) => { e.stopPropagation(); setOpen(!open); }}
-        className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium border ${cfg.bg} ${cfg.color} cursor-pointer hover:opacity-80 transition-opacity`}
+        type="button"
+        onClick={(e) => {
+          e.stopPropagation();
+          setOpen(!open);
+        }}
+        onKeyDown={(e) => {
+          if (e.key === 'Escape' && open) {
+            e.stopPropagation();
+            setOpen(false);
+          }
+        }}
+        className="inline-flex items-center gap-1.5 hover:opacity-80 transition-opacity rounded-full focus:outline-none focus-visible:ring-2 focus-visible:ring-neutral-900/20"
+        aria-haspopup="menu"
+        aria-expanded={open}
+        aria-label={`Sipariş durumu: ${cfg.label}. Değiştirmek için aç.`}
         data-testid={`select-status-${orderId}`}
       >
-        <span className={`w-1.5 h-1.5 rounded-full ${cfg.dot} ${currentStatus === 'pending' ? 'animate-pulse' : ''}`} />
-        {cfg.label}
-        <ChevronDown className="w-3 h-3 ml-0.5" />
+        <StatusBadge tone={cfg.tone}>{cfg.label}</StatusBadge>
+        <ChevronDown className="w-3 h-3 text-neutral-400" />
       </button>
       {open && (
         <>
-          <div className="fixed inset-0 z-10" onClick={() => setOpen(false)} />
-          <div className="absolute left-0 top-full mt-1 z-20 bg-white border border-neutral-200 rounded-lg shadow-2xl overflow-hidden min-w-[140px]">
+          <div
+            className="fixed inset-0 z-10"
+            onClick={(e) => {
+              e.stopPropagation();
+              setOpen(false);
+            }}
+          />
+          <div
+            role="menu"
+            aria-label="Sipariş durumu seç"
+            className="absolute left-0 top-full mt-1 z-20 bg-white border border-neutral-200 rounded-md shadow-lg overflow-hidden min-w-[150px] py-1"
+          >
             {Object.entries(STATUS_CONFIG).map(([val, conf]) => (
               <button
                 key={val}
-                onClick={(e) => { e.stopPropagation(); onChange(orderId, val); setOpen(false); }}
-                className={`w-full flex items-center gap-2 px-3 py-2 text-xs hover:bg-neutral-50 transition-colors ${val === currentStatus ? conf.color : 'text-neutral-700'}`}
+                type="button"
+                role="menuitemradio"
+                aria-checked={val === currentStatus}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onChange(orderId, val);
+                  setOpen(false);
+                }}
+                className={`w-full flex items-center gap-2 px-2.5 py-1.5 text-[12px] hover:bg-neutral-50 focus:bg-neutral-50 focus:outline-none transition-colors ${
+                  val === currentStatus
+                    ? 'text-neutral-900 font-medium'
+                    : 'text-neutral-600'
+                }`}
               >
-                <span className={`w-1.5 h-1.5 rounded-full ${conf.dot}`} />
-                {conf.label}
+                <StatusBadge tone={conf.tone}>{conf.label}</StatusBadge>
               </button>
             ))}
           </div>
@@ -119,16 +185,88 @@ function StatusSelect({ orderId, currentStatus, onChange }: { orderId: string; c
   );
 }
 
+function KpiCard({
+  icon: Icon,
+  label,
+  value,
+  hint,
+}: {
+  icon: React.ElementType;
+  label: string;
+  value: string;
+  hint?: React.ReactNode;
+}) {
+  return (
+    <Card className="p-4">
+      <div className="flex items-center justify-between mb-2.5">
+        <div className="w-8 h-8 rounded-md bg-neutral-50 border border-neutral-200 flex items-center justify-center">
+          <Icon className="w-3.5 h-3.5 text-neutral-600" />
+        </div>
+        {hint}
+      </div>
+      <p
+        className="text-[20px] font-semibold tracking-tight text-neutral-900 leading-none tabular-nums"
+        data-testid={`kpi-value-${label.toLowerCase().replace(/\s+/g, '-')}`}
+      >
+        {value}
+      </p>
+      <p className="text-[11px] text-neutral-500 mt-1.5">{label}</p>
+    </Card>
+  );
+}
+
+function TableSkeletonRow() {
+  return (
+    <tr className="border-b border-neutral-100 animate-pulse">
+      <td className="px-5 py-3.5">
+        <div className="flex items-center gap-3">
+          <div className="w-8 h-8 rounded-md bg-neutral-100" />
+          <div className="space-y-1.5">
+            <div className="h-3 w-28 rounded bg-neutral-100" />
+            <div className="h-2.5 w-36 rounded bg-neutral-100" />
+          </div>
+        </div>
+      </td>
+      <td className="px-5 py-3.5">
+        <div className="h-3 w-24 rounded bg-neutral-100" />
+      </td>
+      <td className="px-5 py-3.5">
+        <div className="h-3 w-16 rounded bg-neutral-100" />
+      </td>
+      <td className="px-5 py-3.5">
+        <div className="h-5 w-20 rounded-full bg-neutral-100" />
+      </td>
+      <td className="px-5 py-3.5">
+        <div className="h-3 w-14 rounded bg-neutral-100" />
+      </td>
+      <td className="px-5 py-3.5">
+        <div className="h-3 w-16 rounded bg-neutral-100" />
+      </td>
+      <td className="px-5 py-3.5" />
+    </tr>
+  );
+}
+
 export default function OrdersPanel() {
   const queryClient = useQueryClient();
   const [, navigate] = useLocation();
   const [statusFilter, setStatusFilter] = useState('all');
   const [search, setSearch] = useState('');
+  const [sort, setSort] = useState('date-desc');
+  const [dateFrom, setDateFrom] = useState('');
+  const [dateTo, setDateTo] = useState('');
 
-  const { data: orders = [], isLoading } = useQuery<Order[]>({
+  const {
+    data: orders = [],
+    isLoading,
+    isError,
+    isFetching,
+    refetch,
+  } = useQuery<Order[]>({
     queryKey: ['admin', 'orders'],
     queryFn: async () => {
       const r = await fetch('/api/admin/orders', { credentials: 'include' });
+      if (!r.ok) throw new Error('Orders request failed');
       return r.json();
     },
     refetchInterval: 30000,
@@ -155,23 +293,43 @@ export default function OrdersPanel() {
     const thisMonthStart = new Date(now.getFullYear(), now.getMonth(), 1);
     const lastMonthStart = new Date(now.getFullYear(), now.getMonth() - 1, 1);
 
-    const thisMonthOrders = orders.filter(o => new Date(o.createdAt) >= thisMonthStart);
-    const lastMonthOrders = orders.filter(o => new Date(o.createdAt) >= lastMonthStart && new Date(o.createdAt) < thisMonthStart);
+    const thisMonthOrders = orders.filter(
+      (o) => new Date(o.createdAt) >= thisMonthStart,
+    );
+    const lastMonthOrders = orders.filter(
+      (o) =>
+        new Date(o.createdAt) >= lastMonthStart &&
+        new Date(o.createdAt) < thisMonthStart,
+    );
 
-    const thisMonthRevenue = thisMonthOrders.filter(o => o.status !== 'cancelled').reduce((s, o) => s + Number(o.total), 0);
-    const lastMonthRevenue = lastMonthOrders.filter(o => o.status !== 'cancelled').reduce((s, o) => s + Number(o.total), 0);
+    const thisMonthRevenue = thisMonthOrders
+      .filter((o) => o.status !== 'cancelled')
+      .reduce((s, o) => s + Number(o.total), 0);
+    const lastMonthRevenue = lastMonthOrders
+      .filter((o) => o.status !== 'cancelled')
+      .reduce((s, o) => s + Number(o.total), 0);
 
-    const confirmed = orders.filter(o => o.status === 'confirmed').length;
-    const pending = orders.filter(o => o.status === 'pending').length;
+    const confirmed = orders.filter((o) => o.status === 'confirmed').length;
+    const pending = orders.filter((o) => o.status === 'pending').length;
     const awaitingAction = confirmed + pending;
-    const processing = orders.filter(o => o.status === 'processing').length;
-    const completed = orders.filter(o => o.status === 'completed').length;
-    const totalRevenue = orders.filter(o => o.status !== 'cancelled').reduce((s, o) => s + Number(o.total), 0);
+    const totalRevenue = orders
+      .filter((o) => o.status !== 'cancelled')
+      .reduce((s, o) => s + Number(o.total), 0);
     const avgOrder = orders.length ? totalRevenue / orders.length : 0;
 
-    const revenueGrowth = lastMonthRevenue > 0 ? ((thisMonthRevenue - lastMonthRevenue) / lastMonthRevenue) * 100 : null;
+    const revenueGrowth =
+      lastMonthRevenue > 0
+        ? ((thisMonthRevenue - lastMonthRevenue) / lastMonthRevenue) * 100
+        : null;
 
-    return { confirmed, pending, awaitingAction, processing, completed, thisMonthRevenue, lastMonthRevenue, revenueGrowth, avgOrder, totalRevenue, thisMonthOrders: thisMonthOrders.length };
+    return {
+      awaitingAction,
+      thisMonthRevenue,
+      revenueGrowth,
+      avgOrder,
+      totalRevenue,
+      thisMonthOrders: thisMonthOrders.length,
+    };
   }, [orders]);
 
   const monthlyData = useMemo(() => {
@@ -181,9 +339,13 @@ export default function OrdersPanel() {
       d.setMonth(d.getMonth() - i);
       const y = d.getFullYear();
       const m = d.getMonth();
-      const monthOrders = orders.filter(o => {
+      const monthOrders = orders.filter((o) => {
         const od = new Date(o.createdAt);
-        return od.getFullYear() === y && od.getMonth() === m && o.status !== 'cancelled';
+        return (
+          od.getFullYear() === y &&
+          od.getMonth() === m &&
+          o.status !== 'cancelled'
+        );
       });
       months.push({
         label: d.toLocaleDateString('tr-TR', { month: 'short' }),
@@ -194,244 +356,453 @@ export default function OrdersPanel() {
     return months;
   }, [orders]);
 
-  const maxRevenue = Math.max(...monthlyData.map(m => m.revenue), 1);
+  const maxRevenue = Math.max(...monthlyData.map((m) => m.revenue), 1);
 
   const filtered = useMemo(() => {
     let list = orders;
-    if (statusFilter !== 'all') list = list.filter(o => o.status === statusFilter);
+    if (statusFilter !== 'all') list = list.filter((o) => o.status === statusFilter);
     if (search.trim()) {
       const q = search.toLowerCase();
-      list = list.filter(o =>
-        o.orderNumber.toLowerCase().includes(q) ||
-        o.customerName.toLowerCase().includes(q) ||
-        o.customerEmail.toLowerCase().includes(q) ||
-        (o.shippingAddress?.city || '').toLowerCase().includes(q)
+      list = list.filter(
+        (o) =>
+          o.orderNumber.toLowerCase().includes(q) ||
+          o.customerName.toLowerCase().includes(q) ||
+          o.customerEmail.toLowerCase().includes(q) ||
+          (o.shippingAddress?.city || '').toLowerCase().includes(q),
       );
     }
-    return list;
-  }, [orders, statusFilter, search]);
+    if (dateFrom) {
+      const from = new Date(dateFrom).getTime();
+      list = list.filter((o) => new Date(o.createdAt).getTime() >= from);
+    }
+    if (dateTo) {
+      const to = new Date(dateTo).getTime() + 24 * 60 * 60 * 1000 - 1;
+      list = list.filter((o) => new Date(o.createdAt).getTime() <= to);
+    }
+
+    const sorted = [...list];
+    sorted.sort((a, b) => {
+      switch (sort) {
+        case 'date-asc':
+          return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
+        case 'amount-desc':
+          return Number(b.total) - Number(a.total);
+        case 'amount-asc':
+          return Number(a.total) - Number(b.total);
+        case 'date-desc':
+        default:
+          return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+      }
+    });
+    return sorted;
+  }, [orders, statusFilter, search, sort, dateFrom, dateTo]);
 
   const statusCounts = useMemo(() => {
     const counts: Record<string, number> = { all: orders.length };
-    orders.forEach(o => { counts[o.status] = (counts[o.status] || 0) + 1; });
+    orders.forEach((o) => {
+      counts[o.status] = (counts[o.status] || 0) + 1;
+    });
     return counts;
   }, [orders]);
 
+  const filtersActive =
+    statusFilter !== 'all' || !!search.trim() || !!dateFrom || !!dateTo;
+
   return (
-    <div className="space-y-6">
-      {/* Stats Row */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="bg-white border border-neutral-200 rounded-xl p-5">
-          <div className="flex items-center justify-between mb-3">
-            <div className="w-9 h-9 rounded-lg bg-blue-500/10 flex items-center justify-center">
-              <ShoppingBag className="w-4 h-4 text-blue-400" />
-            </div>
-            <span className="text-xs text-neutral-500">Bu ay</span>
-          </div>
-          <p className="text-2xl font-bold text-neutral-900">{stats.thisMonthOrders}</p>
-          <p className="text-xs text-neutral-500 mt-1">Sipariş alındı</p>
-        </div>
-
-        <div className="bg-white border border-neutral-200 rounded-xl p-5">
-          <div className="flex items-center justify-between mb-3">
-            <div className="w-9 h-9 rounded-lg bg-orange-500/10 flex items-center justify-center">
-              <Banknote className="w-4 h-4 text-orange-400" />
-            </div>
-            {stats.awaitingAction > 0 && (
-              <span className="flex items-center gap-1 text-xs text-orange-400 font-medium">
-                <span className="w-1.5 h-1.5 rounded-full bg-orange-400 animate-pulse" />
-                İşlem bekliyor
-              </span>
+    <div className="space-y-5" data-testid="tab-orders">
+      <PageHeader
+        title="Siparişler"
+        description={
+          isLoading
+            ? 'Siparişler yükleniyor…'
+            : `${orders.length.toLocaleString('tr-TR')} sipariş${
+                stats.awaitingAction > 0
+                  ? ` — ${stats.awaitingAction} işlem bekliyor`
+                  : ''
+              }`
+        }
+        actions={
+          <SecondaryButton
+            onClick={() => refetch()}
+            disabled={isFetching}
+            data-testid="button-refresh-orders"
+          >
+            {isFetching ? (
+              <Loader2 className="w-3.5 h-3.5 animate-spin" />
+            ) : (
+              <RefreshCw className="w-3.5 h-3.5" />
             )}
-          </div>
-          <p className="text-2xl font-bold text-neutral-900">{stats.awaitingAction}</p>
-          <p className="text-xs text-neutral-500 mt-1">Yeni / Beklemede</p>
-        </div>
+            Yenile
+          </SecondaryButton>
+        }
+      />
 
-        <div className="bg-white border border-neutral-200 rounded-xl p-5">
-          <div className="flex items-center justify-between mb-3">
-            <div className="w-9 h-9 rounded-lg bg-emerald-500/10 flex items-center justify-center">
-              <TrendingUp className="w-4 h-4 text-emerald-400" />
-            </div>
-            {stats.revenueGrowth !== null && (
-              <span className={`flex items-center gap-0.5 text-xs font-medium ${stats.revenueGrowth >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
-                <ArrowUpRight className={`w-3 h-3 ${stats.revenueGrowth < 0 ? 'rotate-180' : ''}`} />
+      {/* KPI grid */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+        <KpiCard
+          icon={ShoppingBag}
+          label="Bu ay sipariş"
+          value={stats.thisMonthOrders.toLocaleString('tr-TR')}
+        />
+        <KpiCard
+          icon={Banknote}
+          label="Yeni / Beklemede"
+          value={stats.awaitingAction.toLocaleString('tr-TR')}
+          hint={
+            stats.awaitingAction > 0 ? (
+              <StatusBadge tone="amber">İşlem bekliyor</StatusBadge>
+            ) : null
+          }
+        />
+        <KpiCard
+          icon={TrendingUp}
+          label="Bu ay ciro"
+          value={`₺${formatCurrency(stats.thisMonthRevenue)}`}
+          hint={
+            stats.revenueGrowth !== null ? (
+              <span
+                className={`inline-flex items-center gap-0.5 text-[11px] font-medium tabular-nums ${
+                  stats.revenueGrowth >= 0 ? 'text-emerald-600' : 'text-red-600'
+                }`}
+                data-testid="text-revenue-growth"
+              >
+                <ArrowUpRight
+                  className={`w-3 h-3 ${stats.revenueGrowth < 0 ? 'rotate-180' : ''}`}
+                />
                 {Math.abs(stats.revenueGrowth).toFixed(0)}%
               </span>
-            )}
-          </div>
-          <p className="text-2xl font-bold text-neutral-900">₺{formatCurrency(stats.thisMonthRevenue)}</p>
-          <p className="text-xs text-neutral-500 mt-1">Bu ay ciro</p>
-        </div>
-
-        <div className="bg-white border border-neutral-200 rounded-xl p-5">
-          <div className="flex items-center justify-between mb-3">
-            <div className="w-9 h-9 rounded-lg bg-purple-500/10 flex items-center justify-center">
-              <BarChart3 className="w-4 h-4 text-purple-400" />
-            </div>
-          </div>
-          <p className="text-2xl font-bold text-neutral-900">₺{formatCurrency(stats.avgOrder)}</p>
-          <p className="text-xs text-neutral-500 mt-1">Ortalama sepet</p>
-        </div>
+            ) : null
+          }
+        />
+        <KpiCard
+          icon={BarChart3}
+          label="Ortalama sepet"
+          value={`₺${formatCurrency(stats.avgOrder)}`}
+        />
       </div>
 
       {/* Monthly Chart */}
-      <div className="bg-white border border-neutral-200 rounded-xl p-6">
-        <div className="flex items-center justify-between mb-5">
+      <Card className="p-5">
+        <div className="flex items-end justify-between mb-5">
           <div>
-            <h3 className="text-sm font-semibold text-neutral-900">Aylık Ciro</h3>
-            <p className="text-xs text-neutral-500 mt-0.5">Son 6 ay (iptal edilen siparişler hariç)</p>
+            <h3 className="text-[13px] font-semibold text-neutral-900">
+              Aylık Ciro
+            </h3>
+            <p className="text-[11px] text-neutral-500 mt-0.5">
+              Son 6 ay (iptal edilenler hariç)
+            </p>
           </div>
           <div className="text-right">
-            <p className="text-lg font-bold text-neutral-900">₺{formatCurrency(stats.totalRevenue)}</p>
-            <p className="text-xs text-neutral-500">Toplam</p>
+            <p
+              className="text-[14px] font-semibold text-neutral-900 tabular-nums"
+              data-testid="text-total-revenue"
+            >
+              ₺{formatCurrency(stats.totalRevenue)}
+            </p>
+            <p className="text-[11px] text-neutral-500">Toplam</p>
           </div>
         </div>
-        <div className="flex items-end gap-3 h-28">
+        <div className="flex items-end gap-3 h-28" data-testid="chart-monthly-revenue">
           {monthlyData.map((m, i) => {
-            const height = maxRevenue > 0 ? Math.max((m.revenue / maxRevenue) * 100, m.revenue > 0 ? 8 : 0) : 0;
+            const height =
+              maxRevenue > 0
+                ? Math.max((m.revenue / maxRevenue) * 100, m.revenue > 0 ? 8 : 0)
+                : 0;
             const isCurrent = i === monthlyData.length - 1;
             return (
               <div key={m.label} className="flex-1 flex flex-col items-center gap-2">
                 <div className="w-full flex items-end justify-center" style={{ height: '88px' }}>
                   <div
-                    className={`w-full rounded-t-md transition-all duration-500 group relative ${isCurrent ? 'bg-white' : 'bg-neutral-200 hover:bg-zinc-600'}`}
-                    style={{ height: `${height}%`, minHeight: m.revenue > 0 ? '6px' : '0px' }}
+                    className={`w-full rounded-t-sm transition-all duration-300 group relative ${
+                      isCurrent
+                        ? 'bg-neutral-900'
+                        : 'bg-neutral-200 hover:bg-neutral-300'
+                    }`}
+                    style={{
+                      height: `${height}%`,
+                      minHeight: m.revenue > 0 ? '4px' : '0px',
+                    }}
                   >
                     {m.revenue > 0 && (
-                      <div className="absolute -top-8 left-1/2 -translate-x-1/2 hidden group-hover:flex bg-neutral-50 border border-neutral-200 rounded px-2 py-1 text-[10px] text-neutral-900 whitespace-nowrap shadow-xl z-10">
+                      <div className="absolute -top-9 left-1/2 -translate-x-1/2 hidden group-hover:flex bg-neutral-900 rounded-md px-2 py-1 text-[10px] text-white whitespace-nowrap shadow-lg z-10">
                         ₺{formatCurrency(m.revenue)} · {m.count} sipariş
                       </div>
                     )}
                   </div>
                 </div>
-                <span className={`text-[10px] font-medium ${isCurrent ? 'text-neutral-900' : 'text-neutral-500'}`}>{m.label}</span>
+                <span
+                  className={`text-[10px] font-medium ${isCurrent ? 'text-neutral-900' : 'text-neutral-500'}`}
+                >
+                  {m.label}
+                </span>
               </div>
             );
           })}
         </div>
-      </div>
+      </Card>
 
-      {/* Filter & Search */}
-      <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center justify-between">
-        <div className="flex items-center gap-1 flex-wrap">
-          {STATUS_OPTIONS.map(opt => {
-            const count = statusCounts[opt.value] || 0;
-            const active = statusFilter === opt.value;
-            return (
-              <button
-                key={opt.value}
-                onClick={() => setStatusFilter(opt.value)}
-                data-testid={`filter-status-${opt.value}`}
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
-                  active
-                    ? 'bg-white text-black'
-                    : 'bg-neutral-50 text-neutral-500 hover:bg-neutral-200 hover:text-neutral-900'
-                }`}
-              >
-                {opt.label}
-                {count > 0 && (
-                  <span className={`text-[10px] font-bold min-w-[16px] text-center ${active ? 'text-black/60' : (opt.value === 'confirmed' || opt.value === 'pending') && count > 0 ? 'text-orange-400' : 'text-neutral-500'}`}>
-                    {count}
-                  </span>
-                )}
-              </button>
-            );
-          })}
-        </div>
-
-        <div className="relative w-full sm:w-64">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-500" />
-          <input
-            type="text"
-            placeholder="Sipariş no, müşteri, şehir..."
+      {/* Toolbar */}
+      <Card className="p-3">
+        <Toolbar>
+          <div className="flex items-center gap-1 flex-wrap">
+            {STATUS_OPTIONS.map((opt) => {
+              const count = statusCounts[opt.value] || 0;
+              const active = statusFilter === opt.value;
+              return (
+                <button
+                  key={opt.value}
+                  onClick={() => setStatusFilter(opt.value)}
+                  data-testid={`filter-status-${opt.value}`}
+                  className={`inline-flex items-center gap-1.5 h-7 px-2.5 rounded-md text-[12px] font-medium transition-colors ${
+                    active
+                      ? 'bg-neutral-900 text-white'
+                      : 'bg-neutral-50 text-neutral-700 hover:bg-neutral-100'
+                  }`}
+                >
+                  {opt.label}
+                  {count > 0 && (
+                    <span
+                      className={`text-[10px] tabular-nums ${
+                        active ? 'text-white/70' : 'text-neutral-500'
+                      }`}
+                    >
+                      {count}
+                    </span>
+                  )}
+                </button>
+              );
+            })}
+          </div>
+        </Toolbar>
+        <div className="flex flex-col sm:flex-row gap-2 sm:items-center">
+          <SearchInput
+            placeholder="Sipariş no, müşteri, e-posta, şehir…"
             value={search}
-            onChange={e => setSearch(e.target.value)}
-            className="w-full pl-9 pr-4 py-2 bg-neutral-50 border border-neutral-200 rounded-lg text-sm text-neutral-900 placeholder:text-neutral-500 focus:outline-none focus:border-zinc-500"
+            onChange={(e) => setSearch(e.target.value)}
             data-testid="input-search-orders"
+            className="sm:flex-1"
           />
+          <div className="flex items-center gap-2">
+            <TextInput
+              type="date"
+              value={dateFrom}
+              onChange={(e) => setDateFrom(e.target.value)}
+              data-testid="input-date-from"
+              aria-label="Başlangıç tarihi"
+              className="!w-[150px]"
+            />
+            <span className="text-[12px] text-neutral-400">–</span>
+            <TextInput
+              type="date"
+              value={dateTo}
+              onChange={(e) => setDateTo(e.target.value)}
+              data-testid="input-date-to"
+              aria-label="Bitiş tarihi"
+              className="!w-[150px]"
+            />
+          </div>
+          <SelectInput
+            value={sort}
+            onChange={(e) => setSort(e.target.value)}
+            data-testid="select-sort-orders"
+            aria-label="Sıralama"
+          >
+            {SORT_OPTIONS.map((opt) => (
+              <option key={opt.value} value={opt.value}>
+                {opt.label}
+              </option>
+            ))}
+          </SelectInput>
         </div>
-      </div>
+      </Card>
 
-      {/* Orders Table */}
-      <div className="bg-white border border-neutral-200 rounded-xl overflow-hidden">
-        {isLoading ? (
-          <div className="flex items-center justify-center py-20">
-            <div className="w-6 h-6 border-2 border-neutral-200 border-t-white rounded-full animate-spin" />
+      {/* Orders list */}
+      <Card className="overflow-hidden">
+        {isError ? (
+          <div className="py-10 px-6">
+            <EmptyState
+              icon={XCircle}
+              title="Siparişler yüklenemedi"
+              description="Bağlantınızı kontrol edip yeniden deneyin."
+              action={
+                <SecondaryButton onClick={() => refetch()}>
+                  <RefreshCw className="w-3.5 h-3.5" />
+                  Tekrar dene
+                </SecondaryButton>
+              }
+            />
+          </div>
+        ) : isLoading ? (
+          <div className="hidden md:block">
+            <table className="w-full" data-testid="loading-orders">
+              <thead>
+                <tr className="border-b border-neutral-200 bg-neutral-50/50">
+                  <th className="text-left px-5 py-3 text-[11px] font-semibold text-neutral-500 uppercase tracking-wider">
+                    Müşteri
+                  </th>
+                  <th className="text-left px-5 py-3 text-[11px] font-semibold text-neutral-500 uppercase tracking-wider">
+                    Sipariş
+                  </th>
+                  <th className="text-left px-5 py-3 text-[11px] font-semibold text-neutral-500 uppercase tracking-wider">
+                    Şehir
+                  </th>
+                  <th className="text-left px-5 py-3 text-[11px] font-semibold text-neutral-500 uppercase tracking-wider">
+                    Durum
+                  </th>
+                  <th className="text-left px-5 py-3 text-[11px] font-semibold text-neutral-500 uppercase tracking-wider">
+                    Tutar
+                  </th>
+                  <th className="text-left px-5 py-3 text-[11px] font-semibold text-neutral-500 uppercase tracking-wider">
+                    Tarih
+                  </th>
+                  <th className="px-5 py-3" />
+                </tr>
+              </thead>
+              <tbody>
+                {Array.from({ length: 6 }).map((_, i) => (
+                  <TableSkeletonRow key={i} />
+                ))}
+              </tbody>
+            </table>
           </div>
         ) : filtered.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-20 gap-3">
-            <Package className="w-10 h-10 text-zinc-700" />
-            <p className="text-neutral-500 text-sm">
-              {search || statusFilter !== 'all' ? 'Eşleşen sipariş bulunamadı' : 'Henüz sipariş yok'}
-            </p>
-          </div>
+          <EmptyState
+            icon={Package}
+            title={filtersActive ? 'Eşleşen sipariş bulunamadı' : 'Henüz sipariş yok'}
+            description={
+              filtersActive
+                ? 'Filtreleri sıfırlayarak tüm siparişleri görüntüleyebilirsiniz.'
+                : 'İlk sipariş geldiğinde burada listelenecek.'
+            }
+            action={
+              filtersActive ? (
+                <SecondaryButton
+                  onClick={() => {
+                    setStatusFilter('all');
+                    setSearch('');
+                    setDateFrom('');
+                    setDateTo('');
+                  }}
+                  data-testid="button-clear-filters"
+                >
+                  Filtreleri temizle
+                </SecondaryButton>
+              ) : null
+            }
+          />
         ) : (
           <>
             {/* Desktop Table */}
             <div className="hidden md:block overflow-x-auto">
-              <table className="w-full">
+              <table className="w-full" data-testid="table-orders">
                 <thead>
-                  <tr className="border-b border-neutral-200">
-                    <th className="text-left px-5 py-3.5 text-[11px] font-semibold text-neutral-500 uppercase tracking-wider">Müşteri</th>
-                    <th className="text-left px-5 py-3.5 text-[11px] font-semibold text-neutral-500 uppercase tracking-wider">Sipariş</th>
-                    <th className="text-left px-5 py-3.5 text-[11px] font-semibold text-neutral-500 uppercase tracking-wider">Şehir</th>
-                    <th className="text-left px-5 py-3.5 text-[11px] font-semibold text-neutral-500 uppercase tracking-wider">Durum</th>
-                    <th className="text-left px-5 py-3.5 text-[11px] font-semibold text-neutral-500 uppercase tracking-wider">Tutar</th>
-                    <th className="text-left px-5 py-3.5 text-[11px] font-semibold text-neutral-500 uppercase tracking-wider">Tarih</th>
-                    <th className="text-right px-5 py-3.5 text-[11px] font-semibold text-neutral-500 uppercase tracking-wider">İşlem</th>
+                  <tr className="border-b border-neutral-200 bg-neutral-50/50">
+                    <th className="text-left px-5 py-3 text-[11px] font-semibold text-neutral-500 uppercase tracking-wider">
+                      Müşteri
+                    </th>
+                    <th className="text-left px-5 py-3 text-[11px] font-semibold text-neutral-500 uppercase tracking-wider">
+                      Sipariş
+                    </th>
+                    <th className="text-left px-5 py-3 text-[11px] font-semibold text-neutral-500 uppercase tracking-wider">
+                      Şehir
+                    </th>
+                    <th className="text-left px-5 py-3 text-[11px] font-semibold text-neutral-500 uppercase tracking-wider">
+                      Durum
+                    </th>
+                    <th className="text-left px-5 py-3 text-[11px] font-semibold text-neutral-500 uppercase tracking-wider">
+                      Tutar
+                    </th>
+                    <th className="text-left px-5 py-3 text-[11px] font-semibold text-neutral-500 uppercase tracking-wider">
+                      Tarih
+                    </th>
+                    <th className="px-5 py-3" />
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-neutral-200/60">
-                  {filtered.map(order => (
+                <tbody className="divide-y divide-neutral-100">
+                  {filtered.map((order) => (
                     <tr
                       key={order.id}
-                      className="hover:bg-neutral-50/40 transition-colors group cursor-pointer"
+                      role="link"
+                      tabIndex={0}
+                      aria-label={`${order.orderNumber} – ${order.customerName} siparişini aç`}
+                      className="hover:bg-neutral-50/60 transition-colors group cursor-pointer focus:outline-none focus-visible:bg-neutral-50 focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-neutral-900/15"
                       data-testid={`row-order-${order.id}`}
                       onClick={() => navigate(`/toov-admin/orders/${order.id}`)}
+                      onKeyDown={(e) => {
+                        if (e.key !== 'Enter' && e.key !== ' ') return;
+                        const target = e.target as HTMLElement;
+                        if (
+                          target !== e.currentTarget &&
+                          target.closest(
+                            'button, a, input, select, textarea, [role="menu"], [role="menuitemradio"]',
+                          )
+                        )
+                          return;
+                        e.preventDefault();
+                        navigate(`/toov-admin/orders/${order.id}`);
+                      }}
                     >
                       <td className="px-5 py-3.5">
                         <div className="flex items-center gap-3">
-                          <div className={`w-8 h-8 rounded-lg bg-gradient-to-br ${avatarGradient(order.customerName)} flex items-center justify-center text-white text-xs font-bold shrink-0`}>
+                          <div className="w-8 h-8 rounded-md bg-neutral-100 border border-neutral-200 flex items-center justify-center text-neutral-700 text-[11px] font-semibold shrink-0">
                             {getInitials(order.customerName)}
                           </div>
                           <div className="min-w-0">
-                            <p className="text-sm font-medium text-neutral-900 truncate max-w-[140px]">{order.customerName}</p>
-                            <p className="text-xs text-neutral-500 truncate max-w-[140px]">{order.customerEmail}</p>
+                            <p className="text-[13px] font-medium text-neutral-900 truncate max-w-[160px]">
+                              {order.customerName}
+                            </p>
+                            <p className="text-[11px] text-neutral-500 truncate max-w-[160px]">
+                              {order.customerEmail}
+                            </p>
                           </div>
                         </div>
                       </td>
                       <td className="px-5 py-3.5">
-                        <span className="font-mono text-sm text-neutral-700">{order.orderNumber}</span>
+                        <span className="font-mono text-[12px] text-neutral-700">
+                          {order.orderNumber}
+                        </span>
                       </td>
                       <td className="px-5 py-3.5">
-                        <span className="text-sm text-neutral-500">{order.shippingAddress?.city || '—'}</span>
+                        <span className="text-[12px] text-neutral-600">
+                          {order.shippingAddress?.city || '—'}
+                        </span>
                       </td>
-                      <td className="px-5 py-3.5" onClick={e => e.stopPropagation()}>
+                      <td
+                        className="px-5 py-3.5"
+                        onClick={(e) => e.stopPropagation()}
+                      >
                         <StatusSelect
                           orderId={order.id}
                           currentStatus={order.status}
-                          onChange={(id, status) => updateStatusMutation.mutate({ id, status })}
+                          onChange={(id, status) =>
+                            updateStatusMutation.mutate({ id, status })
+                          }
                         />
                       </td>
                       <td className="px-5 py-3.5">
-                        <span className="text-sm font-semibold text-neutral-900">₺{formatCurrency(order.total)}</span>
+                        <span className="text-[13px] font-semibold text-neutral-900 tabular-nums">
+                          ₺{formatCurrency(order.total)}
+                        </span>
                       </td>
                       <td className="px-5 py-3.5">
                         <div>
-                          <p className="text-sm text-neutral-500">{timeAgo(order.createdAt)}</p>
-                          <p className="text-[11px] text-neutral-400">{new Date(order.createdAt).toLocaleDateString('tr-TR')}</p>
+                          <p className="text-[12px] text-neutral-700">
+                            {timeAgo(order.createdAt)}
+                          </p>
+                          <p className="text-[11px] text-neutral-400">
+                            {new Date(order.createdAt).toLocaleDateString('tr-TR')}
+                          </p>
                         </div>
                       </td>
                       <td className="px-5 py-3.5">
                         <div className="flex justify-end">
-                          <div
-                            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-neutral-50 hover:bg-neutral-200 text-xs text-neutral-700 hover:text-neutral-900 transition-colors opacity-0 group-hover:opacity-100"
+                          <span
+                            className="inline-flex items-center gap-1 px-2 h-7 rounded-md border border-neutral-200 bg-white text-[11.5px] text-neutral-600 group-hover:text-neutral-900 group-hover:border-neutral-300 transition-colors"
                             data-testid={`button-view-order-${order.id}`}
                           >
-                            <Eye className="w-3.5 h-3.5" />
+                            <Eye className="w-3 h-3" />
                             Detay
-                          </div>
+                          </span>
                         </div>
                       </td>
                     </tr>
@@ -441,62 +812,73 @@ export default function OrdersPanel() {
             </div>
 
             {/* Mobile Cards */}
-            <div className="md:hidden divide-y divide-neutral-200">
-              {filtered.map(order => (
-                <div key={order.id} className="p-4" data-testid={`card-order-${order.id}`}>
-                  <div className="flex items-start justify-between gap-3 mb-3">
+            <div className="md:hidden divide-y divide-neutral-100">
+              {filtered.map((order) => (
+                <Link
+                  key={order.id}
+                  href={`/toov-admin/orders/${order.id}`}
+                  className="block p-4 hover:bg-neutral-50/60 transition-colors"
+                  data-testid={`card-order-${order.id}`}
+                >
+                  <div className="flex items-start justify-between gap-3 mb-2.5">
                     <div className="flex items-center gap-3 min-w-0">
-                      <div className={`w-9 h-9 rounded-lg bg-gradient-to-br ${avatarGradient(order.customerName)} flex items-center justify-center text-white text-xs font-bold shrink-0`}>
+                      <div className="w-9 h-9 rounded-md bg-neutral-100 border border-neutral-200 flex items-center justify-center text-neutral-700 text-[11px] font-semibold shrink-0">
                         {getInitials(order.customerName)}
                       </div>
                       <div className="min-w-0">
-                        <p className="text-sm font-medium text-neutral-900 truncate">{order.customerName}</p>
-                        <p className="text-xs text-neutral-500 font-mono">{order.orderNumber}</p>
+                        <p className="text-[13px] font-medium text-neutral-900 truncate">
+                          {order.customerName}
+                        </p>
+                        <p className="text-[11px] text-neutral-500 font-mono truncate">
+                          {order.orderNumber}
+                        </p>
                       </div>
                     </div>
-                    <span className="text-sm font-bold text-neutral-900 shrink-0">₺{formatCurrency(order.total)}</span>
+                    <span className="text-[13px] font-semibold text-neutral-900 shrink-0 tabular-nums">
+                      ₺{formatCurrency(order.total)}
+                    </span>
                   </div>
                   <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
+                    <div
+                      className="flex items-center gap-2"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        e.preventDefault();
+                      }}
+                    >
                       <StatusSelect
                         orderId={order.id}
                         currentStatus={order.status}
-                        onChange={(id, status) => updateStatusMutation.mutate({ id, status })}
+                        onChange={(id, status) =>
+                          updateStatusMutation.mutate({ id, status })
+                        }
                       />
-                      <span className="text-xs text-neutral-500">{order.shippingAddress?.city}</span>
+                      {order.shippingAddress?.city && (
+                        <span className="text-[11px] text-neutral-500">
+                          · {order.shippingAddress.city}
+                        </span>
+                      )}
                     </div>
                     <div className="flex items-center gap-2">
-                      <span className="text-xs text-neutral-500">{timeAgo(order.createdAt)}</span>
-                      <Link
-                        href={`/toov-admin/orders/${order.id}`}
-                        className="p-1.5 rounded-lg bg-neutral-50 hover:bg-neutral-200 text-neutral-500 hover:text-neutral-900 transition-colors"
+                      <span className="text-[11px] text-neutral-500">
+                        {timeAgo(order.createdAt)}
+                      </span>
+                      <span
+                        className="p-1.5 rounded-md border border-neutral-200 text-neutral-500"
                         data-testid={`button-view-order-mobile-${order.id}`}
                       >
                         <Eye className="w-3.5 h-3.5" />
-                      </Link>
+                      </span>
                     </div>
                   </div>
-                </div>
+                </Link>
               ))}
-            </div>
-
-            {/* Table Footer */}
-            <div className="px-5 py-3 border-t border-neutral-200 flex items-center justify-between">
-              <p className="text-xs text-neutral-500">
-                {filtered.length} sipariş {statusFilter !== 'all' || search ? `(toplam ${orders.length})` : ''}
-              </p>
-              {statusFilter !== 'all' || search ? (
-                <button
-                  onClick={() => { setStatusFilter('all'); setSearch(''); }}
-                  className="text-xs text-neutral-500 hover:text-neutral-900 transition-colors"
-                >
-                  Filtreyi temizle
-                </button>
-              ) : null}
             </div>
           </>
         )}
-      </div>
+      </Card>
     </div>
   );
 }
+
+export { StatusPill };
