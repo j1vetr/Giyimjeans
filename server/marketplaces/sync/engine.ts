@@ -441,11 +441,15 @@ async function upsertProduct(
     for (const v of existingVariants) {
       await storage.deleteProductVariant(v.id);
     }
+    // sku alanını doldur ki delta sync SKU üzerinden deterministik eşleşsin.
+    // sku UNIQUE — pazaryerine prefix ekleyerek başka kaynaklarla çakışmayı önle.
+    const skuPrefix = `${marketplace.type}:`;
     for (const v of np.variants) {
-      // ProductVariants şemasında sku alanı yok — barcode/sku marketplace_products
-      // tarafında köprüde tutulur. Burada sadece şemanın bildiği alanları yazıyoruz.
+      const rawSku = v.sku ?? v.barcode ?? v.externalVariantId ?? null;
+      const sku = rawSku ? `${skuPrefix}${rawSku}` : null;
       await storage.createProductVariant({
         productId: siteProduct.id,
+        sku,
         size: v.size ?? "Tek Beden",
         color: v.color?.name ?? "—",
         colorHex: v.color?.hex ?? null,
@@ -619,6 +623,10 @@ async function runFullSync(
   const catCache = new Map<string, string>();
   let cursor: PageCursor = null;
   let page = 0;
+  // Bu bayrak deactivateMissing'in kararını yönetir: yalnız tüm sayfalar
+  // başarıyla okunduysa "missing = orphan" varsayımı güvenlidir. Aksi halde
+  // bir sayfa hatası tüm kataloğun deactive edilmesine yol açabilir.
+  let fullScanCompleted = false;
   while (true) {
     let resp: ProductsPage;
     try {
@@ -659,14 +667,39 @@ async function runFullSync(
         });
       }
     }
-    if (resp.nextCursor == null) break;
+    if (resp.nextCursor == null) {
+      fullScanCompleted = true;
+      break;
+    }
     cursor = resp.nextCursor;
     page += 1;
-    if (page > 1000) break; // sonsuz loop koruması
+    if (page > 1000) break; // sonsuz loop koruması; full scan kabul EDİLMEZ
   }
 
-  // 3. Yetimleri pasifle
+  // 3. Yetimleri pasifle — yalnız tarama başarıyla tamamlandıysa.
+  if (!fullScanCompleted) {
+    errors.push({
+      context: "deactivateMissing",
+      message:
+        "Sayfalama tam tamamlanmadı; güvenlik nedeniyle deactivateMissing atlandı (catalog kısmen okundu).",
+    });
+    return;
+  }
+
+  // 3a. Failsafe: önceki tur ile karşılaştır. Eğer mevcut DB'deki ürün sayısı
+  // yeni gelen seen'in 2 katından fazlaysa (yani %50'den fazla "kayıp"),
+  // bunu mass-deactivation tehlikesi say ve atla. Eşik 10'dan az ürün için
+  // uygulanmaz (yeni kurulum / küçük katalog).
   try {
+    const existingRows = await storage.getMarketplaceProducts(mp.id);
+    const existingCount = existingRows.length;
+    if (existingCount >= 10 && seen.size * 2 < existingCount) {
+      errors.push({
+        context: "deactivateMissing",
+        message: `Şüpheli kayıp tespit edildi (gelen=${seen.size}, mevcut=${existingCount}). Mass-deactivation atlandı; bir sonraki tarama tekrar denenecek.`,
+      });
+      return;
+    }
     await deactivateMissing(mp.id, seen, stats);
   } catch (err) {
     errors.push({
