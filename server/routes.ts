@@ -1965,6 +1965,17 @@ export async function registerRoutes(
       const firstName = nameParts[0] || customerName;
       const lastName = nameParts.length > 1 ? nameParts.slice(1).join(' ') : firstName;
 
+      // Phone normalization: only auto-prefix +90 for Türkiye orders.
+      // International phones are kept as-is (or just +-prefixed) so iyzico can validate them.
+      let gsmNumber = customerPhone.trim();
+      if (!gsmNumber.startsWith('+')) {
+        if (selectedCountry === 'Türkiye') {
+          gsmNumber = `+90${gsmNumber.replace(/^0/, '')}`;
+        } else {
+          gsmNumber = `+${gsmNumber.replace(/^0+/, '')}`;
+        }
+      }
+
       // Create pending payment record
       const expiresAt = new Date();
       expiresAt.setHours(expiresAt.getHours() + 1); // Expires in 1 hour
@@ -2013,7 +2024,7 @@ export async function registerRoutes(
           id: cartToken.substring(0, 64),
           name: firstName,
           surname: lastName,
-          gsmNumber: customerPhone.startsWith('+') ? customerPhone : `+90${customerPhone.replace(/^0/, '')}`,
+          gsmNumber,
           email: customerEmail,
           identityNumber: '11111111111',
           registrationAddress: `${address}, ${district}, ${city}`,
@@ -2095,23 +2106,30 @@ export async function registerRoutes(
         return sendRedirect('/odeme-basarisiz');
       }
 
-      const pendingPayment = await storage.getPendingPaymentByMerchantOid(merchantOid);
+      // Atomically claim this payment for processing. Only one concurrent caller wins.
+      const pendingPayment = await storage.claimPendingPaymentForProcessing(merchantOid);
       if (!pendingPayment) {
-        console.error('[iyzico Callback] Pending payment not found:', merchantOid);
-        return sendRedirect(`/odeme-basarisiz?oid=${merchantOid}`);
-      }
-
-      // Idempotency: already processed?
-      if (pendingPayment.status === 'completed') {
+        // Either not found, already processed, or another worker is processing it.
+        const existing = await storage.getPendingPaymentByMerchantOid(merchantOid);
+        if (!existing) {
+          console.error('[iyzico Callback] Pending payment not found:', merchantOid);
+          return sendRedirect(`/odeme-basarisiz?oid=${merchantOid}`);
+        }
+        if (existing.status === 'completed') {
+          return sendRedirect(`/odeme-basarili?oid=${merchantOid}`);
+        }
+        if (existing.status === 'failed') {
+          return sendRedirect(`/odeme-basarisiz?oid=${merchantOid}`);
+        }
+        // 'processing' — another callback is in flight; SPA polling will pick up the final state.
+        console.log('[iyzico Callback] Already processing, redirecting to status page:', merchantOid);
         return sendRedirect(`/odeme-basarili?oid=${merchantOid}`);
-      }
-      if (pendingPayment.status === 'failed') {
-        return sendRedirect(`/odeme-basarisiz?oid=${merchantOid}`);
       }
 
       // Verify token belongs to this pending payment
       if (pendingPayment.paymentToken && pendingPayment.paymentToken !== token) {
         console.error('[iyzico Callback] Token mismatch for', merchantOid);
+        await storage.updatePendingPaymentStatus(merchantOid, 'failed');
         return sendRedirect(`/odeme-basarisiz?oid=${merchantOid}`);
       }
 

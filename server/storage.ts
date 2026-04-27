@@ -208,6 +208,11 @@ export interface IStorage {
   updatePendingPaymentStatus(merchantOid: string, status: string): Promise<PendingPayment | undefined>;
   updatePendingPaymentToken(merchantOid: string, paymentToken: string): Promise<PendingPayment | undefined>;
   setPendingPaymentIyzicoId(merchantOid: string, iyzicoPaymentId: string): Promise<PendingPayment | undefined>;
+  /**
+   * Atomically transition a pending payment from {pending, token_received} → 'processing'.
+   * Returns the row only if THIS call won the race (idempotency for callbacks).
+   */
+  claimPendingPaymentForProcessing(merchantOid: string): Promise<PendingPayment | undefined>;
   deletePendingPayment(merchantOid: string): Promise<void>;
 
   // Dealers (Bayiler)
@@ -1491,6 +1496,21 @@ export class DbStorage implements IStorage {
       .where(eq(pendingPayments.merchantOid, merchantOid))
       .returning();
     return updated;
+  }
+
+  async claimPendingPaymentForProcessing(merchantOid: string): Promise<PendingPayment | undefined> {
+    // Conditional update: only succeeds if status is still pending/token_received.
+    // Postgres UPDATE … RETURNING is atomic, so two concurrent callers cannot both win.
+    const [claimed] = await db.update(pendingPayments)
+      .set({ status: 'processing' })
+      .where(
+        and(
+          eq(pendingPayments.merchantOid, merchantOid),
+          inArray(pendingPayments.status, ['pending', 'token_received'])
+        )
+      )
+      .returning();
+    return claimed;
   }
 
   async deletePendingPayment(merchantOid: string): Promise<void> {

@@ -353,6 +353,13 @@ export default function Checkout() {
         throw new Error(data.error || 'Ödeme başlatılamadı');
       }
 
+      // Fallback: if iyzico returned a hosted payment page URL but no inline content,
+      // (or content fails to render due to CSP/blockers) navigate the browser to it.
+      if (!data.checkoutFormContent && data.paymentPageUrl) {
+        window.location.href = data.paymentPageUrl;
+        return;
+      }
+
       setCheckoutFormContent(data.checkoutFormContent || null);
       setMerchantOid(data.merchantOid);
       setSavedOrderTotal(total);
