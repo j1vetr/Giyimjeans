@@ -37,7 +37,9 @@ interface TrendyolCreds extends MarketplaceCredentials {
 }
 
 const DEFAULT_BASE = "https://apigw.trendyol.com/integration";
-const DEFAULT_PAGE_SIZE = 200;
+// Trendyol Cloudflare/LB katmanı büyük sayfalarda HTTP 556 (upstream overload)
+// dönmeye eğilimli. 50, gateway'in stabil kabul ettiği güvenli üst sınır.
+const DEFAULT_PAGE_SIZE = 50;
 
 interface TrendyolCategory {
   id: number;
@@ -153,9 +155,12 @@ class TrendyolAdapter implements MarketplaceAdapter {
 
   async fetchProductsPage(cursor: PageCursor): Promise<ProductsPage> {
     const page = cursor == null ? 0 : Number(cursor);
+    // approved=true parametresi Trendyol gateway'inde sıkça 556 tetikliyor;
+    // tüm ürünleri çekip site tarafında p.approved/archived/rejected üzerinden
+    // isActive hesaplıyoruz (bkz. normalize()).
     const url =
       `/product/sellers/${encodeURIComponent(this.supplierId)}/products` +
-      `?page=${page}&size=${DEFAULT_PAGE_SIZE}&approved=true`;
+      `?page=${page}&size=${DEFAULT_PAGE_SIZE}`;
     const resp = await this.client.request<TrendyolListResponse>(url);
 
     const products = (resp.content ?? []).map((p) => normalize(p));
@@ -273,6 +278,7 @@ function normalize(p: TrendyolProduct): NormalizedProduct {
     externalId,
     externalProductCode: code ?? null,
     externalCategoryId: String(p.categoryId),
+    externalCategoryName: p.categoryName ?? null,
     name: p.title,
     description: p.description ?? null,
     brand: p.brand ?? null,

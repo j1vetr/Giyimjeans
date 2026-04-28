@@ -51,6 +51,9 @@ export interface NormalizedProduct {
   externalProductCode?: string | null;
   /** Pazaryeri kategorisi external id — registry sonra eşleştirir. */
   externalCategoryId: string;
+  /** Pazaryeri kategorisinin görünür adı — ürün payload'ında varsa.
+   *  Engine bunu alıp kategori ağacı çekmeden lazy upsert yapar. */
+  externalCategoryName?: string | null;
   name: string;
   description?: string | null;
   brand?: string | null;

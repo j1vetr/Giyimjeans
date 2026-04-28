@@ -83,12 +83,14 @@ export class MarketplaceHttpClient {
       body = typeof options.body === "string" ? options.body : JSON.stringify(options.body);
     }
 
-    const maxAttempts = 3;
+    // Trendyol/Cloudflare upstream zaman zaman geçici 556/503 verir.
+    // 5 deneme + uzunca backoff (1s, 2s, 4s, 8s + jitter) genelde yeterli.
+    const maxAttempts = 5;
     let lastErr: unknown;
     for (let attempt = 1; attempt <= maxAttempts; attempt++) {
       await this.limiter.take();
       const controller = new AbortController();
-      const t = setTimeout(() => controller.abort(), options.timeoutMs ?? 30_000);
+      const t = setTimeout(() => controller.abort(), options.timeoutMs ?? 45_000);
       try {
         const resp = await fetch(url, {
           method,
@@ -144,7 +146,12 @@ export class MarketplaceHttpClient {
               : true; // network errors -> retry
 
         if (!retryable || attempt === maxAttempts) break;
-        const backoff = 400 * Math.pow(2, attempt - 1) + Math.floor(Math.random() * 200);
+        const status =
+          err instanceof MarketplaceError && err.statusCode != null ? err.statusCode : "net";
+        const backoff = 1000 * Math.pow(2, attempt - 1) + Math.floor(Math.random() * 500);
+        console.warn(
+          `[marketplaces.http] retryable error (status=${status}) attempt=${attempt}/${maxAttempts} url=${url} — backing off ${backoff}ms`,
+        );
         await new Promise((r) => setTimeout(r, backoff));
       }
     }

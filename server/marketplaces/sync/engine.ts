@@ -27,7 +27,6 @@ import {
   MarketplaceCredentials,
   MarketplaceConfig,
   MarketplaceType,
-  NormalizedCategory,
   NormalizedProduct,
   PageCursor,
   ProductsPage,
@@ -652,35 +651,12 @@ async function runFullSync(
   } catch {
     /* tahmin opsiyonel — sessiz geç */
   }
-  // 1. Kategori ağacını çek + DB'ye marketplace_categories satırlarına yaz
-  let tree: NormalizedCategory[] = [];
-  try {
-    tree = await adapter.fetchCategoryTree();
-  } catch (err) {
-    errors.push({
-      context: "fetchCategoryTree",
-      message: err instanceof Error ? err.message : String(err),
-    });
-  }
-  for (const c of tree) {
-    try {
-      const existing = await storage.getMarketplaceCategoryByExternal(mp.id, c.externalId);
-      await storage.upsertMarketplaceCategoryMapping(
-        mp.id,
-        c.externalId,
-        c.name,
-        c.parentExternalId ?? null,
-        existing?.siteCategoryId ?? null,
-      );
-      if (existing) stats.categoriesUpdated += 1;
-    } catch (err) {
-      errors.push({
-        context: `category ${c.externalId}`,
-        message: err instanceof Error ? err.message : String(err),
-      });
-    }
-  }
-
+  // 1. Kategorileri lazy çek: pazaryerinin TÜM kategori ağacını indirmek
+  // yerine sadece ürünlerin gerçekten içinde bulunduğu kategorileri,
+  // ürün payload'ındaki `externalCategoryName` üzerinden upsert ediyoruz.
+  // Bu hem 556 riski olan ağır endpoint'ten kaçınır, hem de bizim site
+  // kategori listesini ürünlerle birebir hizalı tutar.
+  //
   // 2. Sayfa sayfa ürünleri çek
   const seen = new Set<string>();
   const catCache = new Map<string, string>();
@@ -712,14 +688,18 @@ async function runFullSync(
     for (const np of resp.products) {
       seen.add(np.externalId);
       try {
-        // Doğru kategori adı: kategori ağacından oku; yoksa marketplace kategorisi
-        // olarak kayıtlı olanı (full sync sırasında daha önce upsert ettik); o da
-        // yoksa "Genel".
-        const treeNode = tree.find((t) => t.externalId === np.externalCategoryId);
-        const existingMapping = treeNode
-          ? null
-          : await storage.getMarketplaceCategoryByExternal(mp.id, np.externalCategoryId);
-        const categoryName = treeNode?.name ?? existingMapping?.name ?? "Genel";
+        // Kategori adı önceliği:
+        //   1) Ürünün kendi payload'ından (`externalCategoryName`) — en taze isim.
+        //   2) Daha önce upsert edilmiş marketplace_categories satırı.
+        //   3) "Genel" — pazaryeri kategori adı vermezse.
+        let categoryName: string | null = np.externalCategoryName ?? null;
+        if (!categoryName) {
+          const existingMapping = await storage.getMarketplaceCategoryByExternal(
+            mp.id,
+            np.externalCategoryId,
+          );
+          categoryName = existingMapping?.name ?? "Genel";
+        }
         const finalCatId = await ensureSiteCategory(
           mp.id,
           np.externalCategoryId,
