@@ -79,6 +79,13 @@ Preferred communication style: Simple, everyday language.
 - **Admin UI**: `client/src/pages/admin/MarketplacesTab.tsx` — add/edit/delete marketplaces, test connection, manual sync (delta/full), 20-run history, category mapping editor. Sidebar item under "Entegrasyonlar".
 - **Admin API**: `GET/POST/PUT/DELETE /api/admin/marketplaces`, `POST /test-connection`, `POST /sync-now`, `GET /sync-runs`, `GET/PUT /category-mappings/:id`. All `requireAdmin`-protected; secrets masked in responses (last 4 chars only).
 
+## Product Detail Page
+- `client/src/pages/ProductDetail.tsx` is the awward-style redesign. Beden/renk/ölçü-rehberi UI is intentionally removed — every variant in the catalog is its own product, so showing selectors creates dead controls and visual noise. `handleAddToCart` passes `quantity` and the first active variant id (legacy variants only); `addToCart(productId, variantId?, quantity?)` from `useCart`.
+- Layout: 2-column on `lg+` with the right info panel `lg:sticky lg:top-28`. Desktop hero uses cursor-zoom-in + `transform-origin` follow-the-mouse zoom (1× → 1.6×) and opens a fullscreen lightbox on click; lightbox supports keyboard ←/→/Esc on desktop and embla swipe on mobile. Mobile hero is an embla carousel with dot indicator. All `motion`/CSS transforms respect `useReducedMotion()`.
+- Mobile sticky purchase bar: `IntersectionObserver` watches a sentinel div placed right after the desktop CTA; when the sentinel scrolls out of view a fixed bottom bar slides in (price + Sepete Ekle) on `<lg` only.
+- `QuickViewModal` (`client/src/components/QuickViewModal.tsx`) follows the same rule: no size/color selectors, single-click add-to-cart with quantity.
+- Reviews section, share menu, favorite toggle, breadcrumbs, "Beğenebileceğiniz Ürünler" (ProductCard grid), and `SEO` Product schema are preserved.
+
 ## Future Work
 - Replace text wordmark with user-supplied logo asset.
 - Seed Granit / Traverten / Oniks categories with imagery and content once available.

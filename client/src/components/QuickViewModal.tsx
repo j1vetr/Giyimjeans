@@ -21,9 +21,8 @@ interface Product {
   slug: string;
   basePrice: string;
   images: string[];
+  discountBadge?: string | null;
   variants?: ProductVariant[];
-  availableSizes?: string[];
-  availableColors?: { name: string; hex: string }[];
 }
 
 interface QuickViewModalProps {
@@ -33,8 +32,6 @@ interface QuickViewModalProps {
 }
 
 export function QuickViewModal({ product, isOpen, onClose }: QuickViewModalProps) {
-  const [selectedSize, setSelectedSize] = useState<string | null>(null);
-  const [selectedColor, setSelectedColor] = useState<string | null>(null);
   const [quantity, setQuantity] = useState(1);
   const [isAdding, setIsAdding] = useState(false);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
@@ -43,14 +40,8 @@ export function QuickViewModal({ product, isOpen, onClose }: QuickViewModalProps
 
   useEffect(() => {
     if (isOpen && product) {
-      setSelectedSize(null);
-      setSelectedColor(null);
       setQuantity(1);
       setCurrentImageIndex(0);
-      
-      if (product.availableColors && product.availableColors.length > 0) {
-        setSelectedColor(product.availableColors[0].hex);
-      }
     }
   }, [isOpen, product]);
 
@@ -58,10 +49,10 @@ export function QuickViewModal({ product, isOpen, onClose }: QuickViewModalProps
     if (isOpen) {
       document.body.style.overflow = 'hidden';
     } else {
-      document.body.style.overflow = 'unset';
+      document.body.style.overflow = '';
     }
     return () => {
-      document.body.style.overflow = 'unset';
+      document.body.style.overflow = '';
     };
   }, [isOpen]);
 
@@ -69,44 +60,27 @@ export function QuickViewModal({ product, isOpen, onClose }: QuickViewModalProps
 
   const price = parseFloat(product.basePrice || '0');
   const originalPrice = getOriginalPrice(price, product.discountBadge);
-  const sizes = product.availableSizes || [];
-  const colors = product.availableColors || [];
 
-  const getStockForVariant = (size: string, colorHex?: string) => {
-    if (!product.variants) return 0;
-    const variant = product.variants.find(v => 
-      v.size === size && 
-      (!colorHex || v.colorHex === colorHex) &&
-      v.isActive
-    );
-    return variant?.stock || 0;
-  };
+  const totalStock = product.variants?.reduce((sum, v) => sum + (v.stock || 0), 0) ?? 0;
+  const isOutOfStock =
+    !!product.variants && product.variants.length > 0 && totalStock === 0;
 
   const handleAddToCart = async () => {
-    if (!selectedSize) return;
-    
     setIsAdding(true);
     try {
-      const variant = product.variants?.find(v => 
-        v.size === selectedSize && 
-        (!selectedColor || v.colorHex === selectedColor)
-      );
-      
-      if (variant) {
-        for (let i = 0; i < quantity; i++) {
-          await addToCart(product.id, variant.id);
-        }
-        showModal({
-          name: product.name,
-          image: product.images[0],
-          price: price,
-          quantity: quantity,
-          size: selectedSize,
-        });
-        onClose();
-      }
-    } catch (error) {
-      console.error('Failed to add to cart:', error);
+      // Her ölçü/varyant zaten ayrı ürün; legacy varyantlı ürünler için ilk
+      // aktif varyantı kullan, yoksa ürünün temel fiyatını.
+      const variant = product.variants?.find((v) => v.isActive);
+      await addToCart(product.id, variant?.id, quantity);
+      showModal({
+        name: product.name,
+        image: product.images[0],
+        price: price * quantity,
+        quantity,
+      });
+      onClose();
+    } catch (err) {
+      console.error('Failed to add to cart:', err);
     } finally {
       setIsAdding(false);
     }
@@ -124,35 +98,40 @@ export function QuickViewModal({ product, isOpen, onClose }: QuickViewModalProps
             onClick={onClose}
           />
           <motion.div
-            initial={{ opacity: 0, scale: 0.95, y: 20 }}
+            initial={{ opacity: 0, scale: 0.96, y: 20 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.95, y: 20 }}
+            exit={{ opacity: 0, scale: 0.96, y: 20 }}
             transition={{ type: 'spring', damping: 25, stiffness: 300 }}
             className="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-50 w-[95vw] max-w-4xl max-h-[90vh] overflow-y-auto bg-white border border-black/8"
           >
             <button
+              type="button"
               onClick={onClose}
               className="absolute top-4 right-4 z-10 w-10 h-10 bg-black/6 flex items-center justify-center hover:bg-black/12 transition-colors"
+              aria-label="Kapat"
             >
               <X className="w-5 h-5 text-black/60" />
             </button>
 
             <div className="grid grid-cols-1 md:grid-cols-2">
+              {/* Image */}
               <div className="relative aspect-square md:aspect-auto md:h-full bg-stone-100">
                 <img
                   src={product.images[currentImageIndex] || '/placeholder.jpg'}
                   alt={product.name}
                   className="w-full h-full object-cover"
                 />
-                
                 {product.images.length > 1 && (
                   <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-2">
                     {product.images.slice(0, 5).map((img, index) => (
                       <button
+                        type="button"
                         key={index}
                         onClick={() => setCurrentImageIndex(index)}
                         className={`w-12 h-12 overflow-hidden border-2 transition-colors ${
-                          currentImageIndex === index ? 'border-black' : 'border-transparent opacity-50 hover:opacity-100'
+                          currentImageIndex === index
+                            ? 'border-black'
+                            : 'border-transparent opacity-50 hover:opacity-100'
                         }`}
                       >
                         <img src={img} alt="" className="w-full h-full object-cover" />
@@ -162,85 +141,43 @@ export function QuickViewModal({ product, isOpen, onClose }: QuickViewModalProps
                 )}
               </div>
 
+              {/* Info */}
               <div className="p-6 md:p-8 flex flex-col">
                 <h2 className="font-display text-2xl md:text-3xl tracking-wide mb-2 text-black">
                   {product.name}
                 </h2>
-                
-                <div className="flex items-baseline gap-3 mb-6">
+
+                <div className="flex items-baseline gap-3 mb-8">
                   {originalPrice && (
                     <span className="text-lg text-black/30 line-through">
-                      ₺{originalPrice.toLocaleString('tr-TR', { maximumFractionDigits: 0 })}
+                      {originalPrice.toLocaleString('tr-TR', { maximumFractionDigits: 0 })} ₺
                     </span>
                   )}
                   <p className="text-2xl font-bold text-black">
-                    ₺{price.toLocaleString('tr-TR')}
+                    {price.toLocaleString('tr-TR')} ₺
                   </p>
                 </div>
 
-                {colors.length > 0 && (
-                  <div className="mb-6">
-                    <p className="text-sm text-black/45 mb-3">Renk</p>
-                    <div className="flex flex-wrap gap-2">
-                      {colors.map((color) => (
-                        <button
-                          key={color.hex}
-                          onClick={() => setSelectedColor(color.hex)}
-                          className={`w-10 h-10 rounded-full border-2 transition-all ${
-                            selectedColor === color.hex
-                              ? 'border-black scale-110'
-                              : 'border-transparent hover:border-black/30'
-                          }`}
-                          style={{ backgroundColor: color.hex }}
-                          title={color.name}
-                        />
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-                {sizes.length > 0 && (
-                  <div className="mb-6">
-                    <p className="text-sm text-black/45 mb-3">Beden</p>
-                    <div className="flex flex-wrap gap-2">
-                      {sizes.map((size) => {
-                        const stock = getStockForVariant(size, selectedColor || undefined);
-                        const isOutOfStock = stock === 0;
-                        
-                        return (
-                          <button
-                            key={size}
-                            onClick={() => !isOutOfStock && setSelectedSize(size)}
-                            disabled={isOutOfStock}
-                            className={`min-w-[48px] h-12 px-4 border text-sm font-medium transition-all ${
-                              selectedSize === size
-                                ? 'border-black bg-black text-white'
-                                : isOutOfStock
-                                ? 'border-black/8 text-black/25 cursor-not-allowed line-through'
-                                : 'border-black/15 text-black hover:border-black/50'
-                            }`}
-                          >
-                            {size}
-                          </button>
-                        );
-                      })}
-                    </div>
-                  </div>
-                )}
-
+                {/* Quantity */}
                 <div className="mb-6">
-                  <p className="text-sm text-black/45 mb-3">Adet</p>
+                  <p className="text-xs text-black/45 mb-3 uppercase tracking-wider">Adet</p>
                   <div className="flex items-center gap-4">
                     <button
-                      onClick={() => setQuantity(Math.max(1, quantity - 1))}
+                      type="button"
+                      onClick={() => setQuantity((q) => Math.max(1, q - 1))}
                       className="w-10 h-10 border border-black/15 flex items-center justify-center hover:border-black/50 transition-colors"
+                      aria-label="Azalt"
                     >
                       <Minus className="w-4 h-4 text-black/60" />
                     </button>
-                    <span className="text-xl font-medium w-8 text-center text-black">{quantity}</span>
+                    <span className="text-xl font-medium w-8 text-center text-black tabular-nums">
+                      {quantity}
+                    </span>
                     <button
-                      onClick={() => setQuantity(quantity + 1)}
+                      type="button"
+                      onClick={() => setQuantity((q) => q + 1)}
                       className="w-10 h-10 border border-black/15 flex items-center justify-center hover:border-black/50 transition-colors"
+                      aria-label="Artır"
                     >
                       <Plus className="w-4 h-4 text-black/60" />
                     </button>
@@ -249,21 +186,26 @@ export function QuickViewModal({ product, isOpen, onClose }: QuickViewModalProps
 
                 <div className="mt-auto pt-4 border-t border-black/8">
                   <button
+                    type="button"
                     onClick={handleAddToCart}
-                    disabled={!selectedSize || isAdding}
-                    className="w-full py-4 bg-black text-white font-bold tracking-wider uppercase flex items-center justify-center gap-3 hover:bg-black/85 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                    disabled={isAdding || isOutOfStock}
+                    className={`w-full py-4 font-bold tracking-wider uppercase flex items-center justify-center gap-3 transition-colors ${
+                      isOutOfStock
+                        ? 'bg-black/8 text-black/35 cursor-not-allowed'
+                        : 'bg-black text-white hover:bg-polen-orange'
+                    } disabled:cursor-not-allowed`}
                   >
                     {isAdding ? (
                       <Loader2 className="w-5 h-5 animate-spin" />
                     ) : (
                       <ShoppingBag className="w-5 h-5" />
                     )}
-                    {isAdding ? 'Ekleniyor...' : selectedSize ? 'Sepete Ekle' : 'Beden Seçiniz'}
+                    {isAdding ? 'Ekleniyor...' : isOutOfStock ? 'Tükendi' : 'Sepete Ekle'}
                   </button>
-                  
+
                   <a
                     href={`/urun/${product.slug}`}
-                    className="block text-center text-sm text-black/45 hover:text-black mt-4 transition-colors"
+                    className="block text-center text-sm text-black/50 hover:text-polen-orange mt-4 transition-colors"
                   >
                     Ürün Detaylarını Gör →
                   </a>
