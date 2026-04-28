@@ -189,6 +189,10 @@
   animation: marquee 30s linear infinite;
 }
 
+.animate-marquee:hover {
+  animation-play-state: paused;
+}
+
 @keyframes hero-slider {
   0% { transform: translateX(0); }
   100% { transform: translateX(-50%); }
@@ -197,6 +201,10 @@
 .animate-hero-slider {
   animation: hero-slider 40s linear infinite;
   width: max-content;
+}
+
+.animate-hero-slider:hover {
+  animation-play-state: paused;
 }
 
 @keyframes border-dash {
@@ -217,8 +225,16 @@
   animation: marquee 110s linear infinite;
 }
 
+.animate-marquee-slow:hover {
+  animation-play-state: paused;
+}
+
 .animate-marquee-slowest {
   animation: marquee 400s linear infinite;
+}
+
+.animate-marquee-slowest:hover {
+  animation-play-state: paused;
 }
 
 @keyframes marquee-right {
@@ -234,6 +250,10 @@
 .animate-marquee-right {
   animation: marquee-right 50s linear infinite;
   display: inline-block;
+}
+
+.animate-marquee-right:hover {
+  animation-play-state: paused;
 }
 
 .text-stroke-white {
