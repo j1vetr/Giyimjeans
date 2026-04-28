@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Plus, Edit, Trash2, GripVertical, ExternalLink, Loader2, X, Menu, Tag, ChevronUp, ChevronDown } from 'lucide-react';
+import { Plus, Edit, Trash2, GripVertical, ExternalLink, Loader2, X, Menu, Tag, ChevronUp, ChevronDown, Wand2 } from 'lucide-react';
 import type { Category } from './_shared/types';
 
 interface MenuManagementPanelProps {
@@ -128,6 +128,53 @@ export default function MenuManagementPanel({ categories }: MenuManagementPanelP
     },
   });
 
+  const regenerateMutation = useMutation({
+    mutationFn: async () => {
+      const res = await fetch('/api/admin/menu-items/regenerate-from-categories', {
+        method: 'POST',
+        credentials: 'include',
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.error || 'Otomatik gruplandırma başarısız');
+      }
+      return res.json() as Promise<{
+        success: boolean;
+        createdParents: number;
+        createdChildren: number;
+        totalCategories: number;
+        unmatchedCount: number;
+        groups: Array<{ title: string; count: number }>;
+      }>;
+    },
+    onSuccess: (result) => {
+      queryClient.invalidateQueries({ queryKey: ['admin', 'menu-items'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/menu'] });
+      const lines = result.groups.map((g) => `• ${g.title} (${g.count})`).join('\n');
+      alert(
+        `✅ Otomatik gruplandırma tamamlandı!\n\n` +
+        `${result.createdParents} ana grup, ${result.createdChildren} alt kategori oluşturuldu.\n` +
+        `Toplam ${result.totalCategories} kategori, ${result.unmatchedCount} tanesi "Diğer Doğal Taş" altına düştü.\n\n` +
+        `Oluşturulan gruplar:\n${lines}`
+      );
+    },
+    onError: (err: Error) => {
+      alert(`❌ Hata: ${err.message}`);
+    },
+  });
+
+  const handleRegenerate = () => {
+    if (
+      !confirm(
+        'Kategorileri otomatik olarak 8 ana gruba bölecek.\n\n' +
+        'Daha önce otomatik üretilmiş menü öğeleri silinip yeniden oluşturulacak.\n' +
+        'Manuel eklediğin menü öğeleri korunacak.\n\n' +
+        'Devam edilsin mi?'
+      )
+    ) return;
+    regenerateMutation.mutate();
+  };
+
   const closeModal = () => {
     setShowModal(false);
     setEditingItem(null);
@@ -207,14 +254,30 @@ export default function MenuManagementPanel({ categories }: MenuManagementPanelP
           <h2 className="text-xl sm:text-2xl font-bold text-neutral-900">Menü Yönetimi</h2>
           <p className="text-neutral-500 text-sm mt-1">Sitenin ana navigasyon menüsünü düzenleyin</p>
         </div>
-        <button
-          onClick={() => setShowModal(true)}
-          className="flex items-center gap-2 px-4 py-2.5 bg-white text-black rounded-lg font-medium hover:bg-zinc-200 transition-colors"
-          data-testid="button-add-menu-item"
-        >
-          <Plus className="w-5 h-5" />
-          Yeni Öğe Ekle
-        </button>
+        <div className="flex flex-wrap items-center gap-2">
+          <button
+            onClick={handleRegenerate}
+            disabled={regenerateMutation.isPending}
+            className="flex items-center gap-2 px-4 py-2.5 bg-amber-500 text-white rounded-lg font-medium hover:bg-amber-600 disabled:opacity-50 transition-colors"
+            data-testid="button-auto-group-categories"
+            title="Mevcut kategorileri 8 ana grup altında otomatik düzenler"
+          >
+            {regenerateMutation.isPending ? (
+              <Loader2 className="w-5 h-5 animate-spin" />
+            ) : (
+              <Wand2 className="w-5 h-5" />
+            )}
+            Kategorileri Otomatik Gruplandır
+          </button>
+          <button
+            onClick={() => setShowModal(true)}
+            className="flex items-center gap-2 px-4 py-2.5 bg-white text-black rounded-lg font-medium hover:bg-zinc-200 transition-colors"
+            data-testid="button-add-menu-item"
+          >
+            <Plus className="w-5 h-5" />
+            Yeni Öğe Ekle
+          </button>
+        </div>
       </div>
 
       <div className="bg-neutral-50 border border-neutral-200 rounded-xl overflow-hidden">

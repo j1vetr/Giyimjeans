@@ -25,8 +25,8 @@ Preferred communication style: Simple, everyday language.
 - **UI/UX**: Component-based, reusable UI elements. Admin panel at `/toov-admin`.
 
 ### Navigation
-- Header navigation reads from the `menu_items` table (`/api/menu`). Default seeded items: Mermer (linked to the Mermer category), Granit, Traverten, Oniks (URL-based until categories are populated).
-- A hardcoded fallback nav (Mermer / Granit / Traverten) renders only when `menu_items` is empty.
+- Header navigation reads from the `menu_items` table (`/api/menu`). When at least one root item exists, Header renders a nested "Kategoriler" mega-dropdown (desktop) and 2-level accordion (mobile) sourced from `menu_items` (root submenus + child category links). When `menu_items` is empty, Header falls back to a flat list of `categories` filtered by `displayOrder < 100`.
+- **Auto-grouping tool** (`server/menu-grouping.ts` + admin button in `MenuTab.tsx`): admins can press "Kategorileri Otomatik Gruplandır" to (re)build the menu in one click. It applies a fixed set of Turkish keyword rules (8 main groups: Banyo / Mutfak & Sofra / Lavabo & Hamam / Dekorasyon / Saksı & Bahçe / Duvar & Cephe / Sehpa & Mobilya / Şömine & Mangal) and dumps anything unmatched into "Diğer Doğal Taş". The endpoint `POST /api/admin/menu-items/regenerate-from-categories` deletes only auto-generated rows (those with `displayOrder` in [1000, 99999]) and recreates parents + children, so manually-added menu items (`displayOrder < 1000`) are preserved across regenerations. Preview-only counterpart: `GET /api/admin/menu-items/grouping-preview`.
 - Categories table contains a primary "Mermer" category (display_order 0). Legacy fitness categories are retained at `display_order` 100+ for safe rollback but are not surfaced in the UI.
 
 ### Key Features

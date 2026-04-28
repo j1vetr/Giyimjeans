@@ -52,6 +52,7 @@ export function Header() {
   const [searchOpen, setSearchOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const [mobileCatOpen, setMobileCatOpen] = useState(false);
+  const [mobileSubOpen, setMobileSubOpen] = useState<Record<string, boolean>>({});
   const { totalItems } = useCart();
   const { user, logout } = useAuth();
   const { scrollY } = useScroll();
@@ -74,10 +75,33 @@ export function Header() {
     staleTime: 60000,
   });
 
+  const { data: menuTree = [] } = useQuery<MenuItemData[]>({
+    queryKey: ['/api/menu'],
+    queryFn: async () => {
+      const res = await fetch('/api/menu');
+      if (!res.ok) return [];
+      return res.json();
+    },
+    staleTime: 60000,
+  });
+
   // Hide legacy categories (display_order >= 100); show only stone categories
   const visibleCategories = categoriesData
     .filter(c => (c.displayOrder ?? 0) < 100)
     .sort((a, b) => (a.displayOrder ?? 0) - (b.displayOrder ?? 0));
+
+  // Menu_items tablosundan beslenen yapı (admin "Otomatik Gruplandır" ile oluşturulur).
+  // Eğer hiç menu item yoksa, eski davranışa (visibleCategories) düşeriz.
+  const menuRoots = [...menuTree]
+    .filter(m => m.isActive && !m.parentId)
+    .sort((a, b) => (a.displayOrder ?? 0) - (b.displayOrder ?? 0));
+  const useMenuTree = menuRoots.length > 0;
+
+  const hrefForMenu = (item: MenuItemData): string => {
+    if (item.type === 'category' && item.category) return `/kategori/${item.category.slug}`;
+    if (item.type === 'link' && item.url) return item.url;
+    return '#';
+  };
 
   // Static nav links (always visible)
   const staticLinks = [
@@ -213,10 +237,70 @@ export function Header() {
                 <DropdownMenuContent
                   align="start"
                   sideOffset={20}
-                  className="bg-white border-black/8 shadow-xl rounded-none p-3"
-                  style={{ minWidth: visibleCategories.length > 6 ? 520 : 240 }}
+                  className="bg-white border-black/8 shadow-xl rounded-none p-5"
+                  style={{ minWidth: useMenuTree ? Math.min(menuRoots.length, 4) * 220 + 40 : (visibleCategories.length > 6 ? 520 : 240) }}
                 >
-                  {visibleCategories.length === 0 ? (
+                  {useMenuTree ? (
+                    <div>
+                      <div
+                        className="grid gap-x-6 gap-y-4"
+                        style={{ gridTemplateColumns: `repeat(${Math.min(menuRoots.length, 4)}, minmax(180px, 1fr))` }}
+                      >
+                        {menuRoots.map((root) => {
+                          const children = (root.children || []).filter(c => c.isActive);
+                          if (root.type === 'submenu') {
+                            return (
+                              <div key={root.id} className="min-w-0" data-testid={`mega-group-${root.id}`}>
+                                <div className="text-[10px] tracking-[0.22em] uppercase font-semibold text-polen-orange mb-2 pb-1.5 border-b border-black/10">
+                                  {root.title}
+                                </div>
+                                <ul className="flex flex-col">
+                                  {children.length === 0 ? (
+                                    <li className="text-[10px] text-black/40 py-1">Boş</li>
+                                  ) : children.map(child => {
+                                    const href = hrefForMenu(child);
+                                    return (
+                                      <li key={child.id}>
+                                        <DropdownMenuItem
+                                          onClick={() => navigate(href)}
+                                          className="text-[11px] tracking-[0.12em] uppercase text-black hover:bg-[hsl(var(--polen-cream))] hover:text-polen-orange cursor-pointer py-1.5 px-2 rounded-none transition-colors"
+                                          data-testid={`link-mega-${child.id}`}
+                                        >
+                                          {child.title}
+                                        </DropdownMenuItem>
+                                      </li>
+                                    );
+                                  })}
+                                </ul>
+                              </div>
+                            );
+                          }
+                          // root tek başına category/link
+                          const href = hrefForMenu(root);
+                          return (
+                            <div key={root.id} className="min-w-0">
+                              <DropdownMenuItem
+                                onClick={() => navigate(href)}
+                                className="text-[11px] tracking-[0.16em] uppercase font-semibold text-black hover:bg-[hsl(var(--polen-cream))] hover:text-polen-orange cursor-pointer py-2 px-2 rounded-none"
+                                data-testid={`link-mega-root-${root.id}`}
+                              >
+                                {root.title}
+                              </DropdownMenuItem>
+                            </div>
+                          );
+                        })}
+                      </div>
+                      <div className="border-t border-black/10 mt-4 pt-2">
+                        <DropdownMenuItem
+                          onClick={() => navigate('/magaza')}
+                          className="text-[11px] tracking-[0.16em] uppercase text-polen-orange font-semibold hover:bg-[hsl(var(--polen-cream))] cursor-pointer py-2.5 px-3 rounded-none"
+                          data-testid="link-cat-tum-urunler"
+                        >
+                          Tüm Ürünler →
+                        </DropdownMenuItem>
+                      </div>
+                    </div>
+                  ) : visibleCategories.length === 0 ? (
                     <DropdownMenuItem
                       onClick={() => navigate('/magaza')}
                       className="text-[11px] tracking-wider uppercase text-black hover:bg-black/5 cursor-pointer py-2.5"
@@ -483,31 +567,142 @@ export function Header() {
                           transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
                           className="overflow-hidden"
                         >
-                          <ul className="pb-4 pl-9 border-l border-polen-orange/30 ml-[3px] mb-2">
-                            {(visibleCategories.length === 0
-                              ? [{ id: 'all-fb', slug: '', name: 'Tüm Ürünler →', href: '/magaza', testId: 'link-mobile-cat-tum-urunler' }]
-                              : [
-                                  ...visibleCategories.map(c => ({ id: c.id, slug: c.slug, name: c.name, href: `/kategori/${c.slug}`, testId: `link-mobile-cat-${c.slug}` })),
-                                  { id: 'all', slug: '', name: 'Tüm Ürünler →', href: '/magaza', testId: 'link-mobile-cat-tum-urunler' },
-                                ]
-                            ).map((c, idx, arr) => (
-                              <li key={c.id}>
+                          {useMenuTree ? (
+                            <ul className="pb-4 pl-9 border-l border-polen-orange/30 ml-[3px] mb-2">
+                              {menuRoots.map((root, idx) => {
+                                const isSubmenu = root.type === 'submenu';
+                                const children = (root.children || []).filter(c => c.isActive);
+                                const isOpen = !!mobileSubOpen[root.id];
+                                if (isSubmenu) {
+                                  return (
+                                    <li key={root.id}>
+                                      <button
+                                        onClick={() => setMobileSubOpen(s => ({ ...s, [root.id]: !s[root.id] }))}
+                                        className="w-full flex items-center justify-between py-2.5 group"
+                                        data-testid={`button-mobile-group-${root.id}`}
+                                        aria-expanded={isOpen}
+                                      >
+                                        <span className="flex items-baseline gap-3">
+                                          <span className="text-[8px] font-mono tracking-[0.16em] text-black/30">
+                                            {String(idx + 1).padStart(2, '0')}
+                                          </span>
+                                          <span className={`text-[13px] tracking-[0.14em] uppercase font-semibold transition-colors ${isOpen ? 'text-polen-orange' : 'text-black group-hover:text-polen-orange'}`}>
+                                            {root.title}
+                                          </span>
+                                          <span className="text-[10px] text-black/35">({children.length})</span>
+                                        </span>
+                                        <motion.span
+                                          animate={{ rotate: isOpen ? 90 : 0 }}
+                                          transition={{ duration: 0.25 }}
+                                          className={`${isOpen ? 'text-polen-orange' : 'text-black/35'}`}
+                                        >
+                                          <span className="block w-3 h-3 relative">
+                                            <span className="absolute inset-x-0 top-1/2 -translate-y-1/2 h-px bg-current" />
+                                            <motion.span
+                                              animate={{ scaleY: isOpen ? 0 : 1 }}
+                                              transition={{ duration: 0.2 }}
+                                              className="absolute inset-y-0 left-1/2 -translate-x-1/2 w-px bg-current"
+                                            />
+                                          </span>
+                                        </motion.span>
+                                      </button>
+                                      <AnimatePresence initial={false}>
+                                        {isOpen && (
+                                          <motion.ul
+                                            initial={{ height: 0, opacity: 0 }}
+                                            animate={{ height: 'auto', opacity: 1 }}
+                                            exit={{ height: 0, opacity: 0 }}
+                                            transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
+                                            className="overflow-hidden pl-5 border-l border-black/10 ml-1 mb-2"
+                                          >
+                                            {children.length === 0 ? (
+                                              <li className="text-[11px] text-black/35 py-1.5">Boş</li>
+                                            ) : children.map(child => {
+                                              const href = hrefForMenu(child);
+                                              return (
+                                                <li key={child.id}>
+                                                  <Link
+                                                    href={href}
+                                                    onClick={() => setMobileOpen(false)}
+                                                    className="group flex items-baseline gap-2 py-2 text-black/70 hover:text-polen-orange transition-colors"
+                                                    data-testid={`link-mobile-mega-${child.id}`}
+                                                  >
+                                                    <span className="text-[12px] tracking-[0.12em] uppercase">
+                                                      {child.title}
+                                                    </span>
+                                                  </Link>
+                                                </li>
+                                              );
+                                            })}
+                                          </motion.ul>
+                                        )}
+                                      </AnimatePresence>
+                                    </li>
+                                  );
+                                }
+                                // root tek başına category/link
+                                const href = hrefForMenu(root);
+                                return (
+                                  <li key={root.id}>
+                                    <Link
+                                      href={href}
+                                      onClick={() => setMobileOpen(false)}
+                                      className="group flex items-baseline gap-3 py-2.5 text-black/70 hover:text-polen-orange transition-colors"
+                                      data-testid={`link-mobile-mega-root-${root.id}`}
+                                    >
+                                      <span className="text-[8px] font-mono tracking-[0.16em] text-black/30">
+                                        {String(idx + 1).padStart(2, '0')}
+                                      </span>
+                                      <span className="text-[13px] tracking-[0.14em] uppercase">
+                                        {root.title}
+                                      </span>
+                                    </Link>
+                                  </li>
+                                );
+                              })}
+                              <li>
                                 <Link
-                                  href={c.href}
+                                  href="/magaza"
                                   onClick={() => setMobileOpen(false)}
-                                  className={`group flex items-baseline gap-3 py-2.5 transition-colors ${idx === arr.length - 1 && arr.length > 1 ? 'text-polen-orange font-semibold' : 'text-black/65 hover:text-polen-orange'}`}
-                                  data-testid={c.testId}
+                                  className="flex items-baseline gap-3 py-2.5 text-polen-orange font-semibold"
+                                  data-testid="link-mobile-cat-tum-urunler"
                                 >
-                                  <span className="text-[8px] font-mono tracking-[0.16em] text-black/30 mt-0.5">
-                                    {String(idx + 1).padStart(2, '0')}
+                                  <span className="text-[8px] font-mono tracking-[0.16em] text-polen-orange/60">
+                                    {String(menuRoots.length + 1).padStart(2, '0')}
                                   </span>
                                   <span className="text-[13px] tracking-[0.14em] uppercase">
-                                    {c.name}
+                                    Tüm Ürünler →
                                   </span>
                                 </Link>
                               </li>
-                            ))}
-                          </ul>
+                            </ul>
+                          ) : (
+                            <ul className="pb-4 pl-9 border-l border-polen-orange/30 ml-[3px] mb-2">
+                              {(visibleCategories.length === 0
+                                ? [{ id: 'all-fb', slug: '', name: 'Tüm Ürünler →', href: '/magaza', testId: 'link-mobile-cat-tum-urunler' }]
+                                : [
+                                    ...visibleCategories.map(c => ({ id: c.id, slug: c.slug, name: c.name, href: `/kategori/${c.slug}`, testId: `link-mobile-cat-${c.slug}` })),
+                                    { id: 'all', slug: '', name: 'Tüm Ürünler →', href: '/magaza', testId: 'link-mobile-cat-tum-urunler' },
+                                  ]
+                              ).map((c, idx, arr) => (
+                                <li key={c.id}>
+                                  <Link
+                                    href={c.href}
+                                    onClick={() => setMobileOpen(false)}
+                                    className={`group flex items-baseline gap-3 py-2.5 transition-colors ${idx === arr.length - 1 && arr.length > 1 ? 'text-polen-orange font-semibold' : 'text-black/65 hover:text-polen-orange'}`}
+                                    data-testid={c.testId}
+                                  >
+                                    <span className="text-[8px] font-mono tracking-[0.16em] text-black/30 mt-0.5">
+                                      {String(idx + 1).padStart(2, '0')}
+                                    </span>
+                                    <span className="text-[13px] tracking-[0.14em] uppercase">
+                                      {c.name}
+                                    </span>
+                                  </Link>
+                                </li>
+                              ))}
+                            </ul>
+                          )}
                         </motion.div>
                       )}
                     </AnimatePresence>

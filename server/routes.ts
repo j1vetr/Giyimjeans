@@ -42,6 +42,13 @@ import {
 } from "./iyzico";
 import { sendInvoiceToBizimHesap } from "./bizimhesap";
 import {
+  buildGroupingPlan,
+  AUTO_GROUP_DISPLAY_ORDER_BASE,
+  AUTO_GROUP_DISPLAY_ORDER_MAX,
+} from "./menu-grouping";
+import { menuItems as menuItemsTable } from "@shared/schema";
+import { and, gte, lte } from "drizzle-orm";
+import {
   generateAccessToken,
   generateRefreshToken,
   verifyAccessToken,
@@ -5412,6 +5419,87 @@ Sitemap: ${baseUrl}/sitemap.xml
     } catch (error) {
       console.error('[Menu] Reorder menu items error:', error);
       res.status(500).json({ error: "Menü sıralaması güncellenemedi" });
+    }
+  });
+
+  // Admin: Önizleme — kategorileri kurallara göre nasıl gruplayacağını göster (yazma yok)
+  app.get("/api/admin/menu-items/grouping-preview", requireAdmin, async (_req, res) => {
+    try {
+      const categories = await storage.getCategories();
+      const plan = buildGroupingPlan(categories);
+      res.json(plan);
+    } catch (error) {
+      console.error('[Menu] Grouping preview error:', error);
+      res.status(500).json({ error: "Önizleme oluşturulamadı" });
+    }
+  });
+
+  // Admin: Kategorileri otomatik gruplandır → menu_items üret
+  // Sadece displayOrder >= AUTO_GROUP_DISPLAY_ORDER_BASE olan kayıtları siler.
+  // Kullanıcının manuel eklediği menüler korunur.
+  app.post("/api/admin/menu-items/regenerate-from-categories", requireAdmin, async (_req, res) => {
+    try {
+      const categories = await storage.getCategories();
+      const plan = buildGroupingPlan(categories);
+
+      // 1) Eski auto-generated kayıtları sil (parent + child hepsi aynı aralıkta)
+      await db
+        .delete(menuItemsTable)
+        .where(
+          and(
+            gte(menuItemsTable.displayOrder, AUTO_GROUP_DISPLAY_ORDER_BASE),
+            lte(menuItemsTable.displayOrder, AUTO_GROUP_DISPLAY_ORDER_MAX),
+          ),
+        );
+
+      // 2) Her ana grup için submenu kaydı + altına category çocukları
+      let createdParents = 0;
+      let createdChildren = 0;
+      let parentOrder = AUTO_GROUP_DISPLAY_ORDER_BASE; // 1000, 1001, ...
+      let childOrder = AUTO_GROUP_DISPLAY_ORDER_BASE + 100; // 1100+
+
+      for (const group of plan.groups) {
+        const parent = await storage.createMenuItem({
+          title: group.title,
+          type: "submenu",
+          categoryId: null,
+          url: null,
+          parentId: null,
+          displayOrder: parentOrder++,
+          isActive: true,
+          openInNewTab: false,
+        });
+        createdParents++;
+
+        for (const cat of group.categories) {
+          await storage.createMenuItem({
+            title: cat.name,
+            type: "category",
+            categoryId: cat.id,
+            url: null,
+            parentId: parent.id,
+            displayOrder: childOrder++,
+            isActive: true,
+            openInNewTab: false,
+          });
+          createdChildren++;
+        }
+      }
+
+      res.json({
+        success: true,
+        createdParents,
+        createdChildren,
+        totalCategories: plan.totalCategories,
+        unmatchedCount: plan.unmatchedCount,
+        groups: plan.groups.map((g) => ({
+          title: g.title,
+          count: g.categories.length,
+        })),
+      });
+    } catch (error) {
+      console.error('[Menu] Regenerate from categories error:', error);
+      res.status(500).json({ error: "Otomatik gruplandırma yapılamadı" });
     }
   });
 
