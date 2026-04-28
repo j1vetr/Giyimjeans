@@ -8,7 +8,7 @@
  * Yalnız okuma fonksiyonları:
  *   - testConnection: brands endpoint'iyle hafif bir GET
  *   - fetchCategoryTree: /product/product-categories
- *   - fetchProductsPage: /suppliers/{supplierId}/products?page=N&size=200&approved=true
+ *   - fetchProductsPage: /product/sellers/{sellerId}/products?page=N&size=200&approved=true
  *   - fetchStockAndPrice: aynı listing endpoint'ten yalnız barkode/stok/price alanları
  *
  * Sayfalama: cursor = page numarası (string). null → sayfa biter.
@@ -154,7 +154,7 @@ class TrendyolAdapter implements MarketplaceAdapter {
   async fetchProductsPage(cursor: PageCursor): Promise<ProductsPage> {
     const page = cursor == null ? 0 : Number(cursor);
     const url =
-      `/suppliers/${encodeURIComponent(this.supplierId)}/products` +
+      `/product/sellers/${encodeURIComponent(this.supplierId)}/products` +
       `?page=${page}&size=${DEFAULT_PAGE_SIZE}&approved=true`;
     const resp = await this.client.request<TrendyolListResponse>(url);
 
@@ -178,7 +178,7 @@ class TrendyolAdapter implements MarketplaceAdapter {
     let page = 0;
     while (true) {
       const url =
-        `/suppliers/${encodeURIComponent(this.supplierId)}/products` +
+        `/product/sellers/${encodeURIComponent(this.supplierId)}/products` +
         `?page=${page}&size=${DEFAULT_PAGE_SIZE}`;
       const resp = await this.client.request<TrendyolListResponse>(url);
       for (const p of resp.content ?? []) {
@@ -225,7 +225,7 @@ class TrendyolAdapter implements MarketplaceAdapter {
     let page = 0;
     while (true) {
       const url =
-        `/suppliers/${encodeURIComponent(this.supplierId)}/products` +
+        `/product/sellers/${encodeURIComponent(this.supplierId)}/products` +
         `?page=${page}&size=${DEFAULT_PAGE_SIZE}`;
       const resp = await this.client.request<TrendyolListResponse>(url);
       for (const p of resp.content ?? []) {
