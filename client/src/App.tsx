@@ -9,6 +9,8 @@ import { CartModalProvider } from "@/hooks/useCartModal";
 import { lazy, Suspense, memo } from "react";
 import { Loader2 } from "lucide-react";
 import { ScrollToTop } from "@/components/ScrollToTop";
+import { SmoothScroll } from "@/components/SmoothScroll";
+import { CustomCursor } from "@/components/CustomCursor";
 
 const Home = lazy(() => import("@/pages/Home"));
 const Category = lazy(() => import("@/pages/Category"));
@@ -86,6 +88,8 @@ function App() {
           <CartModalProvider>
             <TooltipProvider>
               <div className="relative w-full overflow-x-hidden">
+                <SmoothScroll />
+                <CustomCursor />
                 <Toaster />
                 <Router />
               </div>
