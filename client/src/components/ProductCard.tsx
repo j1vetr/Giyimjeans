@@ -26,7 +26,7 @@ interface Product {
   discountBadge?: string | null;
   variants?: ProductVariant[];
   availableSizes?: string[];
-  availableColors?: { name: string; hex: string }[];
+  availableColors?: { name: string; hex: string | null }[];
 }
 
 interface ProductCardProps {

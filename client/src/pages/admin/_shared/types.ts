@@ -9,7 +9,7 @@ export interface Product {
   categoryIds?: string[];
   images: string[];
   availableSizes: string[];
-  availableColors: { name: string; hex: string }[];
+  availableColors: { name: string; hex: string | null }[];
   isActive: boolean;
   isFeatured: boolean;
   isNew: boolean;

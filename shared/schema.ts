@@ -96,7 +96,7 @@ export const products = pgTable("products", {
   basePrice: decimal("base_price", { precision: 10, scale: 2 }).notNull(),
   images: jsonb("images").$type<string[]>().default([]).notNull(),
   availableSizes: jsonb("available_sizes").$type<string[]>().default([]).notNull(),
-  availableColors: jsonb("available_colors").$type<{name: string, hex: string}[]>().default([]).notNull(),
+  availableColors: jsonb("available_colors").$type<{name: string, hex: string | null}[]>().default([]).notNull(),
   isActive: boolean("is_active").default(true).notNull(),
   isFeatured: boolean("is_featured").default(false).notNull(),
   isNew: boolean("is_new").default(false).notNull(),

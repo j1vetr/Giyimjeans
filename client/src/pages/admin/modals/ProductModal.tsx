@@ -226,7 +226,7 @@ export default function ProductModal({
 
     const trimmedColor = colorInput.trim();
     const normalizedColors = trimmedColor
-      ? [{ name: toTurkishUpper(trimmedColor), hex: '' }]
+      ? [{ name: toTurkishUpper(trimmedColor), hex: null }]
       : [];
 
     onSave({
