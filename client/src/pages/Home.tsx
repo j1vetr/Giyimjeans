@@ -324,7 +324,8 @@ function HeroSceneInner() {
 function ProductMarqueeScene({ products }: { products: Product[] }) {
   const items = useMemo(() => {
     if (!products?.length) return [];
-    return [...products].slice(0, 16);
+    // Only show products with a real image so the marquee never renders broken tiles.
+    return products.filter((p) => !!(p.images && p.images.length > 0)).slice(0, 16);
   }, [products]);
   if (items.length === 0) return null;
   const doubled = [...items, ...items];
