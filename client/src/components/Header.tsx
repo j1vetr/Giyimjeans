@@ -104,7 +104,7 @@ export function Header() {
 
   // Üst nav artık sadece menü ağacından besleniyor; "Mağaza" / "Hakkımızda" çıkarıldı.
   const navLinkCls = (active: boolean) =>
-    `relative inline-flex items-center gap-1 text-[11px] font-medium tracking-[0.14em] uppercase transition-colors nav-link-hover ${active ? 'text-black' : 'text-black/70 hover:text-black'}`;
+    `relative inline-flex items-center gap-1 whitespace-nowrap text-[10.5px] xl:text-[11px] font-medium tracking-[0.08em] xl:tracking-[0.14em] uppercase transition-colors nav-link-hover ${active ? 'text-black' : 'text-black/70 hover:text-black'}`;
 
   return (
     <>
@@ -216,7 +216,7 @@ export function Header() {
             </div>
 
             {/* Center: Desktop nav — 8 ana grup direkt üst seviyede, alt kategoriler dropdown'da */}
-            <nav className="hidden lg:flex items-center gap-5 xl:gap-7 flex-wrap">
+            <nav className="hidden lg:flex items-center gap-3 xl:gap-5 min-w-0">
               {useMenuTree ? (
                 menuRoots.map((root) => {
                   const children = (root.children || []).filter(c => c.isActive);
@@ -422,8 +422,8 @@ export function Header() {
               className="fixed inset-y-0 left-0 z-50 w-[92%] max-w-[420px] bg-white flex flex-col overflow-hidden shadow-[0_0_60px_rgba(0,0,0,0.25)]"
               data-testid="drawer-mobile-menu"
             >
-              {/* ── Hero panel: soft marble bg, large clean logo only ── */}
-              <div className="relative h-[150px] shrink-0 overflow-hidden border-b border-black/8">
+              {/* ── Hero panel: soft marble bg, compact logo only ── */}
+              <div className="relative h-[96px] shrink-0 overflow-hidden border-b border-black/8">
                 <img
                   src={marbleHero}
                   alt=""
@@ -438,15 +438,15 @@ export function Header() {
                 <motion.button
                   whileTap={{ scale: 0.88 }}
                   onClick={() => setMobileOpen(false)}
-                  className="group absolute top-4 right-4 z-10 p-2 text-black/70 hover:text-black transition-colors"
+                  className="group absolute top-3 right-3 z-10 p-1.5 text-black/70 hover:text-black transition-colors"
                   data-testid="button-close-menu"
                   aria-label="Menüyü Kapat"
                 >
-                  <span className="absolute inset-0 m-auto w-9 h-9 rounded-full border border-black/15 group-hover:border-black/45 transition-colors" />
-                  <X className="relative w-4 h-4" strokeWidth={1.75} />
+                  <span className="absolute inset-0 m-auto w-8 h-8 rounded-full border border-black/15 group-hover:border-black/45 transition-colors" />
+                  <X className="relative w-3.5 h-3.5" strokeWidth={1.75} />
                 </motion.button>
 
-                {/* Centered, larger logo */}
+                {/* Centered, compact logo */}
                 <div className="absolute inset-0 z-[5] flex items-center justify-center">
                   <Link
                     href="/"
@@ -457,7 +457,7 @@ export function Header() {
                     <img
                       src={polenLogo}
                       alt="Polen Stone"
-                      className="h-[120px] w-[120px] object-contain"
+                      className="h-[68px] w-[68px] object-contain"
                       data-testid="img-logo-mobile-drawer"
                     />
                   </Link>
@@ -465,35 +465,35 @@ export function Header() {
               </div>
 
               {/* ── Editorial nav list ── */}
-              <nav className="flex-1 overflow-y-auto bg-white pt-4">
+              <nav className="flex-1 overflow-y-auto bg-white pt-2">
                 <motion.ul
                   variants={stagger.container}
                   initial="initial"
                   animate="animate"
                   exit="initial"
-                  className="flex flex-col px-6"
+                  className="flex flex-col px-5"
                 >
                   {/* Ana Sayfa — sabit ilk satır */}
                   <motion.li variants={stagger.item} className="border-t border-black/[0.08]">
                     <Link
                       href="/"
                       onClick={() => setMobileOpen(false)}
-                      className="group relative flex items-baseline justify-between py-4"
+                      className="group relative flex items-baseline justify-between py-2.5"
                       data-testid="link-mobile-home"
                     >
-                      <span className="flex items-baseline gap-5">
-                        <span className="text-[10px] font-mono tracking-[0.18em] text-black/30 group-hover:text-polen-orange transition-colors">
+                      <span className="flex items-baseline gap-3">
+                        <span className="text-[9px] font-mono tracking-[0.18em] text-black/30 group-hover:text-polen-orange transition-colors">
                           01
                         </span>
-                        <span className="font-display text-[24px] leading-none tracking-[0.01em] text-black group-hover:text-polen-orange transition-colors">
+                        <span className="font-display text-[17px] leading-none tracking-[0.01em] text-black group-hover:text-polen-orange transition-colors">
                           Ana Sayfa
                         </span>
                       </span>
-                      <ArrowUpRight className="w-4 h-4 text-black/25 rotate-45 group-hover:rotate-0 group-hover:text-polen-orange transition-all duration-300" />
+                      <ArrowUpRight className="w-3.5 h-3.5 text-black/25 rotate-45 group-hover:rotate-0 group-hover:text-polen-orange transition-all duration-300" />
                     </Link>
                   </motion.li>
 
-                  {/* 8 ana grup — direkt üst seviye accordion (Kategoriler sarmalayıcısı kaldırıldı) */}
+                  {/* 8 ana grup — kompakt liste, alta inmemesi için sıkıştırılmış padding/font */}
                   {useMenuTree ? (
                     menuRoots.map((root, idx) => {
                       const children = (root.children || []).filter(c => c.isActive);
@@ -506,25 +506,25 @@ export function Header() {
                           <motion.li key={root.id} variants={stagger.item} className="border-t border-black/[0.08]">
                             <button
                               onClick={() => setMobileSubOpen(s => ({ ...s, [root.id]: !s[root.id] }))}
-                              className="group relative w-full flex items-baseline justify-between py-4"
+                              className="group relative w-full flex items-baseline justify-between py-2.5"
                               data-testid={`button-mobile-group-${root.id}`}
                               aria-expanded={isOpen}
                             >
-                              <span className="flex items-baseline gap-5">
-                                <span className={`text-[10px] font-mono tracking-[0.18em] transition-colors ${isOpen ? 'text-polen-orange' : 'text-black/30 group-hover:text-polen-orange'}`}>
+                              <span className="flex items-baseline gap-3">
+                                <span className={`text-[9px] font-mono tracking-[0.18em] transition-colors ${isOpen ? 'text-polen-orange' : 'text-black/30 group-hover:text-polen-orange'}`}>
                                   {number}
                                 </span>
-                                <span className={`font-display text-[24px] leading-none tracking-[0.01em] transition-colors ${isOpen ? 'text-polen-orange' : 'text-black group-hover:text-polen-orange'}`}>
+                                <span className={`font-display text-[17px] leading-none tracking-[0.01em] transition-colors ${isOpen ? 'text-polen-orange' : 'text-black group-hover:text-polen-orange'}`}>
                                   {root.title}
                                 </span>
-                                <span className="text-[10px] text-black/35 self-center">({children.length})</span>
+                                <span className="text-[9px] text-black/35 self-center">({children.length})</span>
                               </span>
                               <motion.span
                                 animate={{ rotate: isOpen ? 90 : 0 }}
                                 transition={{ duration: 0.3 }}
                                 className={`${isOpen ? 'text-polen-orange' : 'text-black/30'} transition-colors`}
                               >
-                                <span className="block w-3.5 h-3.5 relative">
+                                <span className="block w-3 h-3 relative">
                                   <span className="absolute inset-x-0 top-1/2 -translate-y-1/2 h-px bg-current" />
                                   <motion.span
                                     animate={{ scaleY: isOpen ? 0 : 1 }}
@@ -540,11 +540,11 @@ export function Header() {
                                   initial={{ height: 0, opacity: 0 }}
                                   animate={{ height: 'auto', opacity: 1 }}
                                   exit={{ height: 0, opacity: 0 }}
-                                  transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
-                                  className="overflow-hidden pl-9 border-l border-polen-orange/30 ml-[3px] mb-3"
+                                  transition={{ duration: 0.32, ease: [0.16, 1, 0.3, 1] }}
+                                  className="overflow-hidden pl-7 border-l border-polen-orange/30 ml-[3px] mb-2"
                                 >
                                   {children.length === 0 ? (
-                                    <li className="text-[11px] text-black/35 py-2">Henüz alt kategori yok</li>
+                                    <li className="text-[10px] text-black/35 py-1.5">Henüz alt kategori yok</li>
                                   ) : children.map(child => {
                                     const href = hrefForMenu(child);
                                     return (
@@ -552,10 +552,10 @@ export function Header() {
                                         <Link
                                           href={href}
                                           onClick={() => setMobileOpen(false)}
-                                          className="group flex items-baseline gap-2 py-2 text-black/70 hover:text-polen-orange transition-colors"
+                                          className="group flex items-baseline gap-2 py-1.5 text-black/70 hover:text-polen-orange transition-colors"
                                           data-testid={`link-mobile-mega-${child.id}`}
                                         >
-                                          <span className="text-[12px] tracking-[0.12em] uppercase">
+                                          <span className="text-[11px] tracking-[0.12em] uppercase">
                                             {child.title}
                                           </span>
                                         </Link>
@@ -575,18 +575,18 @@ export function Header() {
                           <Link
                             href={href}
                             onClick={() => setMobileOpen(false)}
-                            className="group relative flex items-baseline justify-between py-4"
+                            className="group relative flex items-baseline justify-between py-2.5"
                             data-testid={`link-mobile-root-${root.id}`}
                           >
-                            <span className="flex items-baseline gap-5">
-                              <span className="text-[10px] font-mono tracking-[0.18em] text-black/30 group-hover:text-polen-orange transition-colors">
+                            <span className="flex items-baseline gap-3">
+                              <span className="text-[9px] font-mono tracking-[0.18em] text-black/30 group-hover:text-polen-orange transition-colors">
                                 {number}
                               </span>
-                              <span className="font-display text-[24px] leading-none tracking-[0.01em] text-black group-hover:text-polen-orange transition-colors">
+                              <span className="font-display text-[17px] leading-none tracking-[0.01em] text-black group-hover:text-polen-orange transition-colors">
                                 {root.title}
                               </span>
                             </span>
-                            <ArrowUpRight className="w-4 h-4 text-black/25 rotate-45 group-hover:rotate-0 group-hover:text-polen-orange transition-all duration-300" />
+                            <ArrowUpRight className="w-3.5 h-3.5 text-black/25 rotate-45 group-hover:rotate-0 group-hover:text-polen-orange transition-all duration-300" />
                           </Link>
                         </motion.li>
                       );
@@ -598,109 +598,90 @@ export function Header() {
                         <Link
                           href={`/kategori/${c.slug}`}
                           onClick={() => setMobileOpen(false)}
-                          className="group relative flex items-baseline justify-between py-4"
+                          className="group relative flex items-baseline justify-between py-2.5"
                           data-testid={`link-mobile-cat-${c.slug}`}
                         >
-                          <span className="flex items-baseline gap-5">
-                            <span className="text-[10px] font-mono tracking-[0.18em] text-black/30 group-hover:text-polen-orange transition-colors">
+                          <span className="flex items-baseline gap-3">
+                            <span className="text-[9px] font-mono tracking-[0.18em] text-black/30 group-hover:text-polen-orange transition-colors">
                               {String(idx + 2).padStart(2, '0')}
                             </span>
-                            <span className="font-display text-[24px] leading-none tracking-[0.01em] text-black group-hover:text-polen-orange transition-colors">
+                            <span className="font-display text-[17px] leading-none tracking-[0.01em] text-black group-hover:text-polen-orange transition-colors">
                               {c.name}
                             </span>
                           </span>
-                          <ArrowUpRight className="w-4 h-4 text-black/25 rotate-45 group-hover:rotate-0 group-hover:text-polen-orange transition-all duration-300" />
+                          <ArrowUpRight className="w-3.5 h-3.5 text-black/25 rotate-45 group-hover:rotate-0 group-hover:text-polen-orange transition-all duration-300" />
                         </Link>
                       </motion.li>
                     ))
                   )}
 
-                  {user ? (
+                  {user && (
                     <motion.li variants={stagger.item} className="border-t border-b border-black/[0.08]">
                       <Link
                         href="/hesabim"
                         onClick={() => setMobileOpen(false)}
-                        className="group relative flex items-baseline justify-between py-4"
+                        className="group relative flex items-baseline justify-between py-2.5"
                         data-testid="link-mobile-hesabim"
                       >
-                        <span className="flex items-baseline gap-5">
-                          <span className="text-[10px] font-mono tracking-[0.18em] text-black/30 group-hover:text-polen-orange transition-colors">
-                            05
+                        <span className="flex items-baseline gap-3">
+                          <span className="text-[9px] font-mono tracking-[0.18em] text-black/30 group-hover:text-polen-orange transition-colors">
+                            ★
                           </span>
-                          <span className="font-display text-[24px] leading-none tracking-[0.01em] text-black group-hover:text-polen-orange transition-colors">
+                          <span className="font-display text-[17px] leading-none tracking-[0.01em] text-black group-hover:text-polen-orange transition-colors">
                             Hesabım
                           </span>
                         </span>
-                        <ArrowUpRight className="w-4 h-4 text-black/25 rotate-45 group-hover:rotate-0 group-hover:text-polen-orange transition-all duration-300" />
+                        <ArrowUpRight className="w-3.5 h-3.5 text-black/25 rotate-45 group-hover:rotate-0 group-hover:text-polen-orange transition-all duration-300" />
                       </Link>
                     </motion.li>
-                  ) : (
-                    <>
-                      <motion.li variants={stagger.item} className="border-t border-black/[0.08]">
-                        <Link
-                          href="/giris"
-                          onClick={() => setMobileOpen(false)}
-                          className="group relative flex items-baseline justify-between py-4"
-                          data-testid="link-mobile-giris"
-                        >
-                          <span className="flex items-baseline gap-5">
-                            <span className="text-[10px] font-mono tracking-[0.18em] text-black/30 group-hover:text-polen-orange transition-colors">
-                              05
-                            </span>
-                            <span className="font-display text-[24px] leading-none tracking-[0.01em] text-black group-hover:text-polen-orange transition-colors">
-                              Giriş Yap
-                            </span>
-                          </span>
-                          <ArrowUpRight className="w-4 h-4 text-black/25 rotate-45 group-hover:rotate-0 group-hover:text-polen-orange transition-all duration-300" />
-                        </Link>
-                      </motion.li>
-                      <motion.li variants={stagger.item} className="border-t border-b border-black/[0.08]">
-                        <Link
-                          href="/kayit"
-                          onClick={() => setMobileOpen(false)}
-                          className="group relative flex items-baseline justify-between py-4"
-                          data-testid="link-mobile-kayit"
-                        >
-                          <span className="flex items-baseline gap-5">
-                            <span className="text-[10px] font-mono tracking-[0.18em] text-polen-orange transition-colors">
-                              06
-                            </span>
-                            <span className="font-display text-[24px] leading-none tracking-[0.01em] text-polen-orange transition-colors">
-                              Kayıt Ol
-                            </span>
-                          </span>
-                          <ArrowUpRight className="w-4 h-4 text-polen-orange rotate-45 group-hover:rotate-0 transition-all duration-300" />
-                        </Link>
-                      </motion.li>
-                    </>
                   )}
                 </motion.ul>
               </nav>
 
-              {/* ── Bottom: editorial cart CTA ── */}
-              <Link
-                href="/sepet"
-                onClick={() => setMobileOpen(false)}
-                className="group relative shrink-0 bg-black hover:bg-polen-orange transition-colors duration-500 px-6 py-5 flex items-center justify-between text-white"
-                data-testid="link-mobile-sepet"
-              >
-                <span className="flex items-center gap-4">
-                  <span className="text-[9px] font-mono tracking-[0.32em] uppercase text-white/45 group-hover:text-white/70 transition-colors">
-                    {user ? '06' : '07'}
-                  </span>
-                  <span className="font-display text-[18px] tracking-[0.04em]">
-                    Sepeti Görüntüle
-                  </span>
-                </span>
-                <span className="flex items-center gap-3">
-                  {totalItems > 0 && (
-                    <span className="min-w-[26px] h-[26px] px-2 bg-polen-orange group-hover:bg-white text-white group-hover:text-polen-orange text-[11px] font-bold flex items-center justify-center rounded-full transition-colors">
-                      {totalItems}
+              {/* ── Bottom: auth + cart CTA ── */}
+              <div className="shrink-0">
+                {!user && (
+                  <div className="grid grid-cols-2 border-t border-black/8">
+                    <Link
+                      href="/giris"
+                      onClick={() => setMobileOpen(false)}
+                      className="flex items-center justify-center py-3.5 text-[11px] tracking-[0.18em] uppercase font-medium text-black/75 hover:text-polen-orange hover:bg-black/[0.03] transition-colors border-r border-black/8"
+                      data-testid="link-mobile-giris"
+                    >
+                      Giriş Yap
+                    </Link>
+                    <Link
+                      href="/kayit"
+                      onClick={() => setMobileOpen(false)}
+                      className="flex items-center justify-center py-3.5 text-[11px] tracking-[0.18em] uppercase font-bold text-white bg-polen-orange hover:bg-[hsl(var(--polen-orange-deep))] transition-colors"
+                      data-testid="link-mobile-kayit"
+                    >
+                      Kayıt Ol
+                    </Link>
+                  </div>
+                )}
+                <Link
+                  href="/sepet"
+                  onClick={() => setMobileOpen(false)}
+                  className="group relative bg-black hover:bg-polen-orange transition-colors duration-500 px-6 py-4 flex items-center justify-between text-white"
+                  data-testid="link-mobile-sepet"
+                >
+                  <span className="flex items-center gap-3">
+                    <ShoppingBag className="w-4 h-4" strokeWidth={1.75} />
+                    <span className="font-display text-[16px] tracking-[0.04em]">
+                      Sepeti Görüntüle
                     </span>
-                  )}
-                  <ArrowUpRight className="w-4 h-4 transition-transform duration-500 group-hover:rotate-45" strokeWidth={1.75} />
-                </span>
-              </Link>
+                  </span>
+                  <span className="flex items-center gap-3">
+                    {totalItems > 0 && (
+                      <span className="min-w-[24px] h-[24px] px-2 bg-polen-orange group-hover:bg-white text-white group-hover:text-polen-orange text-[11px] font-bold flex items-center justify-center rounded-full transition-colors">
+                        {totalItems}
+                      </span>
+                    )}
+                    <ArrowUpRight className="w-4 h-4 transition-transform duration-500 group-hover:rotate-45" strokeWidth={1.75} />
+                  </span>
+                </Link>
+              </div>
             </motion.div>
           </>
         )}
