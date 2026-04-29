@@ -33,7 +33,7 @@ export function Footer() {
               <img
                 src={polenLogo}
                 alt="Polen Stone — Doğal Taş & Mermer"
-                className="h-[88px] w-auto object-contain brightness-0 invert"
+                className="h-[112px] w-auto object-contain"
               />
             </Link>
             <p className="text-white/55 text-[14px] leading-[1.7] max-w-md mb-6">
