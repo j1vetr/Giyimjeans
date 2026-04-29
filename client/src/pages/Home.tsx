@@ -78,35 +78,16 @@ function HeroScene() {
 function HeroSceneStatic() {
   return (
     <section
-      className="relative h-[100svh] min-h-[640px] w-full overflow-hidden bg-black flex items-center justify-center"
+      className="relative h-[100svh] min-h-[560px] w-full overflow-hidden bg-black lg:h-[calc(100svh-200px)] lg:min-h-[560px]"
       aria-label="Polen Stone tanıtım"
     >
       <img
         src={heroPosterImage}
         alt=""
         aria-hidden="true"
-        className="absolute inset-0 w-full h-full object-cover opacity-80"
+        className="absolute inset-0 w-full h-full object-cover"
       />
-      <div className="absolute inset-0 bg-gradient-to-b from-black/55 via-black/25 to-black/80" />
-      <div className="relative z-10 text-center px-5">
-        <h1
-          className="font-display text-white leading-[0.86] uppercase"
-          style={{
-            fontSize: 'clamp(72px, 13vw, 220px)',
-            letterSpacing: '-0.04em',
-            fontWeight: 700,
-          }}
-          data-testid="text-hero-title"
-        >
-          <span className="block">POLEN</span>
-          <span className="block text-polen-orange" style={{ marginTop: '-0.18em' }}>
-            STONE
-          </span>
-        </h1>
-        <p className="mt-5 lg:mt-7 max-w-[520px] mx-auto text-[12px] lg:text-[13px] tracking-[0.18em] uppercase text-white/65 font-mono">
-          Mermer · Granit · Traverten · Oniks
-        </p>
-      </div>
+      <div className="absolute inset-0 bg-gradient-to-b from-black/25 via-transparent to-black/40" />
     </section>
   );
 }
@@ -167,7 +148,7 @@ function HeroSceneInner() {
   return (
     <section
       ref={heroRef}
-      className="relative h-[100svh] min-h-[640px] w-full overflow-hidden bg-black text-white"
+      className="relative h-[100svh] min-h-[560px] w-full overflow-hidden bg-black text-white lg:h-[calc(100svh-200px)] lg:min-h-[560px]"
       data-testid="scene-hero"
     >
       <motion.div className="absolute inset-0 z-0" style={{ y: videoY }}>
@@ -178,62 +159,8 @@ function HeroSceneInner() {
           className="absolute inset-0 w-full h-full object-cover"
         />
         <HeroVideoLazy />
-        <div className="absolute inset-0 bg-gradient-to-b from-black/55 via-black/25 to-black/80" />
-        <div className="absolute inset-0 bg-gradient-to-r from-black/60 via-transparent to-black/30" />
+        <div className="absolute inset-0 bg-gradient-to-b from-black/25 via-transparent to-black/40" />
       </motion.div>
-
-      <motion.div
-        className="absolute inset-0 z-10 flex items-center justify-center px-5"
-        style={{ y: titleY, opacity: titleOpacity }}
-      >
-        <div className="text-center">
-          <h1
-            className="font-display text-white leading-[0.86] uppercase"
-            style={{
-              fontSize: 'clamp(72px, 13vw, 220px)',
-              letterSpacing: '-0.04em',
-              fontWeight: 700,
-            }}
-            data-testid="text-hero-title"
-          >
-            <span className="block">
-              <RevealWord text="POLEN" delay={0.2} />
-            </span>
-            <span
-              className="block text-polen-orange"
-              style={{ marginTop: '-0.18em' }}
-            >
-              <RevealWord text="STONE" delay={0.4} />
-            </span>
-          </h1>
-          <motion.p
-            initial={{ opacity: 0, y: 16 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 1.2, duration: 0.9, ease: [0.16, 1, 0.3, 1] }}
-            className="mt-5 lg:mt-7 max-w-[520px] mx-auto text-[12px] lg:text-[13px] tracking-[0.18em] uppercase text-white/65 font-mono"
-          >
-            Mermer · Granit · Traverten · Oniks
-          </motion.p>
-        </div>
-      </motion.div>
-
-      <div className="absolute bottom-0 left-0 right-0 z-20 px-5 lg:px-10 pb-8 lg:pb-10">
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 1.5, duration: 0.8 }}
-          className="flex items-end justify-end"
-        >
-          <div className="hidden lg:flex items-center gap-3 text-white/55 text-[10px] tracking-[0.28em] uppercase font-mono">
-            <motion.span
-              animate={{ y: [0, 8, 0] }}
-              transition={{ duration: 1.8, repeat: Infinity, ease: 'easeInOut' }}
-              className="inline-block w-px h-10 bg-white/40"
-            />
-            <span>Aşağı Kaydır</span>
-          </div>
-        </motion.div>
-      </div>
     </section>
   );
 }
