@@ -94,7 +94,7 @@ import {
   type MarketplaceSyncRun,
   type InsertMarketplaceSyncRun,
 } from "@shared/schema";
-import { eq, and, desc, asc, sql, ilike, gte, lte, between, inArray } from "drizzle-orm";
+import { eq, and, desc, asc, sql, ilike, gte, lte, gt, between, inArray, sum } from "drizzle-orm";
 
 export interface AdminStats {
   totalProducts: number;
@@ -526,6 +526,16 @@ export class DbStorage implements IStorage {
         categoryProductIds!.includes(p.id)
       );
     }
+
+    // Stoksuz ürünleri public listelerden gizle (en az 1 aktif variant'ta stok > 0).
+    // Trendyol senkronu sonrası stok dolarsa otomatik geri görünür.
+    const inStockRows = await db
+      .select({ productId: productVariants.productId })
+      .from(productVariants)
+      .where(and(eq(productVariants.isActive, true), gt(productVariants.stock, 0)))
+      .groupBy(productVariants.productId);
+    const inStockSet = new Set(inStockRows.map(r => r.productId));
+    result = result.filter(p => inStockSet.has(p.id));
     
     return result;
   }
@@ -537,6 +547,14 @@ export class DbStorage implements IStorage {
 
   async getProductBySlug(slug: string): Promise<Product | undefined> {
     const [product] = await db.select().from(products).where(eq(products.slug, slug));
+    if (!product) return undefined;
+    // Stoksuz ürünün public detay sayfası da açılmasın (admin ayrı endpoint kullanır).
+    const [agg] = await db
+      .select({ total: sum(productVariants.stock) })
+      .from(productVariants)
+      .where(and(eq(productVariants.productId, product.id), eq(productVariants.isActive, true)));
+    const total = Number(agg?.total ?? 0);
+    if (!Number.isFinite(total) || total <= 0) return undefined;
     return product;
   }
 

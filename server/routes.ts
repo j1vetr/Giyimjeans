@@ -1515,33 +1515,46 @@ export async function registerRoutes(
   app.post("/api/cart", async (req: Request, res) => {
     try {
       const cartToken = getOrCreateCartToken(req, res);
-      const { productId, variantId, quantity } = req.body;
-      
-      // Check if product requires variant selection
+      const { productId, variantId: rawVariantId, quantity } = req.body;
+
       const product = await storage.getProduct(productId);
       if (!product) {
         return res.status(400).json({ error: "Geçersiz ürün" });
       }
-      
-      // If product has available sizes, variant is required
-      if (product.availableSizes && product.availableSizes.length > 0 && !variantId) {
-        return res.status(400).json({ error: "Lütfen beden seçimi yapın" });
+
+      // Polen Stone artık varyantsız (her ürün tek başına). Eğer client variant
+      // göndermediyse ürünün ilk aktif & stoklu varyantını otomatik seçeriz —
+      // böylece "Lütfen beden seçimi yapın" hatası alınmaz ve stok yine
+      // varyant bazlı olarak doğru düşer.
+      let variantId: string | null = rawVariantId ?? null;
+      let resolvedVariant = variantId ? await storage.getProductVariant(variantId) : null;
+
+      if (variantId && !resolvedVariant) {
+        return res.status(400).json({ error: "Geçersiz varyant seçimi" });
       }
-      
-      // If variant provided, verify it exists and belongs to this product
-      if (variantId) {
-        const variant = await storage.getProductVariant(variantId);
-        if (!variant) {
-          return res.status(400).json({ error: "Geçersiz varyant seçimi" });
-        }
-        if (variant.productId !== productId) {
-          return res.status(400).json({ error: "Geçersiz varyant" });
-        }
-        if (variant.stock <= 0) {
-          return res.status(400).json({ error: "Bu beden stokta yok" });
+      if (resolvedVariant && resolvedVariant.productId !== productId) {
+        return res.status(400).json({ error: "Geçersiz varyant" });
+      }
+
+      if (!resolvedVariant) {
+        const variants = await storage.getProductVariants(productId);
+        const candidate = variants.find(v => v.isActive && (v.stock ?? 0) > 0)
+          ?? variants.find(v => (v.stock ?? 0) > 0);
+        if (candidate) {
+          resolvedVariant = candidate;
+          variantId = candidate.id;
         }
       }
-      
+
+      // Stok kontrolü: hem variant hem toplam ürün bazlı.
+      if (resolvedVariant && (resolvedVariant.stock ?? 0) <= 0) {
+        return res.status(400).json({ error: "Ürün stokta yok" });
+      }
+      if (!resolvedVariant) {
+        // Hiç variant yoksa ürün public'te de gösterilmemeli; güvenlik için engelle.
+        return res.status(400).json({ error: "Ürün stokta yok" });
+      }
+
       const validated = insertCartItemSchema.parse({
         productId,
         variantId,
