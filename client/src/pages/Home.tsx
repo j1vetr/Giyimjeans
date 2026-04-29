@@ -469,25 +469,25 @@ function FinalCtaScene() {
           }}
         >
           <motion.span
-            initial={{ opacity: 0, y: 60 }}
+            initial={{ opacity: 0, y: 40 }}
             animate={inView ? { opacity: 1, y: 0 } : {}}
-            transition={{ duration: 1, ease: [0.16, 1, 0.3, 1] }}
+            transition={{ duration: 0.45, ease: [0.16, 1, 0.3, 1] }}
             className="block"
           >
             Mekânınıza
           </motion.span>
           <motion.span
-            initial={{ opacity: 0, y: 60 }}
+            initial={{ opacity: 0, y: 40 }}
             animate={inView ? { opacity: 1, y: 0 } : {}}
-            transition={{ duration: 1, delay: 0.12, ease: [0.16, 1, 0.3, 1] }}
+            transition={{ duration: 0.45, delay: 0.06, ease: [0.16, 1, 0.3, 1] }}
             className="block"
           >
             doğanın ihtişamını
           </motion.span>
           <motion.span
-            initial={{ opacity: 0, y: 60 }}
+            initial={{ opacity: 0, y: 40 }}
             animate={inView ? { opacity: 1, y: 0 } : {}}
-            transition={{ duration: 1, delay: 0.24, ease: [0.16, 1, 0.3, 1] }}
+            transition={{ duration: 0.45, delay: 0.12, ease: [0.16, 1, 0.3, 1] }}
             className="block text-polen-orange"
           >
             taşıyalım.
@@ -495,9 +495,9 @@ function FinalCtaScene() {
         </h2>
 
         <motion.div
-          initial={{ opacity: 0, y: 30 }}
+          initial={{ opacity: 0, y: 20 }}
           animate={inView ? { opacity: 1, y: 0 } : {}}
-          transition={{ duration: 0.9, delay: 0.4 }}
+          transition={{ duration: 0.4, delay: 0.18, ease: [0.16, 1, 0.3, 1] }}
           className="mt-12 lg:mt-16 flex flex-col lg:flex-row lg:items-center lg:justify-between gap-8"
         >
           <p className="max-w-[560px] text-base lg:text-lg text-black/65 leading-relaxed">
