@@ -215,14 +215,15 @@ function HeroOverlayContent({ animated = false }: { animated?: boolean }) {
         </Wrap>
       </div>
 
-      {/* ── MASAÜSTÜ — geniş ve sinematik ── */}
-      <div className="hidden lg:flex h-full w-full items-end">
-        <div className="w-full max-w-[1400px] mx-auto px-10 pb-16 xl:pb-20">
-          <Wrap {...wrapProps} className="max-w-[760px]">
+      {/* ── MASAÜSTÜ — geniş, ortalı, iki kolonlu ── */}
+      <div className="hidden lg:flex h-full w-full items-center">
+        <div className="w-full max-w-[1400px] mx-auto px-10 py-16 xl:py-20">
+          <Wrap {...wrapProps} className="grid grid-cols-12 gap-10 xl:gap-14 items-center">
+            {/* Sol — başlık */}
             <h1
-              className="font-display text-white uppercase"
+              className="col-span-7 font-display text-white uppercase"
               style={{
-                fontSize: 'clamp(56px, 7vw, 108px)',
+                fontSize: 'clamp(56px, 6.4vw, 104px)',
                 lineHeight: 0.92,
                 letterSpacing: '-0.035em',
                 fontWeight: 700,
@@ -232,18 +233,23 @@ function HeroOverlayContent({ animated = false }: { animated?: boolean }) {
               Doğal Taşın
               <span className="block text-polen-orange">Zamansız Zarafeti</span>
             </h1>
-            <p className="mt-7 max-w-[560px] text-[14px] xl:text-[15px] leading-relaxed text-white/80">
-              Doğal mermerden el işçiliğiyle üretilen banyo setleri, lavabolar, servis tabakları ve dekoratif objeler. Her parça atölyemizde özenle hazırlanır.
-            </p>
-            <div className="mt-10 flex items-center gap-5">
-              <Link
-                href="/magaza"
-                data-testid="link-hero-cta"
-                className="inline-flex items-center gap-3 px-8 py-4 bg-polen-orange text-white text-[12px] tracking-[0.24em] uppercase font-semibold hover:bg-polen-orange/90 transition-colors"
-              >
-                Koleksiyonu Keşfet
-                <ArrowUpRight className="w-4 h-4" />
-              </Link>
+
+            {/* Sağ — açıklama + CTA */}
+            <div className="col-span-5 flex flex-col">
+              <span aria-hidden className="block w-12 h-px bg-polen-orange mb-6" />
+              <p className="text-[14px] xl:text-[15px] leading-relaxed text-white/80">
+                Doğal mermerden el işçiliğiyle üretilen banyo setleri, lavabolar, servis tabakları ve dekoratif objeler. Her parça atölyemizde özenle hazırlanır.
+              </p>
+              <div className="mt-8">
+                <Link
+                  href="/magaza"
+                  data-testid="link-hero-cta"
+                  className="inline-flex items-center gap-3 px-8 py-4 bg-polen-orange text-white text-[12px] tracking-[0.24em] uppercase font-semibold hover:bg-polen-orange/90 transition-colors"
+                >
+                  Koleksiyonu Keşfet
+                  <ArrowUpRight className="w-4 h-4" />
+                </Link>
+              </div>
             </div>
           </Wrap>
         </div>
