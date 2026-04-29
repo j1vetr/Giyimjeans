@@ -28,17 +28,17 @@ export const WHATSAPP_EVENT_LABELS: Record<WhatsAppEvent, string> = {
 
 export const DEFAULT_TEMPLATES: Record<WhatsAppEvent, string> = {
   order_received_customer:
-    'Merhaba {{musteriAdi}},\n\n{{siteAdi}}\'dan {{siparisNo}} numaralı siparişiniz alındı. Toplam tutar: {{toplam}} TL.\n\nSiparişiniz hazırlanmaya başladığında size tekrar haber vereceğiz.\n\nTeşekkürler!',
+    '👋 Merhaba {{musteriAdi}},\n\n✅ {{siteAdi}}\'dan *{{siparisNo}}* numaralı siparişiniz başarıyla alındı.\n\n💳 Toplam: *{{toplam}} TL*\n\nSiparişiniz hazırlanmaya başladığında size tekrar haber vereceğiz. Bizi tercih ettiğiniz için teşekkürler! 🤍',
   order_received_admin:
     'Yeni sipariş geldi!\n\nSipariş No: {{siparisNo}}\nMüşteri: {{musteriAdi}}\nTelefon: {{musteriTelefon}}\nTutar: {{toplam}} TL',
   order_preparing_customer:
-    'Merhaba {{musteriAdi}},\n\n{{siparisNo}} numaralı siparişiniz hazırlanmaya başladı. En kısa sürede kargoya teslim edilecek.\n\n{{siteAdi}}',
+    '📦 Merhaba {{musteriAdi}},\n\n*{{siparisNo}}* numaralı siparişiniz atölyemizde özenle hazırlanıyor. En kısa sürede kargoya teslim edilecek.\n\n— {{siteAdi}}',
   order_shipped_customer:
-    'Merhaba {{musteriAdi}},\n\n{{siparisNo}} numaralı siparişiniz kargoya verildi.\n\nKargo Firması: {{kargoFirma}}\nTakip No: {{kargoTakipNo}}\nTakip Linki: {{kargoTakipLink}}\n\n{{siteAdi}}',
+    '🚚 Merhaba {{musteriAdi}},\n\n*{{siparisNo}}* numaralı siparişiniz kargoya verildi!\n\n📮 Kargo: {{kargoFirma}}\n🔢 Takip No: *{{kargoTakipNo}}*\n🔗 Takip: {{kargoTakipLink}}\n\n— {{siteAdi}}',
   order_delivered_customer:
-    'Merhaba {{musteriAdi}},\n\n{{siparisNo}} numaralı siparişiniz teslim edildi. Bizi tercih ettiğiniz için teşekkür ederiz.\n\n{{siteAdi}}',
+    '🎉 Merhaba {{musteriAdi}},\n\n*{{siparisNo}}* numaralı siparişiniz teslim edildi. Bizi tercih ettiğiniz için teşekkür ederiz! Memnun kaldıysanız bir değerlendirme bırakırsanız çok seviniriz. 🤍\n\n— {{siteAdi}}',
   order_cancelled_customer:
-    'Merhaba {{musteriAdi}},\n\n{{siparisNo}} numaralı siparişiniz iptal edilmiştir. Detaylı bilgi için bizimle iletişime geçebilirsiniz.\n\n{{siteAdi}}',
+    'ℹ️ Merhaba {{musteriAdi}},\n\n*{{siparisNo}}* numaralı siparişiniz iptal edilmiştir. Detaylı bilgi veya yardım için bizimle iletişime geçebilirsiniz.\n\n— {{siteAdi}}',
   order_cancelled_admin:
     'Sipariş iptal edildi!\n\nSipariş No: {{siparisNo}}\nMüşteri: {{musteriAdi}}\nTutar: {{toplam}} TL',
 };

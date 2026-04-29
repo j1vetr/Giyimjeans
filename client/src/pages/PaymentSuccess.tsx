@@ -1,17 +1,31 @@
-import { useEffect, useState } from 'react';
-import { useLocation, Link } from 'wouter';
+import { useEffect, useRef, useState } from 'react';
+import { Link } from 'wouter';
 import { Header } from '@/components/Header';
+import { Footer } from '@/components/Footer';
 import { Button } from '@/components/ui/button';
 import { motion } from 'framer-motion';
-import { CheckCircle2, ArrowRight, Loader2, Package } from 'lucide-react';
+import {
+  CheckCircle2,
+  ArrowRight,
+  Loader2,
+  Package,
+  Truck,
+  Home,
+  Copy,
+  Check as CheckIcon,
+  AlertTriangle,
+  Phone,
+} from 'lucide-react';
 
 export default function PaymentSuccess() {
-  const [location] = useLocation();
   const [orderNumber, setOrderNumber] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [copied, setCopied] = useState(false);
+  const cancelledRef = useRef(false);
 
   useEffect(() => {
+    cancelledRef.current = false;
     const params = new URLSearchParams(window.location.search);
     const oid = params.get('oid');
 
@@ -22,11 +36,12 @@ export default function PaymentSuccess() {
     }
 
     const checkStatus = async () => {
+      if (cancelledRef.current) return;
       try {
         const res = await fetch(`/api/payment/status/${oid}`, {
           credentials: 'include',
         });
-        
+
         if (res.ok) {
           const data = await res.json();
           if (data.status === 'completed') {
@@ -36,7 +51,7 @@ export default function PaymentSuccess() {
             setError('Ödeme işlemi başarısız oldu');
             setLoading(false);
           } else {
-            setTimeout(checkStatus, 2000);
+            setTimeout(checkStatus, 2500);
           }
         } else {
           setError('Sipariş durumu kontrol edilemedi');
@@ -49,95 +64,291 @@ export default function PaymentSuccess() {
     };
 
     checkStatus();
+    return () => {
+      cancelledRef.current = true;
+    };
   }, []);
 
+  const copyOrderNumber = async () => {
+    if (!orderNumber) return;
+    try {
+      await navigator.clipboard.writeText(orderNumber);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1800);
+    } catch {}
+  };
+
+  // ── Loading ───────────────────────────────────────────────
   if (loading) {
     return (
-      <div className="min-h-screen bg-background">
+      <div className="min-h-screen bg-[#faf7f1] flex flex-col">
         <Header />
-        <main className="pt-20 lg:pt-8 pb-12 px-4 sm:px-6">
-          <div className="max-w-lg mx-auto text-center">
-            <Loader2 className="w-12 h-12 animate-spin text-white/50 mx-auto mb-4" />
-            <p className="text-muted-foreground">Ödeme onaylanıyor...</p>
+        <main className="flex-1 flex items-center justify-center px-4 py-16">
+          <div className="text-center max-w-md mx-auto">
+            <div className="w-16 h-16 mx-auto mb-5 rounded-full border-2 border-polen-orange/20 flex items-center justify-center">
+              <Loader2 className="w-8 h-8 animate-spin text-polen-orange" strokeWidth={2} />
+            </div>
+            <h2 className="font-display text-xl tracking-[0.14em] uppercase text-black mb-2">
+              Ödemeniz Onaylanıyor
+            </h2>
+            <p className="text-sm text-black/55">Banka cevabı bekleniyor, lütfen sayfayı kapatmayın…</p>
           </div>
         </main>
+        <Footer />
       </div>
     );
   }
 
+  // ── Error ─────────────────────────────────────────────────
   if (error) {
     return (
-      <div className="min-h-screen bg-background">
+      <div className="min-h-screen bg-[#faf7f1] flex flex-col">
         <Header />
-        <main className="pt-20 lg:pt-8 pb-12 px-4 sm:px-6">
-          <div className="max-w-lg mx-auto text-center">
-            <div className="w-24 h-24 mx-auto mb-6 rounded-full bg-gradient-to-br from-red-500 to-red-600 flex items-center justify-center">
-              <span className="text-4xl">!</span>
+        <main className="flex-1 flex items-center justify-center px-4 py-16">
+          <div className="max-w-md mx-auto text-center">
+            <div className="w-16 h-16 mx-auto mb-5 rounded-full bg-amber-100 border border-amber-200 flex items-center justify-center">
+              <AlertTriangle className="w-7 h-7 text-amber-600" strokeWidth={2} />
             </div>
-            <h1 className="font-display text-3xl tracking-wider mb-4">BİR HATA OLUŞTU</h1>
-            <p className="text-muted-foreground mb-8">{error}</p>
+            <h1 className="font-display text-2xl tracking-[0.14em] uppercase text-black mb-3">
+              Bir Sorun Oluştu
+            </h1>
+            <p className="text-sm text-black/60 mb-7">{error}</p>
             <Link href="/">
-              <Button className="h-12 px-8 bg-white text-black hover:bg-white/90 font-bold tracking-wide">
-                ANA SAYFAYA DÖN
+              <Button className="h-12 px-7 bg-polen-orange text-black hover:bg-[hsl(var(--polen-orange-deep))] hover:text-white font-semibold tracking-[0.1em] uppercase text-[12px] rounded-none">
+                Ana Sayfaya Dön
               </Button>
             </Link>
           </div>
         </main>
+        <Footer />
       </div>
     );
   }
 
+  // ── Success ───────────────────────────────────────────────
   return (
-    <div className="min-h-screen bg-background overflow-x-hidden">
+    <div className="min-h-screen bg-[#faf7f1] flex flex-col overflow-x-hidden">
       <Header />
-      <main className="pt-20 lg:pt-8 pb-12 px-4 sm:px-6">
-        <motion.div 
-          initial={{ opacity: 0, scale: 0.95 }}
-          animate={{ opacity: 1, scale: 1 }}
-          className="max-w-lg mx-auto text-center"
-        >
+
+      {/* Üst — başarı banneri */}
+      <section className="relative bg-white border-b border-black/[0.06]">
+        <div
+          aria-hidden
+          className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-transparent via-polen-orange to-transparent"
+        />
+        <div className="max-w-3xl mx-auto px-5 lg:px-8 pt-12 pb-10 text-center">
           <motion.div
-            initial={{ scale: 0 }}
-            animate={{ scale: 1 }}
-            transition={{ delay: 0.2, type: 'spring', stiffness: 200 }}
-            className="w-24 h-24 mx-auto mb-6 rounded-full bg-gradient-to-br from-green-500 to-emerald-600 flex items-center justify-center"
+            initial={{ scale: 0, rotate: -15 }}
+            animate={{ scale: 1, rotate: 0 }}
+            transition={{ type: 'spring', stiffness: 220, damping: 18 }}
+            className="w-20 h-20 mx-auto mb-5 rounded-full bg-polen-orange flex items-center justify-center shadow-[0_8px_24px_-6px_rgba(253,181,29,0.55)]"
           >
-            <CheckCircle2 className="w-12 h-12 text-white" />
+            <CheckCircle2 className="w-10 h-10 text-black" strokeWidth={2.2} />
           </motion.div>
-          <h1 className="font-display text-3xl tracking-wider mb-4" data-testid="text-order-success">
-            ÖDEMENİZ BAŞARILI!
-          </h1>
-          <p className="text-muted-foreground mb-2">
-            Siparişiniz başarıyla oluşturuldu.
-          </p>
-          <p className="text-lg font-mono font-bold text-white mb-8">
-            Sipariş No: #{orderNumber}
-          </p>
-          
-          <div className="bg-zinc-900/50 border border-zinc-800 rounded-2xl p-6 mb-8 text-left">
-            <div className="flex items-start gap-3">
-              <Package className="w-5 h-5 text-green-400 mt-0.5" />
+
+          <motion.h1
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.08 }}
+            className="font-display text-2xl sm:text-3xl tracking-[0.14em] uppercase text-black mb-3"
+            data-testid="text-order-success"
+          >
+            Ödemeniz Alındı
+          </motion.h1>
+          <motion.p
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.14 }}
+            className="text-sm text-black/60 max-w-md mx-auto"
+          >
+            Siparişiniz başarıyla oluşturuldu. Onay e-postası birazdan gelecek.
+          </motion.p>
+        </div>
+      </section>
+
+      <main className="flex-1 px-4 sm:px-6 py-10">
+        <div className="max-w-2xl mx-auto">
+          {/* Sipariş özet kartı */}
+          <motion.div
+            initial={{ opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.18 }}
+            className="bg-white border border-black/[0.08] p-5 sm:p-6 mb-5"
+          >
+            <div className="flex items-start justify-between gap-4 flex-wrap">
               <div>
-                <h3 className="font-semibold text-white mb-2">Sonraki Adımlar</h3>
-                <ul className="space-y-2 text-sm text-muted-foreground">
-                  <li>• Sipariş onayı e-posta adresinize gönderildi</li>
-                  <li>• Siparişiniz 1 iş günü içinde kargoya verilecek</li>
-                  <li>• Kargo takip numarası SMS ile bildirilecek</li>
-                </ul>
+                <p className="text-[10px] tracking-[0.2em] uppercase text-black/45 font-medium mb-1.5">
+                  Sipariş No
+                </p>
+                <div className="flex items-center gap-2">
+                  <p
+                    className="font-mono text-xl sm:text-2xl font-bold text-black tracking-wide"
+                    data-testid="text-order-number"
+                  >
+                    #{orderNumber}
+                  </p>
+                  <button
+                    onClick={copyOrderNumber}
+                    className="p-1.5 text-black/45 hover:text-polen-orange hover:bg-black/[0.04] transition-colors rounded"
+                    aria-label="Sipariş numarasını kopyala"
+                    data-testid="button-copy-order-number"
+                  >
+                    {copied ? (
+                      <CheckIcon className="w-4 h-4 text-emerald-600" strokeWidth={2.5} />
+                    ) : (
+                      <Copy className="w-4 h-4" strokeWidth={2} />
+                    )}
+                  </button>
+                </div>
+              </div>
+              <div className="text-right">
+                <p className="text-[10px] tracking-[0.2em] uppercase text-black/45 font-medium mb-1.5">
+                  Tahmini Teslim
+                </p>
+                <p className="text-sm font-semibold text-black">2-4 İş Günü</p>
               </div>
             </div>
-          </div>
-          
+
+            <Link href={`/siparis-takip?no=${orderNumber}`}>
+              <button
+                className="mt-5 w-full h-11 border border-black/15 text-black hover:bg-black/[0.04] font-semibold tracking-[0.08em] uppercase text-[11.5px] flex items-center justify-center gap-2 transition-colors"
+                data-testid="button-track-order"
+              >
+                Siparişimi Takip Et
+                <ArrowRight className="w-3.5 h-3.5" strokeWidth={2.5} />
+              </button>
+            </Link>
+          </motion.div>
+
+          {/* Timeline */}
+          <motion.div
+            initial={{ opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.24 }}
+            className="bg-white border border-black/[0.08] p-5 sm:p-6 mb-5"
+          >
+            <h3 className="text-[11px] tracking-[0.2em] uppercase text-black/55 font-semibold mb-5">
+              Şimdi Ne Olacak?
+            </h3>
+            <ol className="relative">
+              {[
+                {
+                  icon: Package,
+                  title: 'Sipariş Hazırlanıyor',
+                  desc: '1 iş günü içinde ürünleriniz özenle paketlenir.',
+                  active: true,
+                },
+                {
+                  icon: Truck,
+                  title: 'Kargoya Veriliyor',
+                  desc: 'Takip numarası SMS ve e-posta ile bildirilir.',
+                  active: false,
+                },
+                {
+                  icon: Home,
+                  title: 'Adresinizde',
+                  desc: 'Anlaşmalı kargo ile kapınıza kadar teslim.',
+                  active: false,
+                },
+              ].map((step, i, arr) => {
+                const Icon = step.icon;
+                const isLast = i === arr.length - 1;
+                return (
+                  <li key={step.title} className="flex gap-4 pb-5 last:pb-0 relative">
+                    {!isLast && (
+                      <span
+                        aria-hidden
+                        className="absolute left-[18px] top-9 bottom-0 w-px bg-black/10"
+                      />
+                    )}
+                    <div
+                      className={`relative w-9 h-9 rounded-full flex items-center justify-center shrink-0 ${
+                        step.active
+                          ? 'bg-polen-orange text-black'
+                          : 'bg-black/[0.05] text-black/35'
+                      }`}
+                    >
+                      <Icon className="w-4 h-4" strokeWidth={2} />
+                    </div>
+                    <div className="flex-1 pt-1">
+                      <p
+                        className={`text-[13px] font-semibold mb-0.5 ${
+                          step.active ? 'text-black' : 'text-black/55'
+                        }`}
+                      >
+                        {step.title}
+                      </p>
+                      <p className="text-[12px] text-black/50 leading-relaxed">{step.desc}</p>
+                    </div>
+                  </li>
+                );
+              })}
+            </ol>
+          </motion.div>
+
+          {/* Yardım kutusu */}
+          <motion.div
+            initial={{ opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.3 }}
+            className="bg-[#1a1612] text-white p-5 sm:p-6 mb-7"
+          >
+            <p className="text-[11px] tracking-[0.18em] uppercase text-white/50 font-medium mb-2">
+              Yardım gerekirse
+            </p>
+            <p className="text-sm text-white/85 mb-4 leading-relaxed">
+              Siparişinizle ilgili sorularınız için bizi arayabilir veya WhatsApp üzerinden ulaşabilirsiniz.
+            </p>
+            <div className="flex flex-col sm:flex-row gap-2.5">
+              <a
+                href="tel:+905326956183"
+                className="flex-1 inline-flex items-center justify-center gap-2 h-11 border border-white/20 hover:border-polen-orange hover:text-polen-orange transition-colors text-[12px] tracking-[0.08em] uppercase font-semibold"
+                data-testid="link-help-phone"
+              >
+                <Phone className="w-3.5 h-3.5" strokeWidth={2} />
+                0532 695 61 83
+              </a>
+              <a
+                href="https://wa.me/905326956183"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex-1 inline-flex items-center justify-center gap-2 h-11 bg-polen-orange text-black hover:bg-white transition-colors text-[12px] tracking-[0.08em] uppercase font-semibold"
+                data-testid="link-help-whatsapp"
+              >
+                WhatsApp
+                <ArrowRight className="w-3.5 h-3.5" strokeWidth={2.5} />
+              </a>
+            </div>
+          </motion.div>
+
+          {/* Geri dön CTA */}
           <div className="flex flex-col sm:flex-row gap-3">
             <Link href="/" className="flex-1">
-              <Button className="w-full h-12 bg-white text-black hover:bg-white/90 font-bold tracking-wide group">
-                ALIŞVERİŞE DEVAM ET
-                <ArrowRight className="w-4 h-4 ml-2 transition-transform group-hover:translate-x-1" />
+              <Button
+                className="w-full h-12 bg-polen-orange text-black hover:bg-[hsl(var(--polen-orange-deep))] hover:text-white font-semibold tracking-[0.1em] uppercase text-[12px] group rounded-none"
+                data-testid="button-continue-shopping"
+              >
+                Alışverişe Devam Et
+                <ArrowRight
+                  className="w-4 h-4 ml-2 transition-transform group-hover:translate-x-1"
+                  strokeWidth={2.5}
+                />
+              </Button>
+            </Link>
+            <Link href="/hesabim/siparislerim" className="flex-1">
+              <Button
+                variant="outline"
+                className="w-full h-12 border-black/20 text-black hover:bg-black/[0.04] font-semibold tracking-[0.1em] uppercase text-[12px] rounded-none"
+                data-testid="button-view-orders"
+              >
+                Siparişlerim
               </Button>
             </Link>
           </div>
-        </motion.div>
+        </div>
       </main>
+
+      <Footer />
     </div>
   );
 }

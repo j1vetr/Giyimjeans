@@ -47,374 +47,520 @@ async function createTransporter() {
   });
 }
 
-const baseStyles = `
-  body { font-family: 'Helvetica Neue', Arial, sans-serif; margin: 0; padding: 0; background-color: #0a0a0a; color: #ffffff; }
-  .container { max-width: 600px; margin: 0 auto; background-color: #171717; border-radius: 16px; overflow: hidden; }
-  .header { background: linear-gradient(135deg, #1a1a1a 0%, #0d0d0d 100%); padding: 40px 30px; text-align: center; border-bottom: 1px solid #262626; }
-  .logo { font-size: 32px; font-weight: 800; letter-spacing: 4px; color: #ffffff; margin: 0; }
-  .content { padding: 40px 30px; }
-  .footer { background-color: #0d0d0d; padding: 30px; text-align: center; border-top: 1px solid #262626; }
-  .footer p { color: #71717a; font-size: 12px; margin: 5px 0; }
-  h1 { color: #ffffff; font-size: 24px; margin: 0 0 20px 0; font-weight: 600; }
-  h2 { color: #ffffff; font-size: 18px; margin: 20px 0 10px 0; font-weight: 600; }
-  p { color: #a1a1aa; font-size: 15px; line-height: 1.6; margin: 0 0 15px 0; }
-  .highlight { color: #ffffff; font-weight: 600; }
-  .btn { display: inline-block; background-color: #ffffff; color: #000000 !important; padding: 14px 32px; text-decoration: none; border-radius: 8px; font-weight: 600; font-size: 14px; margin: 20px 0; }
-  .btn:hover { background-color: #e5e5e5; }
-  .info-box { background-color: #1f1f1f; border: 1px solid #262626; border-radius: 12px; padding: 20px; margin: 20px 0; }
-  .info-row { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #262626; }
-  .info-row:last-child { border-bottom: none; }
-  .info-label { color: #71717a; font-size: 13px; }
-  .info-value { color: #ffffff; font-size: 14px; font-weight: 500; }
-  .product-item { display: flex; align-items: center; padding: 15px 0; border-bottom: 1px solid #262626; }
-  .product-item:last-child { border-bottom: none; }
-  .product-info { flex: 1; }
-  .product-name { color: #ffffff; font-weight: 500; margin: 0 0 5px 0; }
-  .product-details { color: #71717a; font-size: 13px; margin: 0; }
-  .product-price { color: #ffffff; font-weight: 600; }
-  .total-row { display: flex; justify-content: space-between; padding: 15px 0; }
-  .total-label { color: #a1a1aa; }
-  .total-value { color: #ffffff; font-weight: 600; }
-  .grand-total { font-size: 18px; border-top: 1px solid #262626; padding-top: 15px; margin-top: 10px; }
-  .tracking-box { background: linear-gradient(135deg, #262626 0%, #1f1f1f 100%); border-radius: 12px; padding: 25px; text-align: center; margin: 20px 0; }
-  .tracking-number { font-size: 20px; color: #ffffff; font-weight: 700; letter-spacing: 2px; margin: 10px 0; }
-  .divider { height: 1px; background-color: #262626; margin: 25px 0; }
-`;
+// ─────────────────────────────────────────────────────────────────────────────
+// EMAIL TEMPLATE SYSTEM
+// Outlook + Gmail + Apple Mail uyumlu, table-based, inline-style.
+// Marka: Polen Stone — açık tema, sıcak krem zemin, marka sarısı (#fdb51d) vurgu.
+// ─────────────────────────────────────────────────────────────────────────────
 
-function wrapTemplate(content: string): string {
+const BRAND = {
+  primary: '#fdb51d',
+  primaryDeep: '#d97f2a',
+  ink: '#1a1612',
+  body: '#52483a',
+  muted: '#8a7e6c',
+  border: '#ece4d3',
+  borderSoft: '#f3ecde',
+  card: '#faf6ed',
+  bg: '#f4ebd9',
+};
+
+const CONTACT = {
+  phoneDisplay: '0532 695 61 83',
+  phoneTel: '+905326956183',
+  email: 'info@polenstone.com',
+  addressLine1: 'Yunus Emre, Barbaros Blv. 42 d',
+  addressLine2: '34791 Sancaktepe / İstanbul',
+  site: 'polenstone.com.tr',
+  siteUrl: 'https://polenstone.com.tr',
+  whatsapp: 'https://wa.me/905326956183',
+  instagram: 'https://www.instagram.com/polenstonecom/',
+};
+
+function escapeHtml(s: string | number | undefined | null): string {
+  if (s === null || s === undefined) return '';
+  return String(s)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
+}
+
+function emailButton(href: string, label: string, opts?: { variant?: 'primary' | 'ghost' }): string {
+  const variant = opts?.variant ?? 'primary';
+  const bg = variant === 'primary' ? BRAND.primary : '#ffffff';
+  const color = variant === 'primary' ? BRAND.ink : BRAND.ink;
+  const stroke = variant === 'primary' ? 'f' : 't';
+  const strokeColor = variant === 'primary' ? BRAND.primary : BRAND.border;
+  const bgFallback = variant === 'primary' ? BRAND.primary : '#ffffff';
   return `
-<!DOCTYPE html>
-<html lang="tr">
+<table role="presentation" cellspacing="0" cellpadding="0" border="0" align="center" style="margin:24px auto;">
+  <tr>
+    <td align="center" bgcolor="${bgFallback}" style="border-radius:4px;mso-padding-alt:0;background-color:${bgFallback};">
+      <!--[if mso]>
+      <v:roundrect xmlns:v="urn:schemas-microsoft-com:vml" xmlns:w="urn:schemas-microsoft-com:office:word" href="${href}" style="height:48px;v-text-anchor:middle;width:280px;" arcsize="8%" stroke="${stroke}" strokecolor="${strokeColor}" fillcolor="${bg}">
+        <w:anchorlock/>
+        <center style="color:${color};font-family:Helvetica,Arial,sans-serif;font-size:13px;font-weight:bold;letter-spacing:1.2px;text-transform:uppercase;">${label}</center>
+      </v:roundrect>
+      <![endif]-->
+      <a href="${href}" style="background-color:${bg};border:1px solid ${variant === 'primary' ? BRAND.primary : BRAND.border};border-radius:4px;color:${color};display:inline-block;font-family:Helvetica,Arial,sans-serif;font-size:13px;font-weight:bold;line-height:46px;text-align:center;text-decoration:none;width:280px;-webkit-text-size-adjust:none;letter-spacing:1.2px;text-transform:uppercase;mso-hide:all;">${label}</a>
+    </td>
+  </tr>
+</table>`;
+}
+
+function infoCard(innerHtml: string, opts?: { padding?: string }): string {
+  const padding = opts?.padding ?? '20px 22px';
+  return `
+<table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="background-color:${BRAND.card};border:1px solid ${BRAND.borderSoft};border-collapse:separate;border-radius:6px;margin:16px 0;">
+  <tr>
+    <td style="padding:${padding};font-family:Helvetica,Arial,sans-serif;color:${BRAND.body};font-size:14px;line-height:1.65;">
+      ${innerHtml}
+    </td>
+  </tr>
+</table>`;
+}
+
+function sectionTitle(text: string): string {
+  return `<p style="margin:28px 0 10px 0;font-family:Helvetica,Arial,sans-serif;color:${BRAND.muted};font-size:11px;font-weight:700;letter-spacing:2px;text-transform:uppercase;">${text}</p>`;
+}
+
+function brandHeader(): string {
+  return `
+<table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="background-color:#ffffff;">
+  <tr>
+    <td align="center" style="padding:36px 30px 24px 30px;border-bottom:1px solid ${BRAND.borderSoft};">
+      <table role="presentation" cellspacing="0" cellpadding="0" border="0">
+        <tr>
+          <td align="center" style="font-family:'Helvetica Neue',Helvetica,Arial,sans-serif;color:${BRAND.ink};font-size:28px;font-weight:800;letter-spacing:6px;line-height:1;">
+            POLEN<span style="color:${BRAND.primary};">·</span>STONE
+          </td>
+        </tr>
+        <tr>
+          <td align="center" style="padding-top:8px;font-family:Helvetica,Arial,sans-serif;color:${BRAND.muted};font-size:10px;font-weight:600;letter-spacing:3px;text-transform:uppercase;">
+            Doğal Taş &amp; Mermer
+          </td>
+        </tr>
+      </table>
+    </td>
+  </tr>
+  <tr>
+    <td style="height:3px;background-color:${BRAND.primary};line-height:3px;font-size:0;">&nbsp;</td>
+  </tr>
+</table>`;
+}
+
+function brandFooter(): string {
+  return `
+<table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="background-color:${BRAND.ink};">
+  <tr>
+    <td style="padding:32px 30px 22px 30px;font-family:Helvetica,Arial,sans-serif;color:#ffffff;">
+      <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%">
+        <tr>
+          <td align="center" style="font-size:14px;font-weight:700;letter-spacing:3px;color:#ffffff;padding-bottom:4px;">
+            POLEN<span style="color:${BRAND.primary};">·</span>STONE
+          </td>
+        </tr>
+        <tr>
+          <td align="center" style="font-size:10px;color:rgba(255,255,255,0.45);letter-spacing:2px;text-transform:uppercase;padding-bottom:18px;">
+            ${CONTACT.site}
+          </td>
+        </tr>
+        <tr>
+          <td align="center" style="padding-bottom:6px;font-size:13px;color:rgba(255,255,255,0.85);">
+            <a href="tel:${CONTACT.phoneTel}" style="color:${BRAND.primary};text-decoration:none;font-weight:600;">${CONTACT.phoneDisplay}</a>
+            <span style="color:rgba(255,255,255,0.25);padding:0 8px;">|</span>
+            <a href="mailto:${CONTACT.email}" style="color:${BRAND.primary};text-decoration:none;font-weight:600;">${CONTACT.email}</a>
+          </td>
+        </tr>
+        <tr>
+          <td align="center" style="padding:6px 0 18px 0;font-size:12px;line-height:1.6;color:rgba(255,255,255,0.6);">
+            ${CONTACT.addressLine1}<br>${CONTACT.addressLine2}
+          </td>
+        </tr>
+        <tr>
+          <td align="center" style="padding-top:18px;border-top:1px solid rgba(255,255,255,0.08);">
+            <p style="margin:0;font-size:11px;color:rgba(255,255,255,0.4);line-height:1.6;">
+              © ${new Date().getFullYear()} Polen Stone. Tüm hakları saklıdır.<br>
+              Bu e-postayı, hesabınızla ilgili bir işlem nedeniyle aldınız.
+            </p>
+          </td>
+        </tr>
+      </table>
+    </td>
+  </tr>
+</table>`;
+}
+
+function wrapTemplate(content: string, opts?: { preheader?: string; title?: string }): string {
+  const preheader = opts?.preheader ?? '';
+  const title = opts?.title ?? 'Polen Stone';
+  return `<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" lang="tr">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>POLEN STONE</title>
-  <style>${baseStyles}</style>
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="x-apple-disable-message-reformatting">
+<meta name="format-detection" content="telephone=no,address=no,email=no,date=no,url=no">
+<meta name="color-scheme" content="light only">
+<meta name="supported-color-schemes" content="light only">
+<title>${escapeHtml(title)}</title>
+<!--[if mso]>
+<xml>
+  <o:OfficeDocumentSettings>
+    <o:PixelsPerInch>96</o:PixelsPerInch>
+    <o:AllowPNG/>
+  </o:OfficeDocumentSettings>
+</xml>
+<![endif]-->
+<style type="text/css">
+  body, table, td, a { -webkit-text-size-adjust:100%; -ms-text-size-adjust:100%; }
+  table, td { mso-table-lspace:0pt; mso-table-rspace:0pt; }
+  img { -ms-interpolation-mode:bicubic; border:0; outline:none; text-decoration:none; }
+  body { margin:0 !important; padding:0 !important; width:100% !important; background-color:${BRAND.bg}; }
+  a { color:${BRAND.primary}; }
+  @media screen and (max-width: 620px) {
+    .container { width:100% !important; max-width:100% !important; }
+    .px-mobile { padding-left:20px !important; padding-right:20px !important; }
+    .stack-col { display:block !important; width:100% !important; padding-bottom:12px !important; text-align:left !important; }
+  }
+</style>
 </head>
-<body>
-  <div style="padding: 20px; background-color: #0a0a0a;">
-    <div class="container">
-      <div class="header">
-        <h1 class="logo">POLEN STONE</h1>
-      </div>
-      ${content}
-      <div class="footer">
-        <p>Polen Stone — Doğal Taş & Mermer</p>
-        <p>Bu e-posta Polen Stone tarafından gönderilmiştir.</p>
-      </div>
-    </div>
-  </div>
+<body style="margin:0;padding:0;background-color:${BRAND.bg};font-family:Helvetica,Arial,sans-serif;color:${BRAND.body};">
+<div style="display:none;font-size:1px;color:${BRAND.bg};line-height:1px;max-height:0;max-width:0;opacity:0;overflow:hidden;mso-hide:all;">${escapeHtml(preheader)}</div>
+<table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="background-color:${BRAND.bg};">
+  <tr>
+    <td align="center" style="padding:24px 12px;">
+      <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="600" class="container" style="max-width:600px;width:100%;background-color:#ffffff;border:1px solid ${BRAND.borderSoft};">
+        <tr><td>${brandHeader()}</td></tr>
+        <tr>
+          <td class="px-mobile" style="padding:36px 36px 28px 36px;font-family:Helvetica,Arial,sans-serif;color:${BRAND.body};">
+            ${content}
+          </td>
+        </tr>
+        <tr><td>${brandFooter()}</td></tr>
+      </table>
+    </td>
+  </tr>
+</table>
 </body>
 </html>`;
 }
 
-// Welcome Email Template
+// Inline yardımcılar — şablonlar için
+const H1 = (text: string) =>
+  `<h1 style="margin:0 0 10px 0;font-family:'Helvetica Neue',Helvetica,Arial,sans-serif;color:${BRAND.ink};font-size:24px;font-weight:700;line-height:1.25;letter-spacing:-0.2px;">${text}</h1>`;
+const Lede = (text: string) =>
+  `<p style="margin:0 0 22px 0;font-family:Helvetica,Arial,sans-serif;color:${BRAND.body};font-size:15px;line-height:1.65;">${text}</p>`;
+const P = (text: string, color?: string) =>
+  `<p style="margin:0 0 14px 0;font-family:Helvetica,Arial,sans-serif;color:${color ?? BRAND.body};font-size:14px;line-height:1.65;">${text}</p>`;
+const Small = (text: string) =>
+  `<p style="margin:18px 0 0 0;font-family:Helvetica,Arial,sans-serif;color:${BRAND.muted};font-size:12px;line-height:1.6;text-align:center;">${text}</p>`;
+const HR = () =>
+  `<table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%"><tr><td style="border-top:1px solid ${BRAND.borderSoft};font-size:0;line-height:0;height:1px;">&nbsp;</td></tr></table>`;
+
+// ─── Şablonlar ──────────────────────────────────────────────────────────────
+
 function welcomeEmailTemplate(userName: string): string {
+  const safeName = escapeHtml(userName);
   return wrapTemplate(`
-    <div class="content">
-      <h1>Hoş Geldin, ${userName}!</h1>
-      <p>Polen Stone ailesine katıldığın için çok mutluyuz. Artık premium doğal taş koleksiyonumuza tam erişimin var.</p>
-      
-      <div class="info-box">
-        <h2 style="margin-top: 0;">Seni Neler Bekliyor?</h2>
-        <p style="margin-bottom: 0;">
-          <span class="highlight">Premium Kalite</span> - En iyi malzemelerle üretilmiş ürünler<br><br>
-          <span class="highlight">Hızlı Teslimat</span> - Siparişleriniz özenle paketlenir<br><br>
-          <span class="highlight">Özel Kampanyalar</span> - Üyelere özel indirimler
-        </p>
-      </div>
-      
-      <div style="text-align: center;">
-        <a href="https://polenstone.com.tr" class="btn">Alışverişe Başla</a>
-      </div>
-      
-      <p style="text-align: center; color: #71717a; font-size: 13px;">
-        Sorularınız için bize ulaşabilirsiniz.
-      </p>
-    </div>
-  `);
+    ${H1(`Hoş geldiniz, ${safeName}.`)}
+    ${Lede('Polen Stone ailesine katıldığınız için çok mutluyuz. Atölyemizde el işçiliğiyle şekillenen mermer parçalar artık sizin için bir tık uzakta.')}
+
+    ${infoCard(`
+      <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%">
+        <tr>
+          <td style="padding-bottom:14px;font-size:14px;color:${BRAND.ink};font-weight:700;letter-spacing:0.4px;">Sizi neler bekliyor</td>
+        </tr>
+        <tr>
+          <td style="padding-bottom:10px;">
+            <span style="display:inline-block;width:6px;height:6px;background:${BRAND.primary};border-radius:50%;margin-right:10px;vertical-align:middle;"></span>
+            <strong style="color:${BRAND.ink};">El işçiliği</strong> <span style="color:${BRAND.body};">— her parça atölyemizde özenle şekillenir</span>
+          </td>
+        </tr>
+        <tr>
+          <td style="padding-bottom:10px;">
+            <span style="display:inline-block;width:6px;height:6px;background:${BRAND.primary};border-radius:50%;margin-right:10px;vertical-align:middle;"></span>
+            <strong style="color:${BRAND.ink};">Güvenli kargo</strong> <span style="color:${BRAND.body};">— DHL ile hızlı, kırılmaz paketleme</span>
+          </td>
+        </tr>
+        <tr>
+          <td>
+            <span style="display:inline-block;width:6px;height:6px;background:${BRAND.primary};border-radius:50%;margin-right:10px;vertical-align:middle;"></span>
+            <strong style="color:${BRAND.ink};">Üyeye özel</strong> <span style="color:${BRAND.body};">— kampanyalardan ilk siz haberdar olun</span>
+          </td>
+        </tr>
+      </table>
+    `)}
+
+    ${emailButton(CONTACT.siteUrl, 'Koleksiyona Göz At')}
+
+    ${Small(`Sorularınız için <a href="mailto:${CONTACT.email}" style="color:${BRAND.primaryDeep};text-decoration:none;">${CONTACT.email}</a> adresinden bize ulaşabilirsiniz.`)}
+  `, { preheader: `Hoş geldiniz ${safeName} — Polen Stone ailesindesiniz.`, title: 'Hoş geldiniz' });
 }
 
-// Order Confirmation Template
-function orderConfirmationTemplate(order: Order, items: OrderItem[], siteUrl: string = 'https://polenstone.com.tr'): string {
-  const itemsHtml = items.map(item => `
-    <div class="product-item">
-      <div class="product-info">
-        <p class="product-name">${item.productName}</p>
-        <p class="product-details">${item.variantDetails || ''} x ${item.quantity}</p>
-      </div>
-      <div class="product-price">${item.subtotal}₺</div>
-    </div>
-  `).join('');
-  
-  const shippingAddress = order.shippingAddress as { address: string; city: string; district: string; postalCode: string; country?: string };
-  const trackingUrl = `${siteUrl}/siparis-takip?no=${order.orderNumber}`;
-  
-  return wrapTemplate(`
-    <div class="content">
-      <h1>Siparişiniz Alındı!</h1>
-      <p>Siparişiniz başarıyla oluşturuldu. Hazırlanmaya başlandığında size bilgi vereceğiz.</p>
-      
-      <div class="info-box">
-        <div style="display: flex; justify-content: space-between; margin-bottom: 15px;">
-          <div>
-            <p class="info-label">Sipariş No</p>
-            <p class="info-value">#${order.orderNumber}</p>
-          </div>
-          <div style="text-align: right;">
-            <p class="info-label">Tarih</p>
-            <p class="info-value">${new Date(order.createdAt).toLocaleDateString('tr-TR')}</p>
-          </div>
-        </div>
-        <div style="text-align: center; margin-top: 10px;">
-          <a href="${trackingUrl}" class="btn" style="display: inline-block;">Siparişimi Takip Et</a>
-        </div>
-      </div>
-      
-      <h2>Sipariş Detayları</h2>
-      <div class="info-box">
-        ${itemsHtml}
-        <div class="divider"></div>
-        <div class="total-row">
-          <span class="total-label">Ara Toplam</span>
-          <span class="total-value">${order.subtotal}₺</span>
-        </div>
-        <div class="total-row">
-          <span class="total-label">Kargo</span>
-          <span class="total-value">${parseFloat(order.shippingCost) === 0 ? 'Ücretsiz' : order.shippingCost + '₺'}</span>
-        </div>
-        ${order.discountAmount && parseFloat(order.discountAmount) > 0 ? `
-        <div class="total-row">
-          <span class="total-label">İndirim</span>
-          <span class="total-value" style="color: #22c55e;">-${order.discountAmount}₺</span>
-        </div>
-        ` : ''}
-        <div class="total-row grand-total">
-          <span class="total-label">Toplam</span>
-          <span class="total-value">${order.total}₺</span>
-        </div>
-      </div>
-      
-      <h2>Teslimat Adresi</h2>
-      <div class="info-box">
-        <p style="margin: 0; color: #ffffff;">${order.customerName}</p>
-        <p style="margin: 5px 0 0 0;">${shippingAddress.address}</p>
-        <p style="margin: 5px 0 0 0;">${shippingAddress.district}, ${shippingAddress.city} ${shippingAddress.postalCode}</p>
-        <p style="margin: 10px 0 0 0;">${order.customerPhone}</p>
-      </div>
-      
-      <p style="text-align: center; color: #71717a; font-size: 13px; margin-top: 20px;">
-        Sorularınız için <a href="mailto:destek@polenstone.com.tr" style="color: #ffffff;">destek@polenstone.com.tr</a> adresinden bize ulaşabilirsiniz.
-      </p>
-    </div>
-  `);
-}
-
-// Preparing Notification Template
-function preparingNotificationTemplate(order: Order): string {
-  return wrapTemplate(`
-    <div class="content">
-      <h1>Siparişiniz Hazırlanıyor!</h1>
-      <p>Güzel haberler! Siparişiniz şu anda depomuzda özenle hazırlanıyor.</p>
-      
-      <div class="info-box">
-        <div style="display: flex; justify-content: space-between;">
-          <div>
-            <p class="info-label">Sipariş No</p>
-            <p class="info-value">#${order.orderNumber}</p>
-          </div>
-          <div style="text-align: right;">
-            <p class="info-label">Toplam</p>
-            <p class="info-value">${order.total}₺</p>
-          </div>
-        </div>
-      </div>
-      
-      <div style="text-align: center; padding: 20px; background: linear-gradient(135deg, #18181b, #27272a); border-radius: 12px; margin: 20px 0;">
-        <p style="margin: 0; color: #a1a1aa; font-size: 14px;">Tahmini Kargo Süresi</p>
-        <p style="margin: 10px 0 0 0; color: #ffffff; font-size: 24px; font-weight: bold;">1-2 İş Günü</p>
-      </div>
-      
-      <p style="text-align: center; color: #71717a; font-size: 13px;">
-        Siparişiniz kargoya verildiğinde size tekrar bilgi vereceğiz.
-      </p>
-    </div>
-  `);
-}
-
-// Shipping Notification Template
-function shippingNotificationTemplate(order: Order): string {
-  const dhlTrackingUrl = order.trackingNumber 
-    ? `https://www.dhl.com/tr-tr/home/tracking.html?tracking-id=${order.trackingNumber}&submit=1`
-    : null;
-  const trackingUrl = order.trackingUrl || dhlTrackingUrl;
-  
-  return wrapTemplate(`
-    <div class="content">
-      <h1>Siparişiniz Kargoya Verildi!</h1>
-      <p>Harika haberlerimiz var! Siparişiniz paketlendi ve kargoya teslim edildi.</p>
-      
-      <div class="tracking-box" style="text-align: center; padding: 25px; background: linear-gradient(135deg, #18181b, #27272a); border-radius: 12px; border: 1px solid #3f3f46;">
-        <img src="https://www.dhl.com/content/dam/dhl/global/core/images/logos/dhl-logo.svg" alt="DHL" style="height: 40px; margin-bottom: 15px;" />
-        <p style="margin: 0; color: #71717a; font-size: 13px; text-transform: uppercase; letter-spacing: 1px;">KARGO TAKİP NUMARASI</p>
-        <p class="tracking-number" style="font-size: 28px; font-weight: bold; color: #ffffff; margin: 10px 0; letter-spacing: 2px;">${order.trackingNumber || 'Henüz belirlenmedi'}</p>
-        ${order.shippingCarrier ? `<p style="margin: 5px 0 0 0; color: #a1a1aa;">${order.shippingCarrier}</p>` : '<p style="margin: 5px 0 0 0; color: #fbbf24;">DHL Express</p>'}
-        ${trackingUrl ? `
-          <a href="${trackingUrl}" class="btn" style="display: inline-block; margin-top: 20px; padding: 14px 32px; background: #fbbf24; color: #000000; text-decoration: none; border-radius: 8px; font-weight: bold;">KARGOMU TAKİP ET</a>
-        ` : ''}
-      </div>
-      
-      <div class="info-box">
-        <div style="display: flex; justify-content: space-between;">
-          <div>
-            <p class="info-label">Sipariş No</p>
-            <p class="info-value">#${order.orderNumber}</p>
-          </div>
-          <div style="text-align: right;">
-            <p class="info-label">Toplam</p>
-            <p class="info-value">${order.total}₺</p>
-          </div>
-        </div>
-      </div>
-      
-      <p style="text-align: center; color: #71717a; font-size: 13px;">
-        Kargo takip numaranızı kullanarak siparişinizi DHL üzerinden takip edebilirsiniz.
-      </p>
-    </div>
-  `);
-}
-
-// Admin New Order Notification Template
-function adminOrderNotificationTemplate(order: Order, items: OrderItem[]): string {
-  const itemsHtml = items.map(item => `
+function orderConfirmationTemplate(order: Order, items: OrderItem[], siteUrl: string = CONTACT.siteUrl): string {
+  const itemRows = items.map(item => `
     <tr>
-      <td style="padding: 10px; border-bottom: 1px solid #262626; color: #ffffff;">${item.productName}</td>
-      <td style="padding: 10px; border-bottom: 1px solid #262626; color: #a1a1aa;">${item.variantDetails || '-'}</td>
-      <td style="padding: 10px; border-bottom: 1px solid #262626; color: #a1a1aa; text-align: center;">${item.quantity}</td>
-      <td style="padding: 10px; border-bottom: 1px solid #262626; color: #ffffff; text-align: right;">${item.subtotal}₺</td>
+      <td style="padding:14px 0;border-bottom:1px solid ${BRAND.borderSoft};vertical-align:top;">
+        <div style="font-family:Helvetica,Arial,sans-serif;color:${BRAND.ink};font-size:14px;font-weight:600;line-height:1.4;">${escapeHtml(item.productName)}</div>
+        ${item.variantDetails ? `<div style="font-family:Helvetica,Arial,sans-serif;color:${BRAND.muted};font-size:12px;line-height:1.5;margin-top:3px;">${escapeHtml(item.variantDetails)}</div>` : ''}
+        <div style="font-family:Helvetica,Arial,sans-serif;color:${BRAND.muted};font-size:12px;line-height:1.5;margin-top:3px;">Adet: ${escapeHtml(item.quantity)}</div>
+      </td>
+      <td align="right" style="padding:14px 0;border-bottom:1px solid ${BRAND.borderSoft};vertical-align:top;font-family:Helvetica,Arial,sans-serif;color:${BRAND.ink};font-size:14px;font-weight:700;white-space:nowrap;">${escapeHtml(item.subtotal)}&nbsp;₺</td>
     </tr>
   `).join('');
-  
+
   const shippingAddress = order.shippingAddress as { address: string; city: string; district: string; postalCode: string; country?: string };
-  
+  const trackingUrl = `${siteUrl}/siparis-takip?no=${encodeURIComponent(order.orderNumber)}`;
+  const orderDate = new Date(order.createdAt).toLocaleDateString('tr-TR', { day: 'numeric', month: 'long', year: 'numeric' });
+
   return wrapTemplate(`
-    <div class="content">
-      <h1>Yeni Sipariş Alındı!</h1>
-      <p>Yeni bir sipariş oluşturuldu. Detaylar aşağıda.</p>
-      
-      <div class="info-box">
-        <div style="display: flex; justify-content: space-between; flex-wrap: wrap; gap: 15px;">
-          <div>
-            <p class="info-label">Sipariş No</p>
-            <p class="info-value">#${order.orderNumber}</p>
-          </div>
-          <div>
-            <p class="info-label">Tarih</p>
-            <p class="info-value">${new Date(order.createdAt).toLocaleDateString('tr-TR', { hour: '2-digit', minute: '2-digit' })}</p>
-          </div>
-          <div>
-            <p class="info-label">Toplam</p>
-            <p class="info-value" style="font-size: 18px;">${order.total}₺</p>
-          </div>
-        </div>
-      </div>
-      
-      <h2>Müşteri Bilgileri</h2>
-      <div class="info-box">
-        <p style="margin: 0; color: #ffffff; font-weight: 500;">${order.customerName}</p>
-        <p style="margin: 5px 0;">${order.customerEmail}</p>
-        <p style="margin: 0;">${order.customerPhone}</p>
-        <div class="divider"></div>
-        <p style="margin: 0; color: #71717a; font-size: 13px;">TESLİMAT ADRESİ</p>
-        <p style="margin: 5px 0 0 0;">${shippingAddress.address}</p>
-        <p style="margin: 5px 0 0 0;">${shippingAddress.district}, ${shippingAddress.city} ${shippingAddress.postalCode}</p>
-      </div>
-      
-      <h2>Sipariş Ürünleri</h2>
-      <div class="info-box" style="padding: 0; overflow: hidden;">
-        <table style="width: 100%; border-collapse: collapse;">
-          <thead>
-            <tr style="background-color: #262626;">
-              <th style="padding: 12px; text-align: left; color: #71717a; font-size: 12px;">ÜRÜN</th>
-              <th style="padding: 12px; text-align: left; color: #71717a; font-size: 12px;">VARYANT</th>
-              <th style="padding: 12px; text-align: center; color: #71717a; font-size: 12px;">ADET</th>
-              <th style="padding: 12px; text-align: right; color: #71717a; font-size: 12px;">TUTAR</th>
-            </tr>
-          </thead>
-          <tbody>
-            ${itemsHtml}
-          </tbody>
-        </table>
-      </div>
-      
-      <div style="text-align: center; margin-top: 25px;">
-        <a href="https://polenstone.com.tr/toov-admin" class="btn">Siparişi Görüntüle</a>
-      </div>
-    </div>
-  `);
+    ${H1('Siparişiniz alındı.')}
+    ${Lede(`Teşekkürler ${escapeHtml(order.customerName)} — siparişiniz başarıyla oluşturuldu. Hazırlanmaya başlandığında size yine yazacağız.`)}
+
+    ${infoCard(`
+      <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%">
+        <tr>
+          <td class="stack-col" style="vertical-align:top;width:50%;">
+            <div style="font-size:11px;color:${BRAND.muted};letter-spacing:1.5px;text-transform:uppercase;font-weight:600;">Sipariş No</div>
+            <div style="font-size:18px;color:${BRAND.ink};font-weight:700;margin-top:4px;font-family:'Courier New',monospace;letter-spacing:0.5px;">#${escapeHtml(order.orderNumber)}</div>
+          </td>
+          <td class="stack-col" align="right" style="vertical-align:top;width:50%;">
+            <div style="font-size:11px;color:${BRAND.muted};letter-spacing:1.5px;text-transform:uppercase;font-weight:600;">Tarih</div>
+            <div style="font-size:14px;color:${BRAND.ink};font-weight:600;margin-top:4px;">${orderDate}</div>
+          </td>
+        </tr>
+      </table>
+    `)}
+
+    ${emailButton(trackingUrl, 'Siparişimi Takip Et')}
+
+    ${sectionTitle('Sipariş İçeriği')}
+    <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="border-top:1px solid ${BRAND.borderSoft};margin-top:6px;">
+      ${itemRows}
+    </table>
+
+    <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="margin-top:10px;">
+      <tr>
+        <td style="padding:8px 0;font-family:Helvetica,Arial,sans-serif;color:${BRAND.body};font-size:13px;">Ara Toplam</td>
+        <td align="right" style="padding:8px 0;font-family:Helvetica,Arial,sans-serif;color:${BRAND.ink};font-size:13px;font-weight:600;white-space:nowrap;">${escapeHtml(order.subtotal)}&nbsp;₺</td>
+      </tr>
+      <tr>
+        <td style="padding:8px 0;font-family:Helvetica,Arial,sans-serif;color:${BRAND.body};font-size:13px;">Kargo</td>
+        <td align="right" style="padding:8px 0;font-family:Helvetica,Arial,sans-serif;color:${BRAND.ink};font-size:13px;font-weight:600;white-space:nowrap;">${parseFloat(order.shippingCost) === 0 ? 'Ücretsiz' : escapeHtml(order.shippingCost) + '&nbsp;₺'}</td>
+      </tr>
+      ${order.discountAmount && parseFloat(order.discountAmount) > 0 ? `
+      <tr>
+        <td style="padding:8px 0;font-family:Helvetica,Arial,sans-serif;color:${BRAND.body};font-size:13px;">İndirim</td>
+        <td align="right" style="padding:8px 0;font-family:Helvetica,Arial,sans-serif;color:${BRAND.primaryDeep};font-size:13px;font-weight:700;white-space:nowrap;">−${escapeHtml(order.discountAmount)}&nbsp;₺</td>
+      </tr>` : ''}
+      <tr>
+        <td style="padding:14px 0 0 0;border-top:2px solid ${BRAND.ink};font-family:Helvetica,Arial,sans-serif;color:${BRAND.ink};font-size:15px;font-weight:700;letter-spacing:0.5px;">Toplam</td>
+        <td align="right" style="padding:14px 0 0 0;border-top:2px solid ${BRAND.ink};font-family:Helvetica,Arial,sans-serif;color:${BRAND.ink};font-size:18px;font-weight:800;white-space:nowrap;">${escapeHtml(order.total)}&nbsp;₺</td>
+      </tr>
+    </table>
+
+    ${sectionTitle('Teslimat Adresi')}
+    ${infoCard(`
+      <div style="font-size:14px;color:${BRAND.ink};font-weight:600;margin-bottom:6px;">${escapeHtml(order.customerName)}</div>
+      <div style="font-size:13px;color:${BRAND.body};line-height:1.6;">${escapeHtml(shippingAddress.address)}</div>
+      <div style="font-size:13px;color:${BRAND.body};line-height:1.6;">${escapeHtml(shippingAddress.district)}, ${escapeHtml(shippingAddress.city)} ${escapeHtml(shippingAddress.postalCode)}</div>
+      <div style="font-size:13px;color:${BRAND.body};margin-top:8px;">${escapeHtml(order.customerPhone)}</div>
+    `)}
+
+    ${Small(`Sorularınız için <a href="mailto:${CONTACT.email}" style="color:${BRAND.primaryDeep};text-decoration:none;font-weight:600;">${CONTACT.email}</a> veya <a href="tel:${CONTACT.phoneTel}" style="color:${BRAND.primaryDeep};text-decoration:none;font-weight:600;">${CONTACT.phoneDisplay}</a>`)}
+  `, { preheader: `Sipariş #${order.orderNumber} alındı — toplam ${order.total} ₺`, title: `Sipariş #${order.orderNumber}` });
 }
 
-// Password Reset Template
+function preparingNotificationTemplate(order: Order): string {
+  return wrapTemplate(`
+    ${H1('Siparişiniz hazırlanıyor.')}
+    ${Lede('Güzel haber — siparişiniz şu anda atölyemizde özenle hazırlanıyor. Kargoya verildiğinde takip numaranızı paylaşacağız.')}
+
+    ${infoCard(`
+      <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%">
+        <tr>
+          <td class="stack-col" style="vertical-align:top;width:50%;">
+            <div style="font-size:11px;color:${BRAND.muted};letter-spacing:1.5px;text-transform:uppercase;font-weight:600;">Sipariş No</div>
+            <div style="font-size:18px;color:${BRAND.ink};font-weight:700;margin-top:4px;font-family:'Courier New',monospace;">#${escapeHtml(order.orderNumber)}</div>
+          </td>
+          <td class="stack-col" align="right" style="vertical-align:top;width:50%;">
+            <div style="font-size:11px;color:${BRAND.muted};letter-spacing:1.5px;text-transform:uppercase;font-weight:600;">Toplam</div>
+            <div style="font-size:18px;color:${BRAND.ink};font-weight:700;margin-top:4px;">${escapeHtml(order.total)}&nbsp;₺</div>
+          </td>
+        </tr>
+      </table>
+    `)}
+
+    <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="background-color:${BRAND.ink};margin:18px 0;">
+      <tr>
+        <td align="center" style="padding:26px 24px;">
+          <div style="font-size:11px;color:${BRAND.primary};letter-spacing:2px;text-transform:uppercase;font-weight:700;">Tahmini Kargo Süresi</div>
+          <div style="font-size:28px;color:#ffffff;font-weight:800;margin-top:8px;letter-spacing:0.5px;">1–2 iş günü</div>
+        </td>
+      </tr>
+    </table>
+
+    ${Small('Siparişiniz kargoya verildiğinde tekrar bilgi vereceğiz.')}
+  `, { preheader: `#${order.orderNumber} hazırlanıyor — 1–2 iş günü içinde kargoda`, title: 'Sipariş Hazırlanıyor' });
+}
+
+function shippingNotificationTemplate(order: Order): string {
+  const dhlTrackingUrl = order.trackingNumber
+    ? `https://www.dhl.com/tr-tr/home/tracking.html?tracking-id=${encodeURIComponent(order.trackingNumber)}&submit=1`
+    : null;
+  const trackingUrl = order.trackingUrl || dhlTrackingUrl;
+  const carrier = order.shippingCarrier || 'DHL Express';
+
+  return wrapTemplate(`
+    ${H1('Kargoya verildi.')}
+    ${Lede('Siparişiniz paketlendi ve kargoya teslim edildi. Aşağıdaki takip numarası ile her aşamayı izleyebilirsiniz.')}
+
+    <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="background-color:${BRAND.ink};margin:18px 0;">
+      <tr>
+        <td align="center" style="padding:30px 24px;">
+          <div style="font-size:11px;color:${BRAND.primary};letter-spacing:2px;text-transform:uppercase;font-weight:700;">Kargo Takip Numarası</div>
+          <div style="font-size:24px;color:#ffffff;font-weight:800;margin:12px 0 6px 0;letter-spacing:2px;font-family:'Courier New',monospace;">${escapeHtml(order.trackingNumber || 'Henüz belirlenmedi')}</div>
+          <div style="font-size:13px;color:rgba(255,255,255,0.6);font-weight:500;">${escapeHtml(carrier)}</div>
+        </td>
+      </tr>
+    </table>
+
+    ${trackingUrl ? emailButton(trackingUrl, 'Kargomu Takip Et') : ''}
+
+    ${infoCard(`
+      <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%">
+        <tr>
+          <td class="stack-col" style="vertical-align:top;width:50%;">
+            <div style="font-size:11px;color:${BRAND.muted};letter-spacing:1.5px;text-transform:uppercase;font-weight:600;">Sipariş No</div>
+            <div style="font-size:16px;color:${BRAND.ink};font-weight:700;margin-top:4px;font-family:'Courier New',monospace;">#${escapeHtml(order.orderNumber)}</div>
+          </td>
+          <td class="stack-col" align="right" style="vertical-align:top;width:50%;">
+            <div style="font-size:11px;color:${BRAND.muted};letter-spacing:1.5px;text-transform:uppercase;font-weight:600;">Toplam</div>
+            <div style="font-size:16px;color:${BRAND.ink};font-weight:700;margin-top:4px;">${escapeHtml(order.total)}&nbsp;₺</div>
+          </td>
+        </tr>
+      </table>
+    `)}
+
+    ${Small(`Kargo süresince sorularınız için <a href="tel:${CONTACT.phoneTel}" style="color:${BRAND.primaryDeep};text-decoration:none;font-weight:600;">${CONTACT.phoneDisplay}</a>`)}
+  `, { preheader: `#${order.orderNumber} kargoda — takip: ${order.trackingNumber || 'yakında'}`, title: 'Kargoya Verildi' });
+}
+
+function adminOrderNotificationTemplate(order: Order, items: OrderItem[]): string {
+  const itemRows = items.map(item => `
+    <tr>
+      <td style="padding:10px 12px;border-bottom:1px solid ${BRAND.borderSoft};color:${BRAND.ink};font-size:13px;">${escapeHtml(item.productName)}</td>
+      <td style="padding:10px 12px;border-bottom:1px solid ${BRAND.borderSoft};color:${BRAND.body};font-size:12px;">${escapeHtml(item.variantDetails || '—')}</td>
+      <td align="center" style="padding:10px 12px;border-bottom:1px solid ${BRAND.borderSoft};color:${BRAND.body};font-size:13px;">${escapeHtml(item.quantity)}</td>
+      <td align="right" style="padding:10px 12px;border-bottom:1px solid ${BRAND.borderSoft};color:${BRAND.ink};font-size:13px;font-weight:700;white-space:nowrap;">${escapeHtml(item.subtotal)}&nbsp;₺</td>
+    </tr>
+  `).join('');
+
+  const shippingAddress = order.shippingAddress as { address: string; city: string; district: string; postalCode: string; country?: string };
+  const dateStr = new Date(order.createdAt).toLocaleDateString('tr-TR', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+
+  return wrapTemplate(`
+    ${H1('Yeni sipariş alındı.')}
+    ${Lede('Aşağıda siparişin detayları yer alıyor. Hazırlığa hemen başlayabilirsiniz.')}
+
+    ${infoCard(`
+      <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%">
+        <tr>
+          <td class="stack-col" style="vertical-align:top;width:33%;padding-right:8px;">
+            <div style="font-size:11px;color:${BRAND.muted};letter-spacing:1.5px;text-transform:uppercase;font-weight:600;">Sipariş No</div>
+            <div style="font-size:15px;color:${BRAND.ink};font-weight:700;margin-top:4px;font-family:'Courier New',monospace;">#${escapeHtml(order.orderNumber)}</div>
+          </td>
+          <td class="stack-col" style="vertical-align:top;width:33%;padding-right:8px;">
+            <div style="font-size:11px;color:${BRAND.muted};letter-spacing:1.5px;text-transform:uppercase;font-weight:600;">Tarih</div>
+            <div style="font-size:13px;color:${BRAND.ink};font-weight:600;margin-top:4px;">${dateStr}</div>
+          </td>
+          <td class="stack-col" align="right" style="vertical-align:top;width:33%;">
+            <div style="font-size:11px;color:${BRAND.muted};letter-spacing:1.5px;text-transform:uppercase;font-weight:600;">Toplam</div>
+            <div style="font-size:18px;color:${BRAND.primaryDeep};font-weight:800;margin-top:4px;">${escapeHtml(order.total)}&nbsp;₺</div>
+          </td>
+        </tr>
+      </table>
+    `)}
+
+    ${sectionTitle('Müşteri')}
+    ${infoCard(`
+      <div style="font-size:14px;color:${BRAND.ink};font-weight:700;margin-bottom:6px;">${escapeHtml(order.customerName)}</div>
+      <div style="font-size:13px;color:${BRAND.body};line-height:1.6;"><a href="mailto:${escapeHtml(order.customerEmail)}" style="color:${BRAND.primaryDeep};text-decoration:none;">${escapeHtml(order.customerEmail)}</a></div>
+      <div style="font-size:13px;color:${BRAND.body};line-height:1.6;"><a href="tel:${escapeHtml(order.customerPhone)}" style="color:${BRAND.primaryDeep};text-decoration:none;">${escapeHtml(order.customerPhone)}</a></div>
+      ${HR()}
+      <div style="font-size:11px;color:${BRAND.muted};letter-spacing:1.5px;text-transform:uppercase;font-weight:600;margin:8px 0 4px 0;">Teslimat Adresi</div>
+      <div style="font-size:13px;color:${BRAND.body};line-height:1.6;">${escapeHtml(shippingAddress.address)}</div>
+      <div style="font-size:13px;color:${BRAND.body};line-height:1.6;">${escapeHtml(shippingAddress.district)}, ${escapeHtml(shippingAddress.city)} ${escapeHtml(shippingAddress.postalCode)}</div>
+    `)}
+
+    ${sectionTitle('Ürünler')}
+    <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="background-color:${BRAND.card};border:1px solid ${BRAND.borderSoft};border-collapse:collapse;margin-top:6px;">
+      <thead>
+        <tr style="background-color:${BRAND.ink};">
+          <th align="left" style="padding:11px 12px;color:${BRAND.primary};font-size:10px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;">Ürün</th>
+          <th align="left" style="padding:11px 12px;color:${BRAND.primary};font-size:10px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;">Varyant</th>
+          <th align="center" style="padding:11px 12px;color:${BRAND.primary};font-size:10px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;">Adet</th>
+          <th align="right" style="padding:11px 12px;color:${BRAND.primary};font-size:10px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;">Tutar</th>
+        </tr>
+      </thead>
+      <tbody>${itemRows}</tbody>
+    </table>
+
+    ${emailButton(`${CONTACT.siteUrl}/toov-admin`, 'Siparişi Yönet')}
+  `, { preheader: `Yeni sipariş #${order.orderNumber} — ${order.total} ₺`, title: `Yeni Sipariş #${order.orderNumber}` });
+}
+
 function passwordResetTemplate(userName: string, resetLink: string): string {
   return wrapTemplate(`
-    <div class="content">
-      <h1>Şifre Sıfırlama Talebi</h1>
-      <p>Merhaba ${userName},</p>
-      <p>Hesabınız için bir şifre sıfırlama talebi aldık. Şifrenizi sıfırlamak için aşağıdaki butona tıklayın.</p>
-      
-      <div style="text-align: center; margin: 30px 0;">
-        <a href="${resetLink}" class="btn">Şifremi Sıfırla</a>
+    ${H1('Şifre sıfırlama talebi.')}
+    ${P(`Merhaba ${escapeHtml(userName)},`)}
+    ${Lede('Hesabınız için bir şifre sıfırlama talebi aldık. Aşağıdaki butona tıklayarak yeni şifrenizi belirleyebilirsiniz.')}
+
+    ${emailButton(resetLink, 'Şifremi Sıfırla')}
+
+    ${infoCard(`
+      <div style="font-size:13px;color:${BRAND.body};line-height:1.6;">
+        <strong style="color:${BRAND.ink};">Not:</strong> Güvenliğiniz için bu bağlantı <strong style="color:${BRAND.ink};">1 saat</strong> içinde geçerliliğini yitirir.
       </div>
-      
-      <div class="info-box">
-        <p style="margin: 0; color: #71717a; font-size: 13px;">
-          <strong style="color: #ffffff;">Önemli:</strong> Bu link 1 saat içinde geçerliliğini yitirecektir.
-        </p>
-      </div>
-      
-      <p style="color: #71717a; font-size: 13px;">
-        Eğer bu talebi siz yapmadıysanız, bu e-postayı görmezden gelebilirsiniz. Hesabınız güvende.
-      </p>
-      
-      <p style="color: #71717a; font-size: 13px;">
-        Butona tıklayamıyorsanız, aşağıdaki linki tarayıcınıza kopyalayın:<br>
-        <span style="color: #a1a1aa; word-break: break-all;">${resetLink}</span>
-      </p>
-    </div>
-  `);
+    `)}
+
+    ${P('Bu talebi siz yapmadıysanız bu e-postayı yok sayabilirsiniz — hesabınız güvende.', BRAND.muted)}
+
+    <p style="margin:20px 0 0 0;font-family:Helvetica,Arial,sans-serif;color:${BRAND.muted};font-size:11px;line-height:1.6;word-break:break-all;">
+      Buton çalışmıyorsa aşağıdaki bağlantıyı tarayıcınıza kopyalayın:<br>
+      <a href="${resetLink}" style="color:${BRAND.primaryDeep};text-decoration:none;">${escapeHtml(resetLink)}</a>
+    </p>
+  `, { preheader: 'Şifrenizi sıfırlamak için bağlantı içeride.', title: 'Şifre Sıfırlama' });
 }
 
-// Review Request Template
 function reviewRequestTemplate(userName: string, orderNumber: string, products: string[]): string {
-  const productsList = products.map(p => `<li style="color: #a1a1aa; margin: 8px 0;">${p}</li>`).join('');
-  
+  const productsList = products.map(p => `
+    <tr>
+      <td style="padding:8px 0;font-family:Helvetica,Arial,sans-serif;color:${BRAND.body};font-size:13px;line-height:1.6;">
+        <span style="display:inline-block;width:5px;height:5px;background:${BRAND.primary};border-radius:50%;margin-right:10px;vertical-align:middle;"></span>
+        ${escapeHtml(p)}
+      </td>
+    </tr>
+  `).join('');
+
   return wrapTemplate(`
-    <div class="content">
-      <h1>Ürünlerimizi Değerlendirir misiniz?</h1>
-      <p>Merhaba ${userName},</p>
-      <p>#${orderNumber} numaralı siparişiniz teslim edildi. Deneyiminizi paylaşmanızı çok isteriz!</p>
-      
-      <div class="info-box">
-        <p style="margin: 0 0 10px 0; color: #71717a; font-size: 13px;">SİPARİŞİNİZDEKİ ÜRÜNLER</p>
-        <ul style="margin: 0; padding-left: 20px;">
-          ${productsList}
-        </ul>
-      </div>
-      
-      <p>Değerlendirmeleriniz, hem bize gelişmemiz için yardımcı oluyor hem de diğer müşterilerimize doğru seçim yapmalarında rehberlik ediyor.</p>
-      
-      <div style="text-align: center;">
-        <a href="https://polenstone.com.tr/profilim" class="btn">Değerlendirme Yap</a>
-      </div>
-      
-      <p style="text-align: center; color: #71717a; font-size: 13px;">
-        Geri bildiriminiz bizim için çok değerli!
-      </p>
-    </div>
-  `);
+    ${H1('Deneyiminizi paylaşır mısınız?')}
+    ${P(`Merhaba ${escapeHtml(userName)},`)}
+    ${Lede(`#${escapeHtml(orderNumber)} numaralı siparişiniz teslim edildi. Birkaç dakikanızı ayırıp ürünleri değerlendirirseniz hem bize yön verir hem de yeni müşterilere yardımcı olursunuz.`)}
+
+    ${infoCard(`
+      <div style="font-size:11px;color:${BRAND.muted};letter-spacing:1.5px;text-transform:uppercase;font-weight:600;margin-bottom:10px;">Siparişinizdeki ürünler</div>
+      <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%">${productsList}</table>
+    `)}
+
+    ${emailButton(`${CONTACT.siteUrl}/profilim`, 'Değerlendirme Yap')}
+
+    ${Small('Geri bildiriminiz bizim için çok değerli — teşekkürler.')}
+  `, { preheader: `#${orderNumber} teslim edildi — deneyiminizi paylaşır mısınız?`, title: 'Değerlendirme' });
 }
 
-// Abandoned Cart Reminder Template
 interface CartItem {
   productName: string;
   variantDetails?: string;
@@ -423,50 +569,55 @@ interface CartItem {
   imageUrl?: string;
 }
 
-function abandonedCartTemplate(userName: string, cartItems: CartItem[], cartTotal: number, siteUrl: string = 'https://polenstone.com.tr'): string {
-  const itemsHtml = cartItems.map(item => `
-    <div class="product-item">
-      <div class="product-info">
-        <p class="product-name">${item.productName}</p>
-        <p class="product-details">${item.variantDetails || ''} x ${item.quantity}</p>
-      </div>
-      <div class="product-price">${item.price}₺</div>
-    </div>
+function abandonedCartTemplate(userName: string, cartItems: CartItem[], cartTotal: number, siteUrl: string = CONTACT.siteUrl): string {
+  const itemRows = cartItems.map(item => `
+    <tr>
+      <td style="padding:12px 0;border-bottom:1px solid ${BRAND.borderSoft};vertical-align:top;">
+        <div style="font-family:Helvetica,Arial,sans-serif;color:${BRAND.ink};font-size:14px;font-weight:600;">${escapeHtml(item.productName)}</div>
+        <div style="font-family:Helvetica,Arial,sans-serif;color:${BRAND.muted};font-size:12px;margin-top:3px;">${escapeHtml(item.variantDetails || '')}${item.variantDetails ? ' · ' : ''}Adet: ${escapeHtml(item.quantity)}</div>
+      </td>
+      <td align="right" style="padding:12px 0;border-bottom:1px solid ${BRAND.borderSoft};vertical-align:top;font-family:Helvetica,Arial,sans-serif;color:${BRAND.ink};font-size:14px;font-weight:700;white-space:nowrap;">${escapeHtml(item.price)}&nbsp;₺</td>
+    </tr>
   `).join('');
-  
+
+  const remaining = Math.max(0, 2500 - cartTotal);
+
   return wrapTemplate(`
-    <div class="content">
-      <h1>Sepetiniz Sizi Bekliyor!</h1>
-      <p>Merhaba ${userName},</p>
-      <p>Sepetinizde harika ürünler var! Siparişinizi tamamlamayı mı unuttunuz?</p>
-      
-      <div class="info-box">
-        <p style="margin: 0 0 15px 0; color: #71717a; font-size: 13px; text-transform: uppercase;">SEPETİNİZDEKİ ÜRÜNLER</p>
-        ${itemsHtml}
-        <div class="divider"></div>
-        <div class="total-row grand-total">
-          <span class="total-label">Toplam</span>
-          <span class="total-value">${cartTotal.toFixed(2)}₺</span>
-        </div>
-      </div>
-      
-      <div style="text-align: center; margin: 30px 0;">
-        <a href="${siteUrl}/sepet" class="btn">Sepetime Git</a>
-      </div>
-      
-      <div class="info-box" style="background: linear-gradient(135deg, #262626 0%, #1f1f1f 100%);">
-        <p style="margin: 0; text-align: center;">
-          <span style="color: #22c55e; font-weight: 600;">2500₺ ve üzeri</span>
-          <span style="color: #a1a1aa;"> siparişlerde </span>
-          <span style="color: #22c55e; font-weight: 600;">kargo ücretsiz!</span>
-        </p>
-      </div>
-      
-      <p style="text-align: center; color: #71717a; font-size: 13px; margin-top: 20px;">
-        Stoklar sınırlı! Favori ürünlerinizi kaçırmayın.
-      </p>
-    </div>
-  `);
+    ${H1('Sepetiniz sizi bekliyor.')}
+    ${P(`Merhaba ${escapeHtml(userName)},`)}
+    ${Lede('Beğendiğiniz ürünleri sepete eklediniz ama henüz tamamlamadınız. Stoklar sınırlı — favorilerinizi kaçırmayın.')}
+
+    ${infoCard(`
+      <div style="font-size:11px;color:${BRAND.muted};letter-spacing:1.5px;text-transform:uppercase;font-weight:600;margin-bottom:6px;">Sepetinizdeki ürünler</div>
+      <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%">${itemRows}</table>
+      <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="margin-top:14px;">
+        <tr>
+          <td style="padding-top:10px;border-top:2px solid ${BRAND.ink};font-family:Helvetica,Arial,sans-serif;color:${BRAND.ink};font-size:14px;font-weight:700;">Toplam</td>
+          <td align="right" style="padding-top:10px;border-top:2px solid ${BRAND.ink};font-family:Helvetica,Arial,sans-serif;color:${BRAND.ink};font-size:18px;font-weight:800;white-space:nowrap;">${cartTotal.toLocaleString('tr-TR', { minimumFractionDigits: 2 })}&nbsp;₺</td>
+        </tr>
+      </table>
+    `)}
+
+    ${emailButton(`${siteUrl}/sepet`, 'Sepetime Dön')}
+
+    ${remaining > 0 ? `
+    <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="background-color:${BRAND.primary};margin:18px 0;">
+      <tr>
+        <td align="center" style="padding:18px 24px;font-family:Helvetica,Arial,sans-serif;color:${BRAND.ink};font-size:14px;font-weight:600;">
+          <strong>${remaining.toLocaleString('tr-TR')} ₺</strong> daha ekleyin, kargo bizden!
+        </td>
+      </tr>
+    </table>` : `
+    <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="background-color:${BRAND.primary};margin:18px 0;">
+      <tr>
+        <td align="center" style="padding:18px 24px;font-family:Helvetica,Arial,sans-serif;color:${BRAND.ink};font-size:14px;font-weight:600;">
+          Tebrikler — kargoya hak kazandınız!
+        </td>
+      </tr>
+    </table>`}
+
+    ${Small('Sorularınız için bize yazın, yardımcı olalım.')}
+  `, { preheader: `Sepetinizde ${cartItems.length} ürün bekliyor — toplam ${cartTotal.toLocaleString('tr-TR')} ₺`, title: 'Sepetiniz' });
 }
 
 // Email sending functions
@@ -677,14 +828,15 @@ export async function sendTestEmail(toEmail: string): Promise<EmailResult> {
       to: toEmail,
       subject: 'Polen Stone - Test E-postası',
       html: wrapTemplate(`
-        <div class="content">
-          <h1>Test E-postası</h1>
-          <p>Bu bir test e-postasıdır. SMTP ayarlarınız başarıyla yapılandırıldı!</p>
-          <div class="info-box">
-            <p style="margin: 0; color: #22c55e;">E-posta sistemi çalışıyor.</p>
+        ${H1('Test e-postası.')}
+        ${Lede('Bu bir test e-postasıdır. SMTP ayarlarınız başarıyla yapılandırıldı.')}
+        ${infoCard(`
+          <div style="font-family:Helvetica,Arial,sans-serif;color:${BRAND.ink};font-size:14px;font-weight:600;">
+            <span style="display:inline-block;width:8px;height:8px;background:${BRAND.primary};border-radius:50%;margin-right:10px;vertical-align:middle;"></span>
+            E-posta sistemi çalışıyor.
           </div>
-        </div>
-      `),
+        `)}
+      `, { preheader: 'SMTP test e-postası — sistem çalışıyor', title: 'Test E-postası' }),
     });
     
     console.log(`[Email] Test email sent to ${toEmail}`);
@@ -737,51 +889,52 @@ interface QuoteEmailData {
 }
 
 function quoteEmailTemplate(data: QuoteEmailData): string {
-  const validUntilText = data.validUntil 
+  const validUntilText = data.validUntil
     ? new Date(data.validUntil).toLocaleDateString('tr-TR', { day: 'numeric', month: 'long', year: 'numeric' })
     : 'Belirtilmemiş';
-  
+  const grandTotalFormatted = parseFloat(data.grandTotal).toLocaleString('tr-TR', { minimumFractionDigits: 2 });
+  const recipient = escapeHtml(data.contactPerson || data.dealerName);
+
   return wrapTemplate(`
-    <div class="content">
-      <h1>Teklif Gönderildi</h1>
-      <p>Sayın ${data.contactPerson || data.dealerName},</p>
-      <p>Size özel hazırladığımız teklifi ekte bulabilirsiniz. Teklif detaylarını incelemeniz için PDF dosyası e-postaya eklenmiştir.</p>
-      
-      <div class="info-box">
-        <div style="display: flex; justify-content: space-between; flex-wrap: wrap; gap: 15px;">
-          <div>
-            <p class="info-label">Teklif No</p>
-            <p class="info-value">${data.quoteNumber}</p>
-          </div>
-          <div>
-            <p class="info-label">Geçerlilik Tarihi</p>
-            <p class="info-value">${validUntilText}</p>
-          </div>
-          <div>
-            <p class="info-label">Toplam Tutar</p>
-            <p class="info-value" style="font-size: 18px; color: #22c55e;">${parseFloat(data.grandTotal).toLocaleString('tr-TR', { minimumFractionDigits: 2 })} TL</p>
-          </div>
-        </div>
-      </div>
-      
-      <div class="info-box" style="background: linear-gradient(135deg, #262626 0%, #1f1f1f 100%); text-align: center;">
-        <p style="margin: 0; color: #a1a1aa;">Bu teklifte</p>
-        <p style="margin: 10px 0; font-size: 24px; color: #ffffff; font-weight: bold;">${data.itemCount} ürün</p>
-        <p style="margin: 0; color: #a1a1aa;">bulunmaktadır</p>
-      </div>
-      
-      <p>Teklif hakkında herhangi bir sorunuz varsa veya değişiklik talep etmek isterseniz, lütfen bizimle iletişime geçmekten çekinmeyin.</p>
-      
-      <div style="text-align: center; margin: 30px 0;">
-        <a href="https://polenstone.com.tr" class="btn">Web Sitemizi Ziyaret Edin</a>
-      </div>
-      
-      <p style="text-align: center; color: #71717a; font-size: 13px;">
-        Bizi tercih ettiğiniz için teşekkür ederiz.<br>
-        Polen Stone Ekibi
-      </p>
-    </div>
-  `);
+    ${H1('Teklifiniz hazır.')}
+    ${P(`Sayın ${recipient},`)}
+    ${Lede('Size özel hazırladığımız teklifi e-postanın ekinde PDF olarak bulabilirsiniz. Aşağıda özet bilgileri yer alıyor.')}
+
+    ${infoCard(`
+      <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%">
+        <tr>
+          <td class="stack-col" style="vertical-align:top;width:50%;padding-bottom:14px;">
+            <div style="font-size:11px;color:${BRAND.muted};letter-spacing:1.5px;text-transform:uppercase;font-weight:600;">Teklif No</div>
+            <div style="font-size:16px;color:${BRAND.ink};font-weight:700;margin-top:4px;font-family:'Courier New',monospace;">${escapeHtml(data.quoteNumber)}</div>
+          </td>
+          <td class="stack-col" align="right" style="vertical-align:top;width:50%;padding-bottom:14px;">
+            <div style="font-size:11px;color:${BRAND.muted};letter-spacing:1.5px;text-transform:uppercase;font-weight:600;">Geçerlilik</div>
+            <div style="font-size:14px;color:${BRAND.ink};font-weight:600;margin-top:4px;">${escapeHtml(validUntilText)}</div>
+          </td>
+        </tr>
+        <tr>
+          <td colspan="2" style="border-top:1px solid ${BRAND.borderSoft};padding-top:14px;">
+            <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%">
+              <tr>
+                <td style="font-size:11px;color:${BRAND.muted};letter-spacing:1.5px;text-transform:uppercase;font-weight:600;">Ürün Adedi</td>
+                <td align="right" style="font-size:14px;color:${BRAND.ink};font-weight:700;">${escapeHtml(data.itemCount)} ürün</td>
+              </tr>
+              <tr>
+                <td style="padding-top:10px;font-size:13px;color:${BRAND.body};font-weight:600;">Toplam Tutar</td>
+                <td align="right" style="padding-top:10px;font-size:20px;color:${BRAND.primaryDeep};font-weight:800;">${grandTotalFormatted}&nbsp;TL</td>
+              </tr>
+            </table>
+          </td>
+        </tr>
+      </table>
+    `)}
+
+    ${P('Teklif hakkında sorunuz varsa veya değişiklik talep etmek isterseniz lütfen bizimle iletişime geçin.')}
+
+    ${emailButton(CONTACT.siteUrl, 'Web Sitemizi Ziyaret Edin')}
+
+    ${Small('Bizi tercih ettiğiniz için teşekkür ederiz — Polen Stone Ekibi')}
+  `, { preheader: `Teklif ${data.quoteNumber} hazır — toplam ${grandTotalFormatted} TL`, title: `Teklif ${data.quoteNumber}` });
 }
 
 export async function sendQuoteEmail(
