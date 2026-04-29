@@ -1,6 +1,7 @@
 import nodemailer from 'nodemailer';
 import { storage } from './storage';
 import type { Order, OrderItem, User } from '@shared/schema';
+import { BANK_TRANSFER_INFO } from '@shared/bankInfo';
 
 interface SmtpConfig {
   host: string;
@@ -504,7 +505,7 @@ function bankTransferPendingTemplate(order: Order, items: OrderItemForEmail[], s
 
   return wrapTemplate(`
     ${H1('Havalenizi bekliyoruz.')}
-    ${Lede(`Teşekkürler ${escapeHtml(order.customerName)} — siparişiniz oluşturuldu. Aşağıdaki ENPARA hesabımıza ödemenizi gönderdiğinizde sipariş hazırlığa alınacak.`)}
+    ${Lede(`Teşekkürler ${escapeHtml(order.customerName)} — siparişiniz oluşturuldu. Aşağıdaki ${BANK_TRANSFER_INFO.bankName} hesabımıza ödemenizi gönderdiğinizde sipariş hazırlığa alınacak.`)}
 
     ${infoCard(`
       <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%">
@@ -535,15 +536,15 @@ function bankTransferPendingTemplate(order: Order, items: OrderItemForEmail[], s
       <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%">
         <tr>
           <td style="padding:6px 0;font-size:12px;color:${BRAND.muted};letter-spacing:1.2px;text-transform:uppercase;font-weight:600;width:38%;">Banka</td>
-          <td style="padding:6px 0;font-size:14px;color:${BRAND.ink};font-weight:700;">ENPARA (QNB Finansbank)</td>
+          <td style="padding:6px 0;font-size:14px;color:${BRAND.ink};font-weight:700;">${BANK_TRANSFER_INFO.bankName}</td>
         </tr>
         <tr>
           <td style="padding:6px 0;font-size:12px;color:${BRAND.muted};letter-spacing:1.2px;text-transform:uppercase;font-weight:600;">Ad Soyad</td>
-          <td style="padding:6px 0;font-size:14px;color:${BRAND.ink};font-weight:700;">Salih Kapıcıoğlu</td>
+          <td style="padding:6px 0;font-size:14px;color:${BRAND.ink};font-weight:700;">${BANK_TRANSFER_INFO.accountHolder}</td>
         </tr>
         <tr>
           <td style="padding:6px 0;font-size:12px;color:${BRAND.muted};letter-spacing:1.2px;text-transform:uppercase;font-weight:600;">IBAN</td>
-          <td style="padding:6px 0;font-size:14px;color:${BRAND.ink};font-weight:700;font-family:'Courier New',monospace;letter-spacing:0.5px;">TR28 0015 7000 0000 0149 6995 20</td>
+          <td style="padding:6px 0;font-size:14px;color:${BRAND.ink};font-weight:700;font-family:'Courier New',monospace;letter-spacing:0.5px;">${BANK_TRANSFER_INFO.iban}</td>
         </tr>
         <tr>
           <td style="padding:6px 0;font-size:12px;color:${BRAND.muted};letter-spacing:1.2px;text-transform:uppercase;font-weight:600;">Tutar</td>

@@ -2180,7 +2180,7 @@ export async function registerRoutes(
           const nameParts = customerName.trim().split(/\s+/);
           await storage.createUser({
             email: customerEmail,
-            passwordHash: accountPasswordHash,
+            password: accountPasswordHash,
             firstName: nameParts[0] || customerName,
             lastName: nameParts.length > 1 ? nameParts.slice(1).join(' ') : '',
             phone: customerPhone,
