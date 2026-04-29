@@ -66,6 +66,7 @@ export default function Checkout() {
   
   // iyzico Checkout Form State
   const [checkoutFormContent, setCheckoutFormContent] = useState<string | null>(null);
+  const [paymentPageUrl, setPaymentPageUrl] = useState<string | null>(null);
   const [merchantOid, setMerchantOid] = useState<string | null>(null);
   const [paymentLoading, setPaymentLoading] = useState(false);
   const [paymentError, setPaymentError] = useState<string | null>(null);
@@ -353,13 +354,8 @@ export default function Checkout() {
         throw new Error(data.error || 'Ödeme başlatılamadı');
       }
 
-      // Fallback: if iyzico returned a hosted payment page URL but no inline content,
-      // (or content fails to render due to CSP/blockers) navigate the browser to it.
-      if (!data.checkoutFormContent && data.paymentPageUrl) {
-        window.location.href = data.paymentPageUrl;
-        return;
-      }
-
+      // Prefer iyzico hosted page in iframe (most reliable). Fallback to inline content.
+      setPaymentPageUrl(data.paymentPageUrl || null);
       setCheckoutFormContent(data.checkoutFormContent || null);
       setMerchantOid(data.merchantOid);
       setSavedOrderTotal(total);
@@ -405,16 +401,16 @@ export default function Checkout() {
     }
   }, [merchantOid, clearCart]);
 
-  // Poll for payment status when on step 3
+  // Poll for payment status when on step 3 (works for both iframe and inline modes)
   useEffect(() => {
-    if (currentStep === 3 && merchantOid && checkoutFormContent) {
+    if (currentStep === 3 && merchantOid && (paymentPageUrl || checkoutFormContent)) {
       const interval = setInterval(() => {
         checkPaymentStatus();
       }, 3000); // Check every 3 seconds
 
       return () => clearInterval(interval);
     }
-  }, [currentStep, merchantOid, checkoutFormContent, checkPaymentStatus]);
+  }, [currentStep, merchantOid, paymentPageUrl, checkoutFormContent, checkPaymentStatus]);
 
   // Inject iyzico Checkout Form HTML/JS into the DOM when received.
   // iyzico's bundle.js looks for a div with id="iyzipay-checkout-form" and
@@ -1075,7 +1071,51 @@ export default function Checkout() {
                         </div>
                       )}
 
-                      {checkoutFormContent ? (
+                      {paymentPageUrl ? (
+                        <div className="space-y-4">
+                          <div className="bg-white border border-black/8 rounded-none overflow-hidden">
+                            <iframe
+                              src={paymentPageUrl}
+                              title="iyzico Güvenli Ödeme"
+                              className="w-full"
+                              style={{ minHeight: '720px', border: 0 }}
+                              allow="payment *"
+                              data-testid="iyzico-payment-iframe"
+                            />
+                          </div>
+
+                          <div className="flex items-center justify-between gap-3 text-xs">
+                            <div className="flex items-center gap-2 text-black/60">
+                              <Lock className="w-3.5 h-3.5" />
+                              <span>256-bit SSL · iyzico güvencesiyle</span>
+                            </div>
+                            <a
+                              href={paymentPageUrl}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-black/70 hover:text-black underline underline-offset-2"
+                              data-testid="link-iyzico-newtab"
+                            >
+                              Yeni sekmede aç →
+                            </a>
+                          </div>
+
+                          <Button
+                            type="button"
+                            variant="outline"
+                            onClick={() => {
+                              setCheckoutFormContent(null);
+                              setPaymentPageUrl(null);
+                              setMerchantOid(null);
+                              setPaymentError(null);
+                              setCurrentStep(2);
+                            }}
+                            className="w-full h-12 border-black/15 hover:bg-black/4 text-black rounded-none"
+                          >
+                            Bilgilerimi Düzenle
+                          </Button>
+                        </div>
+                      ) : checkoutFormContent ? (
                         <div className="space-y-4">
                           <div
                             ref={checkoutFormRef}
@@ -1101,6 +1141,7 @@ export default function Checkout() {
                             variant="outline"
                             onClick={() => {
                               setCheckoutFormContent(null);
+                              setPaymentPageUrl(null);
                               setMerchantOid(null);
                               setPaymentError(null);
                               setCurrentStep(2);
