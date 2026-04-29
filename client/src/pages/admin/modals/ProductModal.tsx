@@ -23,8 +23,6 @@ import {
   StatusBadge,
 } from '../_ui/AdminUI';
 
-const ALL_SIZES = ['S', 'M', 'L', 'XL', 'XXL', '2XL', '3XL'];
-
 // Türkçe-uyumlu büyük harf dönüşümü: i → İ, ı → I, vs.
 function toTurkishUpper(value: string): string {
   return value.toLocaleUpperCase('tr-TR');
@@ -77,7 +75,6 @@ export default function ProductModal({
     categoryIds:
       product?.categoryIds || (product?.categoryId ? [product.categoryId] : ([] as string[])),
     images: product?.images || ([] as string[]),
-    availableSizes: product?.availableSizes || [],
     availableColors: product?.availableColors || [],
     isActive: product?.isActive ?? true,
     isFeatured: product?.isFeatured ?? false,
@@ -91,7 +88,6 @@ export default function ProductModal({
   const [dragOver, setDragOver] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
 
-  const [previewSize, setPreviewSize] = useState<string | null>(formData.availableSizes[0] || null);
   const [colorInput, setColorInput] = useState<string>(
     formData.availableColors[0]?.name ? toTurkishUpper(formData.availableColors[0].name) : '',
   );
@@ -117,7 +113,6 @@ export default function ProductModal({
       categoryIds:
         product?.categoryIds || (product?.categoryId ? [product.categoryId] : ([] as string[])),
       images: product?.images || ([] as string[]),
-      availableSizes: product?.availableSizes || [],
       availableColors: product?.availableColors || [],
       isActive: product?.isActive ?? true,
       isFeatured: product?.isFeatured ?? false,
@@ -138,19 +133,6 @@ export default function ProductModal({
   const regenerateSlug = () => {
     setFormData((prev) => ({ ...prev, slug: generateSlug(prev.name) }));
   };
-
-  const toggleSize = (size: string) => {
-    setFormData((prev) => {
-      const isRemoving = prev.availableSizes.includes(size);
-      const newSizes = isRemoving
-        ? prev.availableSizes.filter((s) => s !== size)
-        : [...prev.availableSizes, size];
-      if (isRemoving && previewSize === size) setPreviewSize(newSizes[0] || null);
-      else if (!isRemoving && newSizes.length === 1) setPreviewSize(size);
-      return { ...prev, availableSizes: newSizes };
-    });
-  };
-
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files) {
@@ -551,48 +533,24 @@ export default function ProductModal({
             )}
           </section>
 
-          {/* Section 4 — Varyantlar */}
+          {/* Section 4 — Renk / Taş Tonu */}
           <section>
             <SectionHeading
               number={4}
-              title="Varyantlar"
-              description="Mevcut beden ve renk seçeneklerini işaretleyin."
+              title="Taş Tonu / Renk"
+              description="Ürünün taş tonunu belirtin (opsiyonel)."
             />
-            <FormField label="Bedenler">
-              <div className="flex flex-wrap gap-1.5">
-                {ALL_SIZES.map((size) => {
-                  const selected = formData.availableSizes.includes(size);
-                  return (
-                    <button
-                      key={size}
-                      type="button"
-                      onClick={() => toggleSize(size)}
-                      className={`min-w-[44px] h-8 px-3 rounded-md text-[12px] font-medium transition-colors border ${
-                        selected
-                          ? 'bg-neutral-900 text-white border-neutral-900'
-                          : 'bg-white text-neutral-700 border-neutral-200 hover:bg-neutral-50'
-                      }`}
-                      data-testid={`button-size-${size}`}
-                    >
-                      {size}
-                    </button>
-                  );
-                })}
-              </div>
+            <FormField label="Renk (otomatik büyük harf)">
+              <TextInput
+                value={colorInput}
+                onChange={(e) => setColorInput(toTurkishUpper(e.target.value))}
+                placeholder="Örn. BEYAZ MERMER, SİYAH ABSOLUTE, BEJ TRAVERTEN"
+                data-testid="input-product-color"
+              />
+              <p className="mt-1 text-[11px] text-neutral-500">
+                Boş bırakılırsa renksiz tek varyant oluşturulur.
+              </p>
             </FormField>
-            <div className="mt-3">
-              <FormField label="Renk (otomatik büyük harf)">
-                <TextInput
-                  value={colorInput}
-                  onChange={(e) => setColorInput(toTurkishUpper(e.target.value))}
-                  placeholder="Örn. BEYAZ MERMER, SİYAH ABSOLUTE, BEJ TRAVERTEN"
-                  data-testid="input-product-color"
-                />
-                <p className="mt-1 text-[11px] text-neutral-500">
-                  Her renk ayrı bir ürün olarak yönetilir. Boş bırakılırsa renk kaydedilmez.
-                </p>
-              </FormField>
-            </div>
           </section>
 
           {/* Section 5 — Fiyat & Stok */}
@@ -603,7 +561,7 @@ export default function ProductModal({
               description={
                 product?.id
                   ? 'Stok bilgileri varyant yönetiminden ayarlanır.'
-                  : 'Yeni ürün oluştururken tüm varyantlar için başlangıç stoğu girebilirsiniz.'
+                  : 'Yeni ürün için başlangıç stok miktarını girin.'
               }
             />
             <div className={`grid grid-cols-1 sm:${product?.id ? 'grid-cols-1' : 'grid-cols-2'} gap-3`}>
@@ -620,7 +578,7 @@ export default function ProductModal({
               {!product?.id && (
                 <FormField
                   label="Başlangıç Stoğu"
-                  hint="Tüm beden/renk kombinasyonlarına uygulanır."
+                  hint="Bu değer otomatik oluşturulan varyanta atanır."
                 >
                   <TextInput
                     type="number"
@@ -770,38 +728,6 @@ export default function ProductModal({
                       {toTurkishUpper(colorInput.trim())}
                     </span>
                   </p>
-                </div>
-              )}
-
-              {formData.availableSizes.length > 0 && (
-                <div>
-                  <p className="text-[12px] text-neutral-500 mb-1.5">
-                    Beden:{' '}
-                    <span className="text-neutral-900">
-                      {previewSize || formData.availableSizes[0]}
-                    </span>
-                  </p>
-                  <div className="flex flex-wrap gap-1.5">
-                    {formData.availableSizes.map((size) => {
-                      const isSelected =
-                        previewSize === size ||
-                        (!previewSize && size === formData.availableSizes[0]);
-                      return (
-                        <button
-                          key={size}
-                          type="button"
-                          onClick={() => setPreviewSize(size)}
-                          className={`min-w-[44px] h-9 px-3 rounded-md text-[12px] font-medium transition-all border ${
-                            isSelected
-                              ? 'bg-neutral-900 text-white border-neutral-900'
-                              : 'bg-white text-neutral-700 border-neutral-200 hover:bg-neutral-50'
-                          }`}
-                        >
-                          {size}
-                        </button>
-                      );
-                    })}
-                  </div>
                 </div>
               )}
 

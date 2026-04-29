@@ -1200,44 +1200,63 @@ export async function registerRoutes(
         await storage.setProductCategories(product.id, [product.categoryId]);
       }
       
-      // Auto-create variants for all size/color combinations
+      // Auto-create variants — bedensiz mantık (Polen Stone: ev ürünleri)
       const sizes = product.availableSizes || [];
       const colors = product.availableColors || [];
       const baseSku = product.sku || '';
       const stockValue = initialStock ? parseInt(initialStock, 10) : 0;
-      
-      if (sizes.length > 0) {
-        if (colors.length > 0) {
-          // Create variant for each size/color combination
-          for (const size of sizes) {
-            for (const color of colors as Array<{name: string, hex: string}>) {
-              const variantSku = baseSku ? `${baseSku}-${size}` : null;
-              await storage.createProductVariant({
-                productId: product.id,
-                size: size,
-                color: color.name,
-                sku: variantSku,
-                stock: stockValue,
-                price: product.basePrice,
-              });
-            }
-          }
-        } else {
-          // Create variant for each size only (no color)
-          for (const size of sizes) {
+
+      if (sizes.length > 0 && colors.length > 0) {
+        // Eski mantık: hem beden hem renk varsa kombinasyon
+        for (const size of sizes) {
+          for (const color of colors as Array<{name: string, hex: string}>) {
             const variantSku = baseSku ? `${baseSku}-${size}` : null;
             await storage.createProductVariant({
               productId: product.id,
-              size: size,
-              color: null,
+              size,
+              color: color.name,
               sku: variantSku,
               stock: stockValue,
               price: product.basePrice,
             });
           }
         }
+      } else if (sizes.length > 0) {
+        for (const size of sizes) {
+          const variantSku = baseSku ? `${baseSku}-${size}` : null;
+          await storage.createProductVariant({
+            productId: product.id,
+            size,
+            color: null,
+            sku: variantSku,
+            stock: stockValue,
+            price: product.basePrice,
+          });
+        }
+      } else if (colors.length > 0) {
+        // Bedensiz, sadece renk(ler): her renk için bir varyant
+        for (const color of colors as Array<{name: string, hex: string}>) {
+          await storage.createProductVariant({
+            productId: product.id,
+            size: null,
+            color: color.name,
+            sku: baseSku || null,
+            stock: stockValue,
+            price: product.basePrice,
+          });
+        }
+      } else {
+        // Bedensiz ve renksiz: tek default varyant (stok yönetimine gözüksün diye)
+        await storage.createProductVariant({
+          productId: product.id,
+          size: null,
+          color: null,
+          sku: baseSku || null,
+          stock: stockValue,
+          price: product.basePrice,
+        });
       }
-      
+
       // Return product with categoryIds
       const productCategoryIds = await storage.getProductCategoryIds(product.id);
       res.status(201).json({ ...product, categoryIds: productCategoryIds });
@@ -1256,52 +1275,70 @@ export async function registerRoutes(
         return res.status(404).json({ error: "Product not found" });
       }
       
-      // Auto-create missing variants for new size/color combinations
+      // Auto-create missing variants
       const sizes = product.availableSizes || [];
       const colors = product.availableColors || [];
       const baseSku = product.sku || '';
       const existingVariants = await storage.getProductVariants(product.id);
-      
-      if (sizes.length > 0) {
-        if (colors.length > 0) {
-          // Create variant for each size/color combination
-          for (const size of sizes) {
-            for (const color of colors as Array<{name: string, hex: string}>) {
-              const exists = existingVariants.some(v => v.size === size && v.color === color.name);
-              if (!exists) {
-                const variantSku = baseSku ? `${baseSku}-${size}` : null;
-                await storage.createProductVariant({
-                  productId: product.id,
-                  size: size,
-                  color: color.name,
-                  sku: variantSku,
-                  stock: 0,
-                  price: product.basePrice,
-                });
-                console.log(`Created missing variant: ${size} / ${color.name} for product ${product.id}`);
-              }
-            }
-          }
-        } else {
-          // Create variant for each size only (no color)
-          for (const size of sizes) {
-            const exists = existingVariants.some(v => v.size === size && !v.color);
+
+      if (sizes.length > 0 && colors.length > 0) {
+        for (const size of sizes) {
+          for (const color of colors as Array<{name: string, hex: string}>) {
+            const exists = existingVariants.some(v => v.size === size && v.color === color.name);
             if (!exists) {
               const variantSku = baseSku ? `${baseSku}-${size}` : null;
               await storage.createProductVariant({
                 productId: product.id,
-                size: size,
-                color: null,
+                size,
+                color: color.name,
                 sku: variantSku,
                 stock: 0,
                 price: product.basePrice,
               });
-              console.log(`Created missing variant: ${size} for product ${product.id}`);
             }
           }
         }
+      } else if (sizes.length > 0) {
+        for (const size of sizes) {
+          const exists = existingVariants.some(v => v.size === size && !v.color);
+          if (!exists) {
+            const variantSku = baseSku ? `${baseSku}-${size}` : null;
+            await storage.createProductVariant({
+              productId: product.id,
+              size,
+              color: null,
+              sku: variantSku,
+              stock: 0,
+              price: product.basePrice,
+            });
+          }
+        }
+      } else if (colors.length > 0) {
+        for (const color of colors as Array<{name: string, hex: string}>) {
+          const exists = existingVariants.some(v => !v.size && v.color === color.name);
+          if (!exists) {
+            await storage.createProductVariant({
+              productId: product.id,
+              size: null,
+              color: color.name,
+              sku: baseSku || null,
+              stock: 0,
+              price: product.basePrice,
+            });
+          }
+        }
+      } else if (existingVariants.length === 0) {
+        // Hiç varyant yoksa default tek varyant oluştur (stok yönetimi için)
+        await storage.createProductVariant({
+          productId: product.id,
+          size: null,
+          color: null,
+          sku: baseSku || null,
+          stock: 0,
+          price: product.basePrice,
+        });
       }
-      
+
       // Update product categories (multi-category support)
       if (categoryIds && Array.isArray(categoryIds)) {
         await storage.setProductCategories(product.id, categoryIds);
