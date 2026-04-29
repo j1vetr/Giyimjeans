@@ -1086,6 +1086,10 @@ export async function registerRoutes(
         status: order.status,
         customerName: order.customerName,
         createdAt: order.createdAt,
+        processingAt: order.processingAt,
+        shippedAt: order.shippedAt,
+        deliveredAt: order.deliveredAt,
+        cancelledAt: order.cancelledAt,
         total: order.total,
         shippingCost: order.shippingCost,
         trackingNumber: order.trackingNumber,
@@ -2699,7 +2703,22 @@ export async function registerRoutes(
           trackingUrl: dhlTrackingUrl,
         };
       }
-      
+
+      // Stamp the timestamp for this status transition (only set if not already set)
+      const now = new Date();
+      const existingOrder = await storage.getOrder(req.params.id);
+      if (existingOrder) {
+        if (status === 'processing' && !existingOrder.processingAt) {
+          updateData.processingAt = now;
+        } else if (status === 'shipped' && !existingOrder.shippedAt) {
+          updateData.shippedAt = now;
+        } else if ((status === 'delivered' || status === 'completed') && !existingOrder.deliveredAt) {
+          updateData.deliveredAt = now;
+        } else if ((status === 'cancelled' || status === 'refunded') && !existingOrder.cancelledAt) {
+          updateData.cancelledAt = now;
+        }
+      }
+
       const order = await storage.updateOrder(req.params.id, updateData);
       if (!order) {
         return res.status(404).json({ error: "Order not found" });
@@ -3748,7 +3767,8 @@ export async function registerRoutes(
       // Update order status to cancelled
       const updatedOrder = await storage.updateOrder(req.params.id, { 
         status: 'cancelled',
-        paymentStatus: 'refunded'
+        paymentStatus: 'refunded',
+        cancelledAt: order.cancelledAt || new Date(),
       });
 
       // Add cancellation note

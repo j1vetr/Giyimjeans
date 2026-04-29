@@ -211,6 +211,10 @@ export const orders = pgTable("orders", {
   trackingUrl: text("tracking_url"),
   shippingCarrier: text("shipping_carrier"),
   invoiceUrl: text("invoice_url"),
+  processingAt: timestamp("processing_at"),
+  shippedAt: timestamp("shipped_at"),
+  deliveredAt: timestamp("delivered_at"),
+  cancelledAt: timestamp("cancelled_at"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });

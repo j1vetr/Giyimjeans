@@ -31,6 +31,10 @@ interface OrderDetail {
   status: string;
   customerName: string;
   createdAt: string;
+  processingAt?: string | null;
+  shippedAt?: string | null;
+  deliveredAt?: string | null;
+  cancelledAt?: string | null;
   total: string;
   shippingCost: string;
   trackingNumber?: string;
@@ -51,6 +55,42 @@ interface OrderDetail {
   }>;
 }
 
+function formatStepDate(iso: string | null | undefined): {
+  relative: string;
+  absolute: string;
+} | null {
+  if (!iso) return null;
+  const date = new Date(iso);
+  if (Number.isNaN(date.getTime())) return null;
+  const now = new Date();
+  const diffMs = now.getTime() - date.getTime();
+  const diffMin = Math.floor(diffMs / 60_000);
+  const diffHour = Math.floor(diffMs / 3_600_000);
+  const diffDay = Math.floor(diffMs / 86_400_000);
+
+  let relative: string;
+  if (diffMin < 1) relative = 'Az önce';
+  else if (diffMin < 60) relative = `${diffMin} dakika önce`;
+  else if (diffHour < 24) relative = `${diffHour} saat önce`;
+  else if (diffDay === 1) relative = 'Dün';
+  else if (diffDay < 7) relative = `${diffDay} gün önce`;
+  else
+    relative = date.toLocaleDateString('tr-TR', {
+      day: 'numeric',
+      month: 'long',
+    });
+
+  const absolute = date.toLocaleDateString('tr-TR', {
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+  });
+
+  return { relative, absolute };
+}
+
 const statusConfig: Record<
   string,
   {
@@ -64,6 +104,12 @@ const statusConfig: Record<
     label: 'Beklemede',
     icon: Clock,
     description: 'Siparişiniz onay bekliyor',
+    step: 1,
+  },
+  confirmed: {
+    label: 'Onaylandı',
+    icon: CheckCircle2,
+    description: 'Siparişiniz onaylandı',
     step: 1,
   },
   processing: {
@@ -84,6 +130,12 @@ const statusConfig: Record<
     description: 'Siparişiniz teslim edildi',
     step: 4,
   },
+  delivered: {
+    label: 'Teslim Edildi',
+    icon: CheckCircle2,
+    description: 'Siparişiniz teslim edildi',
+    step: 4,
+  },
   cancelled: {
     label: 'İptal Edildi',
     icon: XCircle,
@@ -92,11 +144,18 @@ const statusConfig: Record<
   },
 };
 
-const steps = [
-  { id: 1, label: 'Onaylandı', icon: CheckCircle2 },
-  { id: 2, label: 'Hazırlanıyor', icon: Package },
-  { id: 3, label: 'Kargoda', icon: Truck },
-  { id: 4, label: 'Teslim Edildi', icon: Home },
+type StepDateKey = 'createdAt' | 'processingAt' | 'shippedAt' | 'deliveredAt';
+
+const steps: Array<{
+  id: number;
+  label: string;
+  icon: React.ElementType;
+  dateKey: StepDateKey;
+}> = [
+  { id: 1, label: 'Onaylandı', icon: CheckCircle2, dateKey: 'createdAt' },
+  { id: 2, label: 'Hazırlanıyor', icon: Package, dateKey: 'processingAt' },
+  { id: 3, label: 'Kargoda', icon: Truck, dateKey: 'shippedAt' },
+  { id: 4, label: 'Teslim Edildi', icon: Home, dateKey: 'deliveredAt' },
 ];
 
 export default function OrderTracking() {
@@ -388,6 +447,7 @@ export default function OrderTracking() {
                       const isCurrent = currentStep === step.id;
                       const isLast = i === arr.length - 1;
                       const StepIcon = step.icon;
+                      const stepDate = formatStepDate(order[step.dateKey] as string | null | undefined);
                       return (
                         <li
                           key={step.id}
@@ -419,6 +479,15 @@ export default function OrderTracking() {
                             >
                               {step.label}
                             </p>
+                            {stepDate && (isCompleted || isCurrent) && (
+                              <p
+                                className="text-[11px] text-black/55 mt-0.5"
+                                title={stepDate.absolute}
+                                data-testid={`text-step-date-${step.id}`}
+                              >
+                                {stepDate.relative}
+                              </p>
+                            )}
                           </div>
                         </li>
                       );
@@ -443,6 +512,7 @@ export default function OrderTracking() {
                         const isCompleted = currentStep > step.id;
                         const isCurrent = currentStep === step.id;
                         const StepIcon = step.icon;
+                        const stepDate = formatStepDate(order[step.dateKey] as string | null | undefined);
                         return (
                           <div
                             key={step.id}
@@ -459,12 +529,23 @@ export default function OrderTracking() {
                               <StepIcon className="w-4 h-4" strokeWidth={2} />
                             </div>
                             <span
-                              className={`text-[11px] mt-3 font-semibold tracking-[0.06em] uppercase ${
+                              className={`text-[11px] mt-3 font-semibold tracking-[0.06em] uppercase text-center ${
                                 isCompleted || isCurrent ? 'text-black' : 'text-black/45'
                               }`}
                             >
                               {step.label}
                             </span>
+                            {stepDate && (isCompleted || isCurrent) ? (
+                              <span
+                                className="text-[10px] mt-1 text-black/55 text-center"
+                                title={stepDate.absolute}
+                                data-testid={`text-step-date-${step.id}`}
+                              >
+                                {stepDate.relative}
+                              </span>
+                            ) : (
+                              <span className="text-[10px] mt-1 text-transparent">—</span>
+                            )}
                           </div>
                         );
                       })}
