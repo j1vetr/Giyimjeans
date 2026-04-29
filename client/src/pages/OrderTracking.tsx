@@ -5,6 +5,7 @@ import { Footer } from '@/components/Footer';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { motion } from 'framer-motion';
+import { useAuth } from '@/hooks/useAuth';
 import {
   Search,
   Package,
@@ -20,6 +21,8 @@ import {
   Check as CheckIcon,
   ExternalLink,
   ShoppingBag,
+  ListOrdered,
+  LogIn,
 } from 'lucide-react';
 
 interface OrderDetail {
@@ -97,6 +100,7 @@ const steps = [
 ];
 
 export default function OrderTracking() {
+  const { user, isLoading: authLoading } = useAuth();
   const [orderNumber, setOrderNumber] = useState('');
   const [email, setEmail] = useState('');
   const [loading, setLoading] = useState(false);
@@ -263,6 +267,65 @@ export default function OrderTracking() {
               )}
             </Button>
           </motion.form>
+
+          {!authLoading && (
+            <motion.div
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.22 }}
+              className="mb-5"
+            >
+              {user ? (
+                <Link
+                  href="/hesabim/siparislerim"
+                  className="flex items-center justify-between gap-3 bg-white border border-black/[0.08] hover:border-polen-orange/60 hover:bg-polen-orange/5 transition-colors px-5 py-4 group"
+                  data-testid="link-all-orders"
+                >
+                  <div className="flex items-center gap-3 min-w-0">
+                    <div className="w-9 h-9 rounded-full bg-polen-orange/15 flex items-center justify-center shrink-0">
+                      <ListOrdered className="w-4 h-4 text-black" strokeWidth={2.2} />
+                    </div>
+                    <div className="min-w-0">
+                      <p className="text-[13px] font-semibold text-black">
+                        Tüm Siparişlerim
+                      </p>
+                      <p className="text-[11px] text-black/55 truncate">
+                        Hesabınızdaki tüm siparişleri görüntüleyin
+                      </p>
+                    </div>
+                  </div>
+                  <ArrowRight
+                    className="w-4 h-4 text-black/45 group-hover:text-polen-orange group-hover:translate-x-1 transition-all shrink-0"
+                    strokeWidth={2.2}
+                  />
+                </Link>
+              ) : (
+                <Link
+                  href="/giris"
+                  className="flex items-center justify-between gap-3 bg-white border border-black/[0.08] hover:border-polen-orange/60 hover:bg-polen-orange/5 transition-colors px-5 py-4 group"
+                  data-testid="link-login-for-orders"
+                >
+                  <div className="flex items-center gap-3 min-w-0">
+                    <div className="w-9 h-9 rounded-full bg-polen-orange/15 flex items-center justify-center shrink-0">
+                      <LogIn className="w-4 h-4 text-black" strokeWidth={2.2} />
+                    </div>
+                    <div className="min-w-0">
+                      <p className="text-[13px] font-semibold text-black">
+                        Giriş Yap
+                      </p>
+                      <p className="text-[11px] text-black/55 truncate">
+                        Tüm siparişlerinizi tek yerden görmek için giriş yapın
+                      </p>
+                    </div>
+                  </div>
+                  <ArrowRight
+                    className="w-4 h-4 text-black/45 group-hover:text-polen-orange group-hover:translate-x-1 transition-all shrink-0"
+                    strokeWidth={2.2}
+                  />
+                </Link>
+              )}
+            </motion.div>
+          )}
 
           {order && (
             <motion.div

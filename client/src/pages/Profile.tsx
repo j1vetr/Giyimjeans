@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Header } from '@/components/Header';
 import { useAuth } from '@/hooks/useAuth';
 import { useLocation, Link } from 'wouter';
@@ -97,12 +97,18 @@ const statusConfig: Record<string, { label: string; color: string; icon: React.E
 };
 
 export default function Profile() {
-  const [, navigate] = useLocation();
+  const [location, navigate] = useLocation();
   const { user, isLoading: authLoading, logout } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  
+
   const [activeTab, setActiveTab] = useState<TabType>('orders');
+
+  useEffect(() => {
+    if (location === '/hesabim/siparislerim') {
+      setActiveTab('orders');
+    }
+  }, [location]);
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   const [isEditing, setIsEditing] = useState(false);
   const [profileForm, setProfileForm] = useState({

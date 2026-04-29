@@ -64,6 +64,7 @@ function Router() {
         <Route path="/odeme-basarisiz" component={PaymentFail} />
         <Route path="/siparis-takip" component={OrderTracking} />
         <Route path="/hesabim" component={Profile} />
+        <Route path="/hesabim/siparislerim" component={Profile} />
         <Route path="/hakkimizda" component={About} />
         <Route path="/teslimat-kosullari" component={DeliveryTerms} />
         <Route path="/mesafeli-satis-sozlesmesi" component={DistanceSalesAgreement} />
