@@ -136,11 +136,9 @@ export function Header() {
 
           {/* Orta: Logo */}
           <Link href="/" data-testid="link-logo" className="justify-self-center block">
-            <motion.img
+            <img
               src={polenLogo}
               alt="Polen Stone — Doğal Taş & Mermer"
-              whileHover={{ opacity: 0.85 }}
-              transition={{ duration: 0.2 }}
               className="h-[78px] w-auto object-contain"
               data-testid="img-logo"
             />
@@ -483,7 +481,7 @@ export function Header() {
               data-testid="drawer-mobile-menu"
             >
               {/* ── Hero panel: soft marble bg, compact logo only ── */}
-              <div className="relative h-[96px] shrink-0 overflow-hidden border-b border-black/8">
+              <div className="relative h-[150px] shrink-0 overflow-hidden border-b border-black/8">
                 <img
                   src={marbleHero}
                   alt=""
@@ -517,7 +515,7 @@ export function Header() {
                     <img
                       src={polenLogo}
                       alt="Polen Stone"
-                      className="h-[68px] w-[68px] object-contain"
+                      className="h-[120px] w-[120px] object-contain"
                       data-testid="img-logo-mobile-drawer"
                     />
                   </Link>

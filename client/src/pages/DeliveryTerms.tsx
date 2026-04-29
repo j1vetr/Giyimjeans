@@ -1,84 +1,80 @@
 import { Header } from '@/components/Header';
+import { Footer } from '@/components/Footer';
 import { SEO } from '@/components/SEO';
 import { Link } from 'wouter';
 import { motion } from 'framer-motion';
-import { ChevronRight, Truck, Package, Clock, MapPin, Phone, Mail } from 'lucide-react';
+import { ChevronRight, Truck, Package, Clock, MapPin } from 'lucide-react';
 
 const highlights = [
-  { icon: Package, label: 'Hazırlık & Kargo', desc: '1-3 iş günü içinde kargoya verilir', color: 'text-white', bg: 'bg-white/10' },
-  { icon: Truck, label: 'Ücretsiz Kargo', desc: '2.500₺ ve üzeri siparişlerde', color: 'text-green-400', bg: 'bg-green-500/20' },
-  { icon: Clock, label: 'Teslimat Süresi', desc: 'İstanbul içi 1-2, diğer iller 2-5 iş günü', color: 'text-blue-400', bg: 'bg-blue-500/20' },
-  { icon: MapPin, label: 'Kargo Takibi', desc: 'E-posta ve SMS ile takip numarası', color: 'text-purple-400', bg: 'bg-purple-500/20' },
+  { icon: Package, label: 'Hazırlık & Kargo', desc: '1-3 iş günü içinde kargoya verilir' },
+  { icon: Truck, label: 'Ücretsiz Kargo', desc: '2.500₺ ve üzeri siparişlerde' },
+  { icon: Clock, label: 'Teslimat Süresi', desc: 'İstanbul içi 1-2, diğer iller 2-5 iş günü' },
+  { icon: MapPin, label: 'Kargo Takibi', desc: 'E-posta ve SMS ile takip numarası' },
 ];
 
 export default function DeliveryTerms() {
   return (
-    <div className="min-h-screen bg-background overflow-x-hidden">
-      <SEO 
+    <div className="min-h-screen bg-stone-50">
+      <SEO
         title="Teslimat Koşulları - Polen Stone Doğal Taş & Mermer"
         description="Polen Stone Doğal Taş & Mermer teslimat koşulları, kargo süreleri ve ücretsiz kargo bilgileri."
       />
       <Header />
-      
+
       <main className="pt-28 pb-20">
-        <section className="relative overflow-hidden">
-          <div className="absolute inset-0 bg-gradient-to-br from-green-900/20 via-background to-zinc-900/50" />
-          <div className="absolute inset-0 noise-overlay opacity-30" />
-          
-          <div className="relative px-4 sm:px-6 py-12 lg:py-16">
-            <div className="max-w-4xl mx-auto">
-              <motion.nav 
-                initial={{ opacity: 0, y: -10 }}
-                animate={{ opacity: 1, y: 0 }}
-                className="flex items-center gap-2 text-xs text-muted-foreground mb-8"
-              >
-                <Link href="/" data-testid="link-home">Ana Sayfa</Link>
-                <ChevronRight className="w-3 h-3" />
-                <span className="text-foreground">Teslimat Koşulları</span>
-              </motion.nav>
+        <section className="px-4 sm:px-6 py-12 lg:py-16 bg-white border-b border-black/[0.06]">
+          <div className="max-w-4xl mx-auto">
+            <motion.nav
+              initial={{ opacity: 0, y: -10 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="flex items-center gap-2 text-xs text-black/55 mb-8"
+            >
+              <Link href="/" data-testid="link-home" className="hover:text-polen-orange transition-colors">Ana Sayfa</Link>
+              <ChevronRight className="w-3 h-3" />
+              <span className="text-black">Teslimat Koşulları</span>
+            </motion.nav>
 
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-              >
-                <span className="text-xs tracking-[0.3em] uppercase text-muted-foreground mb-4 block">Kargo & Teslimat</span>
-                <h1 className="font-display text-4xl sm:text-5xl lg:text-6xl tracking-wider mb-6">
-                  TESLİMAT<br />
-                  <span className="text-muted-foreground">KOŞULLARI</span>
-                </h1>
-                <p className="text-lg text-muted-foreground max-w-2xl mb-8">
-                  Siparişlerinizi güvenli ve hızlı bir şekilde kapınıza ulaştırıyoruz. Teslimat süreleri ve koşullarımız hakkında tüm detayları aşağıda bulabilirsiniz.
-                </p>
+            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
+              <span className="text-xs tracking-[0.3em] uppercase text-polen-orange mb-4 block font-semibold">
+                Kargo & Teslimat
+              </span>
+              <h1 className="font-display text-4xl sm:text-5xl lg:text-6xl tracking-wider mb-6 text-black">
+                TESLİMAT<br />
+                <span className="text-black/45">KOŞULLARI</span>
+              </h1>
+              <p className="text-lg text-black/65 max-w-2xl mb-10 leading-relaxed">
+                Siparişlerinizi güvenli ve hızlı bir şekilde kapınıza ulaştırıyoruz. Teslimat
+                süreleri ve koşullarımız hakkında tüm detayları aşağıda bulabilirsiniz.
+              </p>
 
-                <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                  {highlights.map((item, index) => (
-                    <motion.div
-                      key={item.label}
-                      initial={{ opacity: 0, y: 20 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: index * 0.1 }}
-                      className="bg-zinc-900/50 border border-zinc-800 rounded-xl p-5 hover:border-white/20 transition-colors"
-                    >
-                      <div className={`w-12 h-12 ${item.bg} rounded-xl flex items-center justify-center mb-4`}>
-                        <item.icon className={`w-6 h-6 ${item.color}`} />
-                      </div>
-                      <h3 className="font-semibold mb-1">{item.label}</h3>
-                      <p className="text-sm text-muted-foreground">{item.desc}</p>
-                    </motion.div>
-                  ))}
-                </div>
-              </motion.div>
-            </div>
+              <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                {highlights.map((item, index) => (
+                  <motion.div
+                    key={item.label}
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: index * 0.08 }}
+                    className="bg-stone-50 border border-black/[0.08] rounded-xl p-5 hover:border-polen-orange/40 transition-colors"
+                  >
+                    <div className="w-12 h-12 bg-polen-orange/10 rounded-xl flex items-center justify-center mb-4">
+                      <item.icon className="w-6 h-6 text-polen-orange" strokeWidth={1.75} />
+                    </div>
+                    <h3 className="font-semibold mb-1 text-black">{item.label}</h3>
+                    <p className="text-sm text-black/60">{item.desc}</p>
+                  </motion.div>
+                ))}
+              </div>
+            </motion.div>
           </div>
         </section>
 
         <section className="py-12 px-4 sm:px-6">
           <div className="max-w-4xl mx-auto">
-            <div className="bg-gradient-to-b from-zinc-900/80 to-zinc-900/40 border border-zinc-800 rounded-2xl p-6 sm:p-8 lg:p-10">
-              <div className="prose prose-invert prose-zinc max-w-none prose-headings:font-display prose-headings:tracking-wide prose-h2:text-xl prose-h2:border-b prose-h2:border-zinc-800 prose-h2:pb-3 prose-h2:mb-4">
+            <div className="bg-white border border-black/[0.08] rounded-2xl p-6 sm:p-8 lg:p-10 shadow-[0_2px_24px_-12px_rgba(0,0,0,0.08)]">
+              <div className="prose prose-zinc max-w-none prose-headings:font-display prose-headings:tracking-wide prose-headings:text-black prose-h2:text-xl prose-h2:border-b prose-h2:border-black/10 prose-h2:pb-3 prose-h2:mb-4 prose-p:text-black/70 prose-li:text-black/70 prose-strong:text-black prose-a:text-polen-orange hover:prose-a:underline">
                 <h2>1) Genel Bilgiler</h2>
                 <p>
-                  Polen Stone olarak siparişlerinizi güvenli, hızlı ve eksiksiz şekilde teslim etmeyi hedefliyoruz. 
+                  Polen Stone olarak siparişlerinizi güvenli, hızlı ve eksiksiz şekilde teslim etmeyi hedefliyoruz.
                   Web sitemiz üzerinden yapılan tüm alışverişlerde aşağıdaki koşullar geçerlidir.
                 </p>
 
@@ -99,12 +95,14 @@ export default function DeliveryTerms() {
 
                 <h2>4) Kargo Takibi</h2>
                 <p>
-                  Siparişiniz kargoya verildiğinde, <strong>kargo takip numarası</strong> e-posta ve/veya SMS yoluyla tarafınıza iletilir. Bu numara ile kargo firmasının web sitesinden gönderinizi takip edebilirsiniz.
+                  Siparişiniz kargoya verildiğinde, <strong>kargo takip numarası</strong> e-posta ve/veya SMS yoluyla
+                  tarafınıza iletilir. Bu numara ile kargo firmasının web sitesinden gönderinizi takip edebilirsiniz.
                 </p>
 
                 <h2>5) Ücretsiz Kargo</h2>
                 <p>
-                  <strong>2.500 ₺ ve üzeri</strong> siparişlerde kargo ücretsizdir. Bu tutarın altındaki siparişlerde standart kargo ücreti uygulanır.
+                  <strong>2.500 ₺ ve üzeri</strong> siparişlerde kargo ücretsizdir. Bu tutarın altındaki
+                  siparişlerde standart kargo ücreti uygulanır.
                 </p>
 
                 <h2>6) Teslimat Esnasında Dikkat Edilecekler</h2>
@@ -116,27 +114,31 @@ export default function DeliveryTerms() {
 
                 <h2>7) Adres Değişikliği</h2>
                 <p>
-                  Siparişiniz henüz kargoya verilmediyse, teslimat adresinizi değiştirmek için <a href="mailto:info@polenstone.com.tr">info@polenstone.com.tr</a> adresi üzerinden bizimle iletişime geçebilirsiniz.
+                  Siparişiniz henüz kargoya verilmediyse, teslimat adresinizi değiştirmek için
+                  <a href="mailto:info@polenstone.com.tr"> info@polenstone.com.tr</a> adresi üzerinden bizimle
+                  iletişime geçebilirsiniz.
                 </p>
 
                 <h2>8) Alıcı Bulunamadığında</h2>
                 <p>
-                  Alıcı adreste bulunamadığında, kargo firması genellikle <strong>2-3 teslimat denemesi</strong> yapar. Ulaşılamazsa ürün şubeye bırakılır veya geri döner. Geri dönüş durumunda yeniden gönderim için ek ücret talep edilebilir.
+                  Alıcı adreste bulunamadığında, kargo firması genellikle <strong>2-3 teslimat denemesi</strong>
+                  yapar. Ulaşılamazsa ürün şubeye bırakılır veya geri döner. Geri dönüş durumunda yeniden gönderim
+                  için ek ücret talep edilebilir.
                 </p>
 
                 <h2>9) İletişim</h2>
-                <p>
-                  Kargo ve teslimatla ilgili sorularınız için bizimle iletişime geçebilirsiniz:
-                </p>
+                <p>Kargo ve teslimatla ilgili sorularınız için bizimle iletişime geçebilirsiniz:</p>
                 <ul>
                   <li><strong>E-posta:</strong> <a href="mailto:info@polenstone.com.tr">info@polenstone.com.tr</a></li>
-                  <li><strong>Telefon:</strong> <a href="tel:+905321350391">0532 135 03 91</a></li>
+                  <li><strong>Telefon:</strong> <a href="tel:+905326956183">0532 695 61 83</a></li>
                 </ul>
               </div>
             </div>
           </div>
         </section>
       </main>
+
+      <Footer />
     </div>
   );
 }

@@ -1,73 +1,69 @@
 import { Header } from '@/components/Header';
+import { Footer } from '@/components/Footer';
 import { SEO } from '@/components/SEO';
 import { Link } from 'wouter';
 import { motion } from 'framer-motion';
-import { ChevronRight, RotateCcw, Clock, Package, AlertCircle, CheckCircle, XCircle } from 'lucide-react';
+import { ChevronRight, RotateCcw, Clock, Package, CheckCircle, XCircle } from 'lucide-react';
 
 const highlights = [
-  { icon: RotateCcw, label: '14 Gün Cayma Hakkı', desc: 'Hiçbir gerekçe göstermeden iade', color: 'text-green-400', bg: 'bg-green-500/20' },
-  { icon: Clock, label: '7 İş Günü', desc: 'Ücret iadesi süresi', color: 'text-blue-400', bg: 'bg-blue-500/20' },
-  { icon: Package, label: 'Kolay Değişim', desc: 'Renk ve ölçü değişimi', color: 'text-purple-400', bg: 'bg-purple-500/20' },
+  { icon: RotateCcw, label: '14 Gün Cayma Hakkı', desc: 'Hiçbir gerekçe göstermeden iade' },
+  { icon: Clock, label: '7 İş Günü', desc: 'Ücret iadesi süresi' },
+  { icon: Package, label: 'Kolay Değişim', desc: 'Renk ve ölçü değişimi' },
 ];
 
 export default function CancellationPolicy() {
   return (
-    <div className="min-h-screen bg-background overflow-x-hidden">
-      <SEO 
+    <div className="min-h-screen bg-stone-50">
+      <SEO
         title="İptal ve İade Politikası - Polen Stone Doğal Taş & Mermer"
         description="Polen Stone Doğal Taş & Mermer ürün iade, değişim ve iptal koşulları."
       />
       <Header />
-      
+
       <main className="pt-28 pb-20">
-        <section className="relative overflow-hidden">
-          <div className="absolute inset-0 bg-gradient-to-br from-purple-900/20 via-background to-zinc-900/50" />
-          <div className="absolute inset-0 noise-overlay opacity-30" />
-          
-          <div className="relative px-4 sm:px-6 py-12 lg:py-16">
-            <div className="max-w-4xl mx-auto">
-              <motion.nav 
-                initial={{ opacity: 0, y: -10 }}
-                animate={{ opacity: 1, y: 0 }}
-                className="flex items-center gap-2 text-xs text-muted-foreground mb-8"
-              >
-                <Link href="/" data-testid="link-home">Ana Sayfa</Link>
-                <ChevronRight className="w-3 h-3" />
-                <span className="text-foreground">İptal ve İade Politikası</span>
-              </motion.nav>
+        <section className="px-4 sm:px-6 py-12 lg:py-16 bg-white border-b border-black/[0.06]">
+          <div className="max-w-4xl mx-auto">
+            <motion.nav
+              initial={{ opacity: 0, y: -10 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="flex items-center gap-2 text-xs text-black/55 mb-8"
+            >
+              <Link href="/" data-testid="link-home" className="hover:text-polen-orange transition-colors">Ana Sayfa</Link>
+              <ChevronRight className="w-3 h-3" />
+              <span className="text-black">İptal ve İade Politikası</span>
+            </motion.nav>
 
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-              >
-                <span className="text-xs tracking-[0.3em] uppercase text-muted-foreground mb-4 block">İade & Değişim</span>
-                <h1 className="font-display text-4xl sm:text-5xl lg:text-6xl tracking-wider mb-6">
-                  İPTAL VE İADE<br />
-                  <span className="text-muted-foreground">POLİTİKASI</span>
-                </h1>
-                <p className="text-lg text-muted-foreground max-w-2xl mb-8">
-                  Müşteri memnuniyeti önceliğimizdir. Kolay iade ve değişim süreçleriyle alışverişlerinizi güvence altına alıyoruz.
-                </p>
+            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
+              <span className="text-xs tracking-[0.3em] uppercase text-polen-orange mb-4 block font-semibold">
+                İade & Değişim
+              </span>
+              <h1 className="font-display text-4xl sm:text-5xl lg:text-6xl tracking-wider mb-6 text-black">
+                İPTAL VE İADE<br />
+                <span className="text-black/45">POLİTİKASI</span>
+              </h1>
+              <p className="text-lg text-black/65 max-w-2xl mb-10 leading-relaxed">
+                Müşteri memnuniyeti önceliğimizdir. Kolay iade ve değişim süreçleriyle alışverişlerinizi
+                güvence altına alıyoruz.
+              </p>
 
-                <div className="grid sm:grid-cols-3 gap-4">
-                  {highlights.map((item, index) => (
-                    <motion.div
-                      key={item.label}
-                      initial={{ opacity: 0, y: 20 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: index * 0.1 }}
-                      className="bg-zinc-900/50 border border-zinc-800 rounded-xl p-6 text-center hover:border-white/20 transition-colors"
-                    >
-                      <div className={`w-14 h-14 ${item.bg} rounded-xl flex items-center justify-center mx-auto mb-4`}>
-                        <item.icon className={`w-7 h-7 ${item.color}`} />
-                      </div>
-                      <h3 className="font-semibold mb-1">{item.label}</h3>
-                      <p className="text-sm text-muted-foreground">{item.desc}</p>
-                    </motion.div>
-                  ))}
-                </div>
-              </motion.div>
-            </div>
+              <div className="grid sm:grid-cols-3 gap-4">
+                {highlights.map((item, index) => (
+                  <motion.div
+                    key={item.label}
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: index * 0.08 }}
+                    className="bg-stone-50 border border-black/[0.08] rounded-xl p-6 text-center hover:border-polen-orange/40 transition-colors"
+                  >
+                    <div className="w-14 h-14 bg-polen-orange/10 rounded-xl flex items-center justify-center mx-auto mb-4">
+                      <item.icon className="w-7 h-7 text-polen-orange" strokeWidth={1.75} />
+                    </div>
+                    <h3 className="font-semibold mb-1 text-black">{item.label}</h3>
+                    <p className="text-sm text-black/60">{item.desc}</p>
+                  </motion.div>
+                ))}
+              </div>
+            </motion.div>
           </div>
         </section>
 
@@ -79,55 +75,55 @@ export default function CancellationPolicy() {
               viewport={{ once: true }}
               className="grid md:grid-cols-2 gap-4"
             >
-              <div className="bg-gradient-to-br from-green-500/10 to-green-600/5 border border-green-500/20 rounded-xl p-6">
+              <div className="bg-white border border-emerald-200 rounded-xl p-6 shadow-[0_2px_18px_-12px_rgba(0,0,0,0.06)]">
                 <div className="flex items-center gap-3 mb-4">
-                  <div className="w-10 h-10 bg-green-500/20 rounded-lg flex items-center justify-center">
-                    <CheckCircle className="w-5 h-5 text-green-400" />
+                  <div className="w-10 h-10 bg-emerald-50 rounded-lg flex items-center justify-center">
+                    <CheckCircle className="w-5 h-5 text-emerald-600" />
                   </div>
-                  <h3 className="font-display text-lg tracking-wide">İade Edilebilir</h3>
+                  <h3 className="font-display text-lg tracking-wide text-black">İade Edilebilir</h3>
                 </div>
-                <ul className="space-y-2 text-sm text-muted-foreground">
+                <ul className="space-y-2 text-sm text-black/70">
                   <li className="flex items-start gap-2">
-                    <span className="text-green-400 mt-1">•</span>
+                    <span className="text-emerald-600 mt-1">•</span>
                     Kullanılmamış, orijinal ambalajında ürünler
                   </li>
                   <li className="flex items-start gap-2">
-                    <span className="text-green-400 mt-1">•</span>
+                    <span className="text-emerald-600 mt-1">•</span>
                     Etiketleri sökülmemiş ürünler
                   </li>
                   <li className="flex items-start gap-2">
-                    <span className="text-green-400 mt-1">•</span>
+                    <span className="text-emerald-600 mt-1">•</span>
                     Fatura ile birlikte gönderilen ürünler
                   </li>
                 </ul>
               </div>
 
-              <div className="bg-gradient-to-br from-red-500/10 to-red-600/5 border border-red-500/20 rounded-xl p-6">
+              <div className="bg-white border border-rose-200 rounded-xl p-6 shadow-[0_2px_18px_-12px_rgba(0,0,0,0.06)]">
                 <div className="flex items-center gap-3 mb-4">
-                  <div className="w-10 h-10 bg-red-500/20 rounded-lg flex items-center justify-center">
-                    <XCircle className="w-5 h-5 text-red-400" />
+                  <div className="w-10 h-10 bg-rose-50 rounded-lg flex items-center justify-center">
+                    <XCircle className="w-5 h-5 text-rose-600" />
                   </div>
-                  <h3 className="font-display text-lg tracking-wide">İade Edilemez</h3>
+                  <h3 className="font-display text-lg tracking-wide text-black">İade Edilemez</h3>
                 </div>
-                <ul className="space-y-2 text-sm text-muted-foreground">
+                <ul className="space-y-2 text-sm text-black/70">
                   <li className="flex items-start gap-2">
-                    <span className="text-red-400 mt-1">•</span>
+                    <span className="text-rose-600 mt-1">•</span>
                     Projeye özel ölçüde kesilmiş veya işlenmiş plaka, fayans ve tezgâh ürünleri
                   </li>
                   <li className="flex items-start gap-2">
-                    <span className="text-red-400 mt-1">•</span>
+                    <span className="text-rose-600 mt-1">•</span>
                     Yerine monte edilmiş, yapıştırılmış veya işlem görmüş doğal taşlar
                   </li>
                   <li className="flex items-start gap-2">
-                    <span className="text-red-400 mt-1">•</span>
+                    <span className="text-rose-600 mt-1">•</span>
                     Doğal taşın yapısından kaynaklanan ton, damar ve desen farklılıkları (kusur sayılmaz)
                   </li>
                 </ul>
               </div>
             </motion.div>
 
-            <div className="bg-gradient-to-b from-zinc-900/80 to-zinc-900/40 border border-zinc-800 rounded-2xl p-6 sm:p-8 lg:p-10">
-              <div className="prose prose-invert prose-zinc max-w-none prose-headings:font-display prose-headings:tracking-wide prose-h2:text-xl prose-h2:border-b prose-h2:border-zinc-800 prose-h2:pb-3 prose-h2:mb-4">
+            <div className="bg-white border border-black/[0.08] rounded-2xl p-6 sm:p-8 lg:p-10 shadow-[0_2px_24px_-12px_rgba(0,0,0,0.08)]">
+              <div className="prose prose-zinc max-w-none prose-headings:font-display prose-headings:tracking-wide prose-headings:text-black prose-h2:text-xl prose-h2:border-b prose-h2:border-black/10 prose-h2:pb-3 prose-h2:mb-4 prose-p:text-black/70 prose-li:text-black/70 prose-strong:text-black prose-a:text-polen-orange hover:prose-a:underline">
                 <h2>1) Genel İlkeler</h2>
                 <ul>
                   <li>İade/iptal işlemleri 6502 sayılı Kanun ve Mesafeli Satış Sözleşmeleri Yönetmeliği'ne uygun şekilde yürütülür.</li>
@@ -188,13 +184,15 @@ export default function CancellationPolicy() {
                 <p>İade ve iptal işlemleri için destek ekibimize ulaşabilirsiniz:</p>
                 <ul>
                   <li><strong>E-posta:</strong> <a href="mailto:info@polenstone.com.tr">info@polenstone.com.tr</a></li>
-                  <li><strong>Telefon:</strong> <a href="tel:+905321350391">0532 135 03 91</a></li>
+                  <li><strong>Telefon:</strong> <a href="tel:+905326956183">0532 695 61 83</a></li>
                 </ul>
               </div>
             </div>
           </div>
         </section>
       </main>
+
+      <Footer />
     </div>
   );
 }

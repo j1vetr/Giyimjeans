@@ -1,84 +1,80 @@
 import { Header } from '@/components/Header';
+import { Footer } from '@/components/Footer';
 import { SEO } from '@/components/SEO';
 import { Link } from 'wouter';
 import { motion } from 'framer-motion';
 import { ChevronRight, FileText, Shield, CheckCircle, Clock } from 'lucide-react';
 
 const highlights = [
-  { icon: FileText, label: 'Yasal Sözleşme', color: 'text-blue-400', bg: 'bg-blue-500/20' },
-  { icon: Shield, label: '6502 Sayılı Kanun', color: 'text-green-400', bg: 'bg-green-500/20' },
-  { icon: CheckCircle, label: 'Güvence', color: 'text-purple-400', bg: 'bg-purple-500/20' },
-  { icon: Clock, label: '14 Gün Cayma', color: 'text-orange-400', bg: 'bg-orange-500/20' },
+  { icon: FileText, label: 'Yasal Sözleşme' },
+  { icon: Shield, label: '6502 Sayılı Kanun' },
+  { icon: CheckCircle, label: 'Güvence' },
+  { icon: Clock, label: '14 Gün Cayma' },
 ];
 
 export default function DistanceSalesAgreement() {
   return (
-    <div className="min-h-screen bg-background overflow-x-hidden">
-      <SEO 
+    <div className="min-h-screen bg-stone-50">
+      <SEO
         title="Mesafeli Satış Sözleşmesi - Polen Stone Doğal Taş & Mermer"
         description="Polen Stone Doğal Taş & Mermer mesafeli satış sözleşmesi ve alışveriş koşulları."
       />
       <Header />
-      
+
       <main className="pt-28 pb-20">
-        <section className="relative overflow-hidden">
-          <div className="absolute inset-0 bg-gradient-to-br from-blue-900/20 via-background to-zinc-900/50" />
-          <div className="absolute inset-0 noise-overlay opacity-30" />
-          
-          <div className="relative px-4 sm:px-6 py-12 lg:py-16">
-            <div className="max-w-4xl mx-auto">
-              <motion.nav 
-                initial={{ opacity: 0, y: -10 }}
-                animate={{ opacity: 1, y: 0 }}
-                className="flex items-center gap-2 text-xs text-muted-foreground mb-8"
-              >
-                <Link href="/" data-testid="link-home">Ana Sayfa</Link>
-                <ChevronRight className="w-3 h-3" />
-                <span className="text-foreground">Mesafeli Satış Sözleşmesi</span>
-              </motion.nav>
+        <section className="px-4 sm:px-6 py-12 lg:py-16 bg-white border-b border-black/[0.06]">
+          <div className="max-w-4xl mx-auto">
+            <motion.nav
+              initial={{ opacity: 0, y: -10 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="flex items-center gap-2 text-xs text-black/55 mb-8"
+            >
+              <Link href="/" data-testid="link-home" className="hover:text-polen-orange transition-colors">Ana Sayfa</Link>
+              <ChevronRight className="w-3 h-3" />
+              <span className="text-black">Mesafeli Satış Sözleşmesi</span>
+            </motion.nav>
 
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-              >
-                <span className="text-xs tracking-[0.3em] uppercase text-muted-foreground mb-4 block">Yasal Bilgiler</span>
-                <h1 className="font-display text-4xl sm:text-5xl lg:text-6xl tracking-wider mb-6">
-                  MESAFELİ SATIŞ<br />
-                  <span className="text-muted-foreground">SÖZLEŞMESİ</span>
-                </h1>
-                <p className="text-lg text-muted-foreground max-w-2xl mb-8">
-                  6502 sayılı Tüketicinin Korunması Hakkında Kanun ve Mesafeli Sözleşmeler Yönetmeliği kapsamında hazırlanmış resmi sözleşme metnidir.
-                </p>
+            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
+              <span className="text-xs tracking-[0.3em] uppercase text-polen-orange mb-4 block font-semibold">
+                Yasal Bilgiler
+              </span>
+              <h1 className="font-display text-4xl sm:text-5xl lg:text-6xl tracking-wider mb-6 text-black">
+                MESAFELİ SATIŞ<br />
+                <span className="text-black/45">SÖZLEŞMESİ</span>
+              </h1>
+              <p className="text-lg text-black/65 max-w-2xl mb-10 leading-relaxed">
+                6502 sayılı Tüketicinin Korunması Hakkında Kanun ve Mesafeli Sözleşmeler Yönetmeliği
+                kapsamında hazırlanmış resmi sözleşme metnidir.
+              </p>
 
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                  {highlights.map((item, index) => (
-                    <motion.div
-                      key={item.label}
-                      initial={{ opacity: 0, y: 20 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: index * 0.1 }}
-                      className="bg-zinc-900/50 border border-zinc-800 rounded-xl p-4 text-center hover:border-white/20 transition-colors"
-                    >
-                      <div className={`w-10 h-10 ${item.bg} rounded-lg flex items-center justify-center mx-auto mb-2`}>
-                        <item.icon className={`w-5 h-5 ${item.color}`} />
-                      </div>
-                      <p className="text-xs font-medium">{item.label}</p>
-                    </motion.div>
-                  ))}
-                </div>
-              </motion.div>
-            </div>
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                {highlights.map((item, index) => (
+                  <motion.div
+                    key={item.label}
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: index * 0.08 }}
+                    className="bg-stone-50 border border-black/[0.08] rounded-xl p-4 text-center hover:border-polen-orange/40 transition-colors"
+                  >
+                    <div className="w-10 h-10 bg-polen-orange/10 rounded-lg flex items-center justify-center mx-auto mb-2">
+                      <item.icon className="w-5 h-5 text-polen-orange" strokeWidth={1.75} />
+                    </div>
+                    <p className="text-xs font-medium text-black">{item.label}</p>
+                  </motion.div>
+                ))}
+              </div>
+            </motion.div>
           </div>
         </section>
 
         <section className="py-12 px-4 sm:px-6">
           <div className="max-w-4xl mx-auto">
-            <div className="bg-gradient-to-b from-zinc-900/80 to-zinc-900/40 border border-zinc-800 rounded-2xl p-6 sm:p-8 lg:p-10">
-              <div className="prose prose-invert prose-zinc max-w-none prose-headings:font-display prose-headings:tracking-wide prose-h2:text-xl prose-h2:border-b prose-h2:border-zinc-800 prose-h2:pb-3 prose-h2:mb-4">
+            <div className="bg-white border border-black/[0.08] rounded-2xl p-6 sm:p-8 lg:p-10 shadow-[0_2px_24px_-12px_rgba(0,0,0,0.08)]">
+              <div className="prose prose-zinc max-w-none prose-headings:font-display prose-headings:tracking-wide prose-headings:text-black prose-h2:text-xl prose-h2:border-b prose-h2:border-black/10 prose-h2:pb-3 prose-h2:mb-4 prose-p:text-black/70 prose-li:text-black/70 prose-strong:text-black prose-a:text-polen-orange hover:prose-a:underline">
                 <h2>1) Taraflar</h2>
                 <p><strong>Satıcı:</strong> Polen Stone Doğal Taş & Mermer</p>
-                <p><strong>Adres:</strong> ATIFBEY MAH. 67 SK. Dış kapı no: 33 İç kapı no: 27 İZMİR/GAZİEMİR</p>
-                <p><strong>Telefon:</strong> <a href="tel:+905321350391">0532 135 03 91</a></p>
+                <p><strong>Adres:</strong> Yunus Emre, Barbaros Blv. 42 d, 34791 Sancaktepe / İstanbul</p>
+                <p><strong>Telefon:</strong> <a href="tel:+905326956183">0532 695 61 83</a></p>
                 <p><strong>E-posta:</strong> <a href="mailto:info@polenstone.com.tr">info@polenstone.com.tr</a></p>
                 <p><strong>Web Sitesi:</strong> <a href="https://www.polenstone.com.tr">www.polenstone.com.tr</a></p>
                 <p><strong>Alıcı:</strong> Polenstone.com.tr üzerinden sipariş veren müşteridir. Alıcının adı, soyadı, adresi ve iletişim bilgileri sipariş formunda yer alır.</p>
@@ -95,7 +91,7 @@ export default function DistanceSalesAgreement() {
 
                 <h2>4) Teslimat Şartları</h2>
                 <p>
-                  Ürünler, alıcının belirttiği teslimat adresine gönderilir. Tüm teslimat detayları <Link href="/teslimat-kosullari" className="text-white hover:underline">Teslimat Koşulları</Link> sayfasında açıklanmıştır. Teslimat süresi, stok durumu ve kargo firmasının operasyonel yoğunluğuna göre değişebilir.
+                  Ürünler, alıcının belirttiği teslimat adresine gönderilir. Tüm teslimat detayları <Link href="/teslimat-kosullari">Teslimat Koşulları</Link> sayfasında açıklanmıştır. Teslimat süresi, stok durumu ve kargo firmasının operasyonel yoğunluğuna göre değişebilir.
                 </p>
 
                 <h2>5) Ödeme Yöntemi</h2>
@@ -131,7 +127,7 @@ export default function DistanceSalesAgreement() {
 
                 <h2>10) Gizlilik ve Kişisel Verilerin Korunması</h2>
                 <p>
-                  Alıcının kişisel verileri, <Link href="/kvkk" className="text-white hover:underline">KVKK Aydınlatma Metni</Link>'nde belirtilen ilkeler doğrultusunda işlenir. Satıcı, müşterilerin kişisel bilgilerini üçüncü kişilerle paylaşmaz; paylaşım yalnızca teslimat ve ödeme süreçlerinde zorunlu olduğu ölçüde gerçekleşebilir.
+                  Alıcının kişisel verileri, <Link href="/kvkk">KVKK Aydınlatma Metni</Link>'nde belirtilen ilkeler doğrultusunda işlenir. Satıcı, müşterilerin kişisel bilgilerini üçüncü kişilerle paylaşmaz; paylaşım yalnızca teslimat ve ödeme süreçlerinde zorunlu olduğu ölçüde gerçekleşebilir.
                 </p>
 
                 <h2>11) Mücbir Sebepler</h2>
@@ -153,6 +149,8 @@ export default function DistanceSalesAgreement() {
           </div>
         </section>
       </main>
+
+      <Footer />
     </div>
   );
 }

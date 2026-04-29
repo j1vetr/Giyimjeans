@@ -86,7 +86,7 @@ function App() {
         <CartProvider>
           <CartModalProvider>
             <TooltipProvider>
-              <div className="relative w-full overflow-x-hidden">
+              <div className="relative w-full">
                 <SmoothScroll />
                 <Toaster />
                 <Router />

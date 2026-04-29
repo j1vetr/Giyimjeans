@@ -615,35 +615,56 @@ export default function Checkout() {
               ÖDEME
             </h1>
             
-            <div className="flex items-center justify-center gap-1 sm:gap-2 max-w-2xl mx-auto px-2 overflow-hidden">
-              {steps.map((step, index) => (
-                <div key={step.id} className="flex items-center min-w-0">
-                  <motion.button 
-                    type="button"
-                    whileHover={{ scale: 1.02 }}
-                    onClick={() => goToStep(step.id)}
-                    disabled={step.id > currentStep + 1}
-                    className={`flex items-center justify-center gap-1 sm:gap-2 px-2 sm:px-4 py-2 rounded-full transition-all shrink-0 ${
-                      currentStep === step.id 
-                        ? 'bg-white text-black' 
-                        : currentStep > step.id
-                          ? 'bg-green-500/20 text-green-400 border border-green-500/30'
-                          : 'bg-black/4 text-black/40 border border-black/10'
-                    } ${step.id > currentStep + 1 ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
-                    data-testid={`step-${step.id}`}
-                  >
-                    {currentStep > step.id ? (
-                      <Check className="w-3 h-3 sm:w-4 sm:h-4 shrink-0" />
-                    ) : (
-                      <step.icon className="w-3 h-3 sm:w-4 sm:h-4 shrink-0" />
+            <div className="max-w-md mx-auto px-2 flex items-start justify-between gap-1 sm:gap-2">
+              {steps.map((step, index) => {
+                const isLast = index === steps.length - 1;
+                const isActive = currentStep === step.id;
+                const isDone = currentStep > step.id;
+                const isLocked = step.id > currentStep + 1;
+                return (
+                  <div key={step.id} className={`flex items-start ${isLast ? 'shrink-0' : 'flex-1'} gap-1 sm:gap-3`}>
+                    <button
+                      type="button"
+                      onClick={() => goToStep(step.id)}
+                      disabled={isLocked}
+                      className={`flex flex-col items-center gap-2 shrink-0 transition-all ${
+                        isLocked ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer group'
+                      }`}
+                      data-testid={`step-${step.id}`}
+                    >
+                      <div
+                        className={`w-10 h-10 sm:w-11 sm:h-11 rounded-full flex items-center justify-center border transition-all ${
+                          isActive
+                            ? 'bg-polen-orange text-white border-polen-orange shadow-[0_4px_14px_-4px_rgba(217,127,42,0.6)]'
+                            : isDone
+                              ? 'bg-green-500 text-white border-green-500'
+                              : 'bg-white text-black/40 border-black/15 group-hover:border-black/40'
+                        }`}
+                      >
+                        {isDone ? (
+                          <Check className="w-4 h-4 sm:w-5 sm:h-5" strokeWidth={2.25} />
+                        ) : (
+                          <step.icon className="w-4 h-4 sm:w-5 sm:h-5" strokeWidth={1.75} />
+                        )}
+                      </div>
+                      <span
+                        className={`text-[10px] sm:text-xs font-medium whitespace-nowrap transition-colors ${
+                          isActive ? 'text-black' : isDone ? 'text-green-700' : 'text-black/45'
+                        }`}
+                      >
+                        {step.title}
+                      </span>
+                    </button>
+                    {!isLast && (
+                      <div
+                        className={`flex-1 h-px mt-5 transition-colors ${
+                          isDone ? 'bg-green-500' : 'bg-black/15'
+                        }`}
+                      />
                     )}
-                    <span className="text-[10px] sm:text-xs font-medium truncate">{step.title}</span>
-                  </motion.button>
-                  {index < steps.length - 1 && (
-                    <div className={`w-2 sm:w-6 h-px mx-0.5 sm:mx-1 shrink-0 ${currentStep > step.id ? 'bg-green-500' : 'bg-black/10'}`} />
-                  )}
-                </div>
-              ))}
+                  </div>
+                );
+              })}
             </div>
           </motion.div>
 

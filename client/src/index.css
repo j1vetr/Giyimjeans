@@ -108,7 +108,8 @@
     @apply font-sans antialiased bg-background text-foreground;
   }
   #root {
-    @apply w-full max-w-full overflow-x-hidden;
+    @apply w-full max-w-full;
+    overflow-x: clip;
     position: relative;
   }
 }
