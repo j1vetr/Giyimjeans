@@ -87,8 +87,8 @@ function HeroSceneStatic() {
         aria-hidden="true"
         className="absolute inset-0 w-full h-full object-cover"
       />
-      <div className="absolute inset-0 bg-black/30" />
-      <div className="absolute inset-0 bg-gradient-to-t from-black/45 via-transparent to-transparent" />
+      <div className="absolute inset-0 bg-black/50" />
+      <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent" />
       <HeroOverlayContent />
     </section>
   );
@@ -161,10 +161,10 @@ function HeroSceneInner() {
           className="absolute inset-0 w-full h-full object-cover"
         />
         <HeroVideoLazy />
-        {/* %30 sabit siyah örtü — başlığın okunabilirliği için */}
-        <div className="absolute inset-0 bg-black/30" />
+        {/* %50 sabit siyah örtü — başlığın okunabilirliği için */}
+        <div className="absolute inset-0 bg-black/50" />
         {/* CTA bölgesinde ekstra kontrast */}
-        <div className="absolute inset-0 bg-gradient-to-t from-black/45 via-transparent to-transparent" />
+        <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent" />
       </motion.div>
 
       <motion.div
@@ -193,9 +193,6 @@ function HeroOverlayContent({ animated = false }: { animated?: boolean }) {
       {/* ── MOBİL — kısa ve vurucu ── */}
       <div className="lg:hidden h-full w-full flex flex-col items-center justify-center text-center px-6">
         <Wrap {...wrapProps}>
-          <span className="block text-[10px] tracking-[0.32em] uppercase text-polen-orange font-mono mb-4" data-testid="text-hero-kicker-mobile">
-            Polen Stone
-          </span>
           <h1
             className="font-display text-white uppercase leading-[0.92]"
             style={{ fontSize: 'clamp(40px, 11vw, 64px)', letterSpacing: '-0.02em', fontWeight: 700 }}
@@ -222,9 +219,6 @@ function HeroOverlayContent({ animated = false }: { animated?: boolean }) {
       <div className="hidden lg:flex h-full w-full items-end">
         <div className="w-full max-w-[1400px] mx-auto px-10 pb-16 xl:pb-20">
           <Wrap {...wrapProps} className="max-w-[760px]">
-            <span className="block text-[11px] tracking-[0.36em] uppercase text-polen-orange font-mono mb-6" data-testid="text-hero-kicker">
-              — Polen Stone / Koleksiyon
-            </span>
             <h1
               className="font-display text-white uppercase"
               style={{
