@@ -928,6 +928,151 @@ export async function sendAdminOrderNotificationEmail(order: Order, items: Order
   }
 }
 
+// ─── Yorum bildirimleri ────────────────────────────────────────────────────
+
+export interface AdminReviewNotificationPayload {
+  productName: string;
+  productSlug: string;
+  authorName: string;
+  authorEmail: string | null;
+  rating: number;
+  title: string | null;
+  content: string | null;
+  isGuest: boolean;
+}
+
+export async function sendAdminReviewNotificationEmail(
+  payload: AdminReviewNotificationPayload,
+): Promise<EmailResult> {
+  try {
+    const transporter = await createTransporter();
+    if (!transporter) return { success: false, error: 'SMTP yapılandırması eksik' };
+
+    const settings = await storage.getSiteSettings();
+    const fromEmail = settings.smtp_user || 'no-reply@polenstone.com.tr';
+    const adminEmail = settings.admin_email;
+    if (!adminEmail) return { success: false, error: 'Admin e-posta adresi ayarlanmamış' };
+
+    const stars = '★'.repeat(payload.rating) + '☆'.repeat(5 - payload.rating);
+    const guestBadge = payload.isGuest
+      ? `<span style="display:inline-block;background:${BRAND.primary};color:${BRAND.ink};font-size:10px;font-weight:700;padding:3px 8px;border-radius:3px;letter-spacing:1px;text-transform:uppercase;">Misafir</span>`
+      : `<span style="display:inline-block;background:${BRAND.borderSoft};color:${BRAND.body};font-size:10px;font-weight:700;padding:3px 8px;border-radius:3px;letter-spacing:1px;text-transform:uppercase;">Üye</span>`;
+
+    const adminUrl = `${CONTACT.siteUrl}/toov-admin?tab=reviews`;
+
+    const html = wrapTemplate(`
+      ${H1('Yeni yorum onay bekliyor.')}
+      ${Lede(`<strong>${escapeHtml(payload.productName)}</strong> için yeni bir değerlendirme geldi. Yayınlanmadan önce admin panelinden onaylamanız gerekiyor.`)}
+
+      ${infoCard(`
+        <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%">
+          <tr>
+            <td style="padding-bottom:10px;">${guestBadge}</td>
+          </tr>
+          <tr>
+            <td style="padding-bottom:6px;font-size:13px;color:${BRAND.muted};">Yazan</td>
+          </tr>
+          <tr>
+            <td style="padding-bottom:14px;font-size:15px;color:${BRAND.ink};font-weight:700;">
+              ${escapeHtml(payload.authorName)}${payload.authorEmail ? `<br><span style="font-size:12px;font-weight:400;color:${BRAND.muted};">${escapeHtml(payload.authorEmail)}</span>` : ''}
+            </td>
+          </tr>
+          <tr>
+            <td style="padding-bottom:6px;font-size:13px;color:${BRAND.muted};">Puan</td>
+          </tr>
+          <tr>
+            <td style="padding-bottom:14px;font-size:18px;color:${BRAND.primary};letter-spacing:2px;">${stars} <span style="color:${BRAND.muted};font-size:13px;">(${payload.rating}/5)</span></td>
+          </tr>
+          ${payload.title ? `
+          <tr>
+            <td style="padding-bottom:6px;font-size:13px;color:${BRAND.muted};">Başlık</td>
+          </tr>
+          <tr>
+            <td style="padding-bottom:14px;font-size:14px;color:${BRAND.ink};font-weight:600;">${escapeHtml(payload.title)}</td>
+          </tr>` : ''}
+          ${payload.content ? `
+          <tr>
+            <td style="padding-bottom:6px;font-size:13px;color:${BRAND.muted};">Yorum</td>
+          </tr>
+          <tr>
+            <td style="font-size:13px;color:${BRAND.body};line-height:1.6;font-style:italic;">"${escapeHtml(payload.content)}"</td>
+          </tr>` : ''}
+        </table>
+      `)}
+
+      ${emailButton(adminUrl, 'Admin Panelinde İncele')}
+    `, {
+      preheader: `Yeni yorum: ${payload.authorName} — ${payload.productName}`,
+      title: 'Yeni yorum onay bekliyor',
+    });
+
+    await transporter.sendMail({
+      from: `"Polen Stone Sistem" <${fromEmail}>`,
+      to: adminEmail,
+      subject: `Yeni yorum onay bekliyor — ${payload.productName}`,
+      html,
+    });
+
+    console.log(`[Email] Review notification sent to ${adminEmail}`);
+    return { success: true };
+  } catch (error: any) {
+    console.error('[Email] Failed to send review notification:', error);
+    return { success: false, error: error.message };
+  }
+}
+
+export interface GuestReviewApprovedPayload {
+  to: string;
+  guestName: string;
+  productName: string;
+  productSlug: string;
+  rating: number;
+}
+
+export async function sendGuestReviewApprovedEmail(
+  payload: GuestReviewApprovedPayload,
+): Promise<EmailResult> {
+  try {
+    const transporter = await createTransporter();
+    if (!transporter) return { success: false, error: 'SMTP yapılandırması eksik' };
+
+    const settings = await storage.getSiteSettings();
+    const fromEmail = settings.smtp_user || 'no-reply@polenstone.com.tr';
+
+    const stars = '★'.repeat(payload.rating) + '☆'.repeat(5 - payload.rating);
+    const productUrl = `${CONTACT.siteUrl}/urun/${payload.productSlug}`;
+
+    const html = wrapTemplate(`
+      ${H1('Yorumunuz yayında.')}
+      ${Lede(`Merhaba ${escapeHtml(payload.guestName)}, <strong>${escapeHtml(payload.productName)}</strong> ürünü için yazdığınız değerlendirme onaylandı ve şimdi ürün sayfasında yayında. Düşünceleriniz için teşekkür ederiz.`)}
+
+      ${infoCard(`
+        <div style="text-align:center;font-size:24px;color:${BRAND.primary};letter-spacing:3px;padding:8px 0;">${stars}</div>
+      `)}
+
+      ${emailButton(productUrl, 'Ürün Sayfasını Gör')}
+
+      ${Small('Polen Stone — doğal taşın sıcaklığını evinize taşıyoruz.')}
+    `, {
+      preheader: `Yorumunuz yayında — ${payload.productName}`,
+      title: 'Yorumunuz yayında',
+    });
+
+    await transporter.sendMail({
+      from: `"Polen Stone" <${fromEmail}>`,
+      to: payload.to,
+      subject: `Yorumunuz yayında — ${payload.productName}`,
+      html,
+    });
+
+    console.log(`[Email] Guest review approved email sent to ${payload.to}`);
+    return { success: true };
+  } catch (error: any) {
+    console.error('[Email] Failed to send guest review approved:', error);
+    return { success: false, error: error.message };
+  }
+}
+
 export async function sendBankTransferPendingEmail(order: Order, items: OrderItem[]): Promise<EmailResult> {
   try {
     const transporter = await createTransporter();

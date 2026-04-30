@@ -115,6 +115,13 @@ export default function ProductDetail() {
   const [reviewRating, setReviewRating] = useState(5);
   const [reviewTitle, setReviewTitle] = useState('');
   const [reviewContent, setReviewContent] = useState('');
+  const [reviewGuestName, setReviewGuestName] = useState('');
+  const [reviewGuestEmail, setReviewGuestEmail] = useState('');
+  const [captchaToken, setCaptchaToken] = useState<string | null>(null);
+  const [reviewSubmitted, setReviewSubmitted] = useState(false);
+  const turnstileContainerRef = useRef<HTMLDivElement | null>(null);
+  const turnstileWidgetIdRef = useRef<string | null>(null);
+  const turnstileSiteKey = (import.meta as any).env?.VITE_TURNSTILE_SITE_KEY as string | undefined;
 
   // Refs
   const ctaSentinelRef = useRef<HTMLDivElement | null>(null);
@@ -253,28 +260,110 @@ export default function ProductDetail() {
     }
   };
 
+  const resetTurnstile = useCallback(() => {
+    setCaptchaToken(null);
+    const ts = (window as any).turnstile;
+    if (ts && turnstileWidgetIdRef.current) {
+      try { ts.reset(turnstileWidgetIdRef.current); } catch {}
+    }
+  }, []);
+
   const handleSubmitReview = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!product) return;
+
+    if (!user) {
+      const trimmedName = reviewGuestName.trim();
+      const trimmedEmail = reviewGuestEmail.trim();
+      if (trimmedName.length < 2) {
+        toast({ title: 'Eksik bilgi', description: 'Lütfen adınızı yazın.', variant: 'destructive' });
+        return;
+      }
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmedEmail)) {
+        toast({ title: 'Eksik bilgi', description: 'Lütfen geçerli bir e-posta girin.', variant: 'destructive' });
+        return;
+      }
+      if (turnstileSiteKey && !captchaToken) {
+        toast({ title: 'Doğrulama gerekli', description: 'Lütfen güvenlik doğrulamasını tamamlayın.', variant: 'destructive' });
+        return;
+      }
+    }
+
     try {
       await createReviewMutation.mutateAsync({
         productId: product.id,
         rating: reviewRating,
         title: reviewTitle || undefined,
         content: reviewContent || undefined,
+        guestName: !user ? reviewGuestName.trim() : undefined,
+        guestEmail: !user ? reviewGuestEmail.trim() : undefined,
+        captchaToken: !user ? captchaToken || undefined : undefined,
       });
-      toast({ title: 'Başarılı', description: 'Değerlendirmeniz gönderildi.' });
+      toast({
+        title: 'Yorumunuz alındı',
+        description: 'Onay sonrası ürün sayfasında görünecektir.',
+      });
       setReviewTitle('');
       setReviewContent('');
       setReviewRating(5);
+      setReviewGuestName('');
+      setReviewGuestEmail('');
+      setReviewSubmitted(true);
+      resetTurnstile();
     } catch (err: any) {
       toast({
         title: 'Hata',
         description: err?.message || 'Değerlendirme gönderilemedi.',
         variant: 'destructive',
       });
+      resetTurnstile();
     }
   };
+
+  // Turnstile widget'ını misafir formu görünür olduğunda başlat
+  useEffect(() => {
+    if (user || userReview || reviewSubmitted) return;
+    if (!turnstileSiteKey) return;
+    const node = turnstileContainerRef.current;
+    if (!node) return;
+
+    let cancelled = false;
+    let pollId: number | undefined;
+
+    const tryRender = () => {
+      const ts = (window as any).turnstile;
+      if (cancelled) return;
+      if (!ts || typeof ts.render !== 'function') {
+        pollId = window.setTimeout(tryRender, 250);
+        return;
+      }
+      if (turnstileWidgetIdRef.current) return;
+      try {
+        const id = ts.render(node, {
+          sitekey: turnstileSiteKey,
+          callback: (token: string) => setCaptchaToken(token),
+          'expired-callback': () => setCaptchaToken(null),
+          'error-callback': () => setCaptchaToken(null),
+          theme: 'light',
+        });
+        turnstileWidgetIdRef.current = id;
+      } catch (err) {
+        console.warn('[Turnstile] render failed:', err);
+      }
+    };
+
+    tryRender();
+
+    return () => {
+      cancelled = true;
+      if (pollId) clearTimeout(pollId);
+      const ts = (window as any).turnstile;
+      if (ts && turnstileWidgetIdRef.current) {
+        try { ts.remove(turnstileWidgetIdRef.current); } catch {}
+        turnstileWidgetIdRef.current = null;
+      }
+    };
+  }, [user, userReview, reviewSubmitted, turnstileSiteKey]);
 
   if (isLoading) {
     return (
@@ -923,9 +1012,33 @@ export default function ProductDetail() {
               )}
             </div>
 
-            {user && !userReview && (
+            {reviewSubmitted && !userReview && (
+              <div className="bg-emerald-50 border border-emerald-200 p-6 mb-8 text-center" data-testid="text-review-pending">
+                <Check className="w-6 h-6 mx-auto mb-2 text-emerald-700" />
+                <p className="text-emerald-900 font-semibold">
+                  Yorumunuz alındı.
+                </p>
+                <p className="text-emerald-800/80 text-sm mt-1">
+                  Onay sonrası ürün sayfasında görünecektir. Teşekkür ederiz.
+                </p>
+              </div>
+            )}
+
+            {!userReview && !reviewSubmitted && (
               <div className="bg-stone-50 border border-black/8 p-6 mb-8">
-                <h3 className="font-semibold mb-4 text-black">Değerlendirme Yaz</h3>
+                <div className="flex items-baseline justify-between mb-4 gap-3 flex-wrap">
+                  <h3 className="font-semibold text-black">Değerlendirme Yaz</h3>
+                  {!user && (
+                    <p className="text-[11px] text-black/55">
+                      Üye misin?{' '}
+                      <Link href="/giris">
+                        <span className="underline hover:text-polen-orange cursor-pointer">
+                          Giriş yap
+                        </span>
+                      </Link>
+                    </p>
+                  )}
+                </div>
                 <form onSubmit={handleSubmitReview} className="space-y-4">
                   <div>
                     <label className="block text-xs text-black/45 mb-2 uppercase tracking-wider">
@@ -938,11 +1051,38 @@ export default function ProductDetail() {
                       onChange={setReviewRating}
                     />
                   </div>
+
+                  {!user && (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      <input
+                        type="text"
+                        required
+                        placeholder="Adınız *"
+                        value={reviewGuestName}
+                        onChange={(e) => setReviewGuestName(e.target.value)}
+                        maxLength={100}
+                        className="w-full px-4 py-3 bg-white border border-black/12 text-black placeholder:text-black/30 focus:outline-none focus:border-black transition-colors"
+                        data-testid="input-review-guest-name"
+                      />
+                      <input
+                        type="email"
+                        required
+                        placeholder="E-posta *"
+                        value={reviewGuestEmail}
+                        onChange={(e) => setReviewGuestEmail(e.target.value)}
+                        maxLength={200}
+                        className="w-full px-4 py-3 bg-white border border-black/12 text-black placeholder:text-black/30 focus:outline-none focus:border-black transition-colors"
+                        data-testid="input-review-guest-email"
+                      />
+                    </div>
+                  )}
+
                   <input
                     type="text"
                     placeholder="Başlık (isteğe bağlı)"
                     value={reviewTitle}
                     onChange={(e) => setReviewTitle(e.target.value)}
+                    maxLength={200}
                     className="w-full px-4 py-3 bg-white border border-black/12 text-black placeholder:text-black/30 focus:outline-none focus:border-black transition-colors"
                     data-testid="input-review-title"
                   />
@@ -951,9 +1091,22 @@ export default function ProductDetail() {
                     value={reviewContent}
                     onChange={(e) => setReviewContent(e.target.value)}
                     rows={3}
+                    maxLength={4000}
                     className="w-full px-4 py-3 bg-white border border-black/12 text-black placeholder:text-black/30 focus:outline-none focus:border-black transition-colors resize-none"
                     data-testid="input-review-content"
                   />
+
+                  {!user && turnstileSiteKey && (
+                    <div ref={turnstileContainerRef} data-testid="turnstile-container" className="min-h-[65px]" />
+                  )}
+
+                  {!user && (
+                    <p className="text-[11px] text-black/45 leading-relaxed">
+                      E-postanız sadece yorum doğrulama için kullanılır, yayınlanmaz.
+                      Yorumlar yayınlanmadan önce yönetici onayından geçer.
+                    </p>
+                  )}
+
                   <button
                     type="submit"
                     disabled={createReviewMutation.isPending}
@@ -968,22 +1121,6 @@ export default function ProductDetail() {
                     Gönder
                   </button>
                 </form>
-              </div>
-            )}
-
-            {!user && (
-              <div className="bg-stone-50 border border-black/8 p-6 mb-8 text-center">
-                <p className="text-black font-medium mb-4">
-                  Değerlendirme yazmak için giriş yapın
-                </p>
-                <Link href="/giris">
-                  <button
-                    type="button"
-                    className="px-6 py-3 bg-black text-white font-semibold hover:bg-polen-orange transition-colors text-xs tracking-[0.18em] uppercase"
-                  >
-                    Giriş Yap
-                  </button>
-                </Link>
               </div>
             )}
 

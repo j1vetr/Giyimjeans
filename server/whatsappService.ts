@@ -17,7 +17,8 @@ export type WhatsAppEvent =
   | 'order_cancelled_customer'
   | 'order_cancelled_admin'
   | 'order_bank_transfer_pending_customer'
-  | 'order_bank_transfer_admin';
+  | 'order_bank_transfer_admin'
+  | 'review_pending_admin';
 
 export const WHATSAPP_EVENT_LABELS: Record<WhatsAppEvent, string> = {
   order_received_customer: 'Sipariş alındı (müşteriye)',
@@ -29,6 +30,7 @@ export const WHATSAPP_EVENT_LABELS: Record<WhatsAppEvent, string> = {
   order_cancelled_admin: 'Sipariş iptal edildi (yöneticiye)',
   order_bank_transfer_pending_customer: 'Havale ödeme alındı – onay bekleniyor (müşteriye)',
   order_bank_transfer_admin: 'Havale ile ödeme – kontrol et (yöneticiye)',
+  review_pending_admin: 'Yeni yorum onay bekliyor (yöneticiye)',
 };
 
 export const DEFAULT_TEMPLATES: Record<WhatsAppEvent, string> = {
@@ -50,6 +52,8 @@ export const DEFAULT_TEMPLATES: Record<WhatsAppEvent, string> = {
     `🏦 *Siparişiniz alındı – Havale onayı bekleniyor*\n\nMerhaba {{musteriAdi}}, *{{siparisNo}}* numaralı siparişiniz başarıyla oluşturuldu.\n\nÖdemenizi aşağıdaki hesaba *{{toplam}} TL* olarak gönderebilirsiniz:\n\nBanka: ${BANK_TRANSFER_INFO.bankName}\nIBAN: ${BANK_TRANSFER_INFO.iban}\nAd Soyad: ${BANK_TRANSFER_INFO.accountHolder}\n\nHavaleniz hesabımıza ulaştığında siparişiniz hazırlanmaya başlanacak ve size tekrar bilgi vereceğiz.\n\n— {{siteAdi}}`,
   order_bank_transfer_admin:
     '⚠️ *HAVALE İLE ÖDEME — KONTROL ET*\n\nMüşteri havale yöntemiyle yeni bir sipariş oluşturdu.\n\nSipariş No: {{siparisNo}}\nMüşteri: {{musteriAdi}}\nTelefon: {{musteriTelefon}}\nTutar: {{toplam}} TL\n\nHesap hareketlerini kontrol edip admin panelinden onaylayabilirsin.',
+  review_pending_admin:
+    '💬 *YENİ YORUM ONAY BEKLİYOR*\n\nÜrün: *{{urunAdi}}*\nYazan: {{yorumYazari}} {{misafirEtiketi}}\nPuan: {{yildizlar}} ({{puan}}/5)\n{{baslikSatiri}}{{icerikSatiri}}\nAdmin panelinden onaylamak için: {{siteAdi}}/toov-admin?tab=reviews',
 };
 
 const DEFAULT_ENDPOINT = 'http://127.0.0.1:3225/api/send-message';
@@ -234,6 +238,48 @@ export async function sendBankTransferPendingToCustomer(order: Order) {
 }
 export async function sendBankTransferPendingToAdmin(order: Order) {
   return sendEventToAdmin(order, 'order_bank_transfer_admin');
+}
+
+export interface ReviewPendingPayload {
+  productName: string;
+  authorName: string;
+  authorEmail: string | null;
+  rating: number;
+  title: string | null;
+  content: string | null;
+  isGuest: boolean;
+}
+
+export async function sendReviewPendingToAdmin(payload: ReviewPendingPayload): Promise<WhatsAppResult> {
+  const config = await getConfig();
+  if (!config) return { success: false, skipped: true, error: 'WhatsApp servisi kapalı' };
+  if (!config.events.review_pending_admin) {
+    console.log('[WhatsApp] event review_pending_admin disabled, skipping');
+    return { success: false, skipped: true, error: 'Bu olay için bildirim kapalı' };
+  }
+  if (!config.adminPhone) {
+    console.log('[WhatsApp] admin phone not configured, skipping event=review_pending_admin');
+    return { success: false, skipped: true, error: 'Yönetici telefonu yapılandırılmamış' };
+  }
+
+  const stars = '⭐'.repeat(payload.rating);
+  const truncate = (s: string, n: number) => (s.length > n ? s.slice(0, n - 1) + '…' : s);
+  const baslikSatiri = payload.title ? `Başlık: _${truncate(payload.title, 80)}_\n` : '';
+  const icerikSatiri = payload.content ? `Yorum: "${truncate(payload.content, 200)}"\n\n` : '\n';
+
+  const vars: Record<string, string> = {
+    urunAdi: payload.productName,
+    yorumYazari: payload.authorName,
+    misafirEtiketi: payload.isGuest ? '(misafir)' : '',
+    yildizlar: stars,
+    puan: String(payload.rating),
+    baslikSatiri,
+    icerikSatiri,
+    siteAdi: config.siteName,
+  };
+
+  const message = renderTemplate(config.templates.review_pending_admin, vars);
+  return sendRaw(config, config.adminPhone, message, 'review_pending_admin');
 }
 
 export async function sendTestWhatsApp(rawPhone: string, customMessage?: string): Promise<WhatsAppResult> {

@@ -11,6 +11,7 @@ import {
   Settings,
   Database,
   Ticket,
+  MessageSquare,
 } from 'lucide-react';
 import type { SidebarCategory } from '../_layout/AdminLayout';
 import type { TabType } from './types';
@@ -28,6 +29,7 @@ export const VALID_TABS: TabType[] = [
   'menu',
   'marketplaces',
   'coupons',
+  'reviews',
 ];
 
 export const SIDEBAR_CATEGORIES: SidebarCategory[] = [
@@ -56,7 +58,10 @@ export const SIDEBAR_CATEGORIES: SidebarCategory[] = [
   },
   {
     title: 'Müşteriler',
-    items: [{ id: 'users', icon: Users, label: 'Kullanıcılar' }],
+    items: [
+      { id: 'users', icon: Users, label: 'Kullanıcılar' },
+      { id: 'reviews', icon: MessageSquare, label: 'Yorumlar' },
+    ],
   },
   {
     title: 'Entegrasyonlar',

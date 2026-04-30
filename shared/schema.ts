@@ -298,21 +298,31 @@ export const insertFavoriteSchema = createInsertSchema(favorites).omit({
 export type InsertFavorite = z.infer<typeof insertFavoriteSchema>;
 export type Favorite = typeof favorites.$inferSelect;
 
-// Product Reviews
+// Product Reviews — üye + misafir destekli, admin onayından geçer
 export const productReviews = pgTable("product_reviews", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   productId: varchar("product_id").references(() => products.id, { onDelete: "cascade" }).notNull(),
-  userId: varchar("user_id").references(() => users.id, { onDelete: "cascade" }).notNull(),
+  // Üye yorumu için doldurulur. Misafir yorumlarında null kalır.
+  userId: varchar("user_id").references(() => users.id, { onDelete: "cascade" }),
+  // Misafir yorumlarında doldurulur. Üye yorumunda null kalır.
+  guestName: text("guest_name"),
+  guestEmail: text("guest_email"),
   rating: integer("rating").notNull(), // 1-5
   title: text("title"),
   content: text("content"),
-  isApproved: boolean("is_approved").default(true).notNull(),
+  isApproved: boolean("is_approved").default(false).notNull(),
+  rejectionReason: text("rejection_reason"),
+  approvedAt: timestamp("approved_at"),
+  approvedBy: varchar("approved_by"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
 export const insertProductReviewSchema = createInsertSchema(productReviews).omit({
   id: true,
   isApproved: true,
+  rejectionReason: true,
+  approvedAt: true,
+  approvedBy: true,
   createdAt: true,
 });
 

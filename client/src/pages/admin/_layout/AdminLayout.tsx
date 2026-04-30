@@ -21,6 +21,7 @@ interface AdminLayoutProps {
   onTabChange: (tab: TabType) => void;
   onLogout: () => void;
   pendingOrdersCount: number;
+  pendingReviewsCount?: number;
   pageTitle: string;
   children: ReactNode;
 }
@@ -32,6 +33,7 @@ export default function AdminLayout({
   onTabChange,
   onLogout,
   pendingOrdersCount,
+  pendingReviewsCount = 0,
   pageTitle,
   children,
 }: AdminLayoutProps) {
@@ -84,7 +86,10 @@ export default function AdminLayout({
               </p>
               {category.items.map((item) => {
                 const isActive = activeTab === item.id;
-                const showBadge = item.id === 'orders' && pendingOrdersCount > 0;
+                let badgeCount = 0;
+                if (item.id === 'orders') badgeCount = pendingOrdersCount;
+                else if (item.id === 'reviews') badgeCount = pendingReviewsCount;
+                const showBadge = badgeCount > 0;
                 return (
                   <button
                     key={item.id}
@@ -105,8 +110,9 @@ export default function AdminLayout({
                             ? 'bg-white text-neutral-900'
                             : 'bg-neutral-900 text-white'
                         }`}
+                        data-testid={`badge-${item.id}-count`}
                       >
-                        {pendingOrdersCount > 99 ? '99+' : pendingOrdersCount}
+                        {badgeCount > 99 ? '99+' : badgeCount}
                       </span>
                     )}
                   </button>

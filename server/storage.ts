@@ -96,6 +96,31 @@ import {
 } from "@shared/schema";
 import { eq, and, desc, asc, sql, ilike, gte, lte, gt, between, inArray, sum } from "drizzle-orm";
 
+export interface ReviewAdminRow {
+  id: string;
+  productId: string;
+  userId: string | null;
+  guestName: string | null;
+  guestEmail: string | null;
+  rating: number;
+  title: string | null;
+  content: string | null;
+  isApproved: boolean;
+  rejectionReason: string | null;
+  approvedAt: Date | null;
+  approvedBy: string | null;
+  createdAt: Date;
+  product: {
+    id: string;
+    name: string;
+    slug: string;
+    image: string | null;
+  };
+  author:
+    | { type: 'user'; displayName: string; email: string | null }
+    | { type: 'guest'; displayName: string; email: string | null };
+}
+
 export interface AdminStats {
   totalProducts: number;
   totalCategories: number;
@@ -170,6 +195,12 @@ export interface IStorage {
   createReview(review: InsertProductReview): Promise<ProductReview>;
   deleteReview(id: string): Promise<void>;
   getUserReview(userId: string, productId: string): Promise<ProductReview | undefined>;
+  getRecentGuestReview(email: string, productId: string, sinceMs: number): Promise<ProductReview | undefined>;
+  getReviewById(id: string): Promise<ProductReview | undefined>;
+  getAdminReviews(filter: 'pending' | 'approved' | 'rejected' | 'all'): Promise<ReviewAdminRow[]>;
+  approveReview(id: string, adminId: string): Promise<ProductReview | undefined>;
+  rejectReview(id: string, reason: string, adminId: string): Promise<ProductReview | undefined>;
+  getPendingReviewsCount(): Promise<number>;
 
   getProductVariants(productId: string): Promise<ProductVariant[]>;
   getProductVariant(id: string): Promise<ProductVariant | undefined>;
@@ -907,10 +938,15 @@ export class DbStorage implements IStorage {
         id: productReviews.id,
         productId: productReviews.productId,
         userId: productReviews.userId,
+        guestName: productReviews.guestName,
+        guestEmail: productReviews.guestEmail,
         rating: productReviews.rating,
         title: productReviews.title,
         content: productReviews.content,
         isApproved: productReviews.isApproved,
+        rejectionReason: productReviews.rejectionReason,
+        approvedAt: productReviews.approvedAt,
+        approvedBy: productReviews.approvedBy,
         createdAt: productReviews.createdAt,
         userFirstName: users.firstName,
         userLastName: users.lastName,
@@ -920,20 +956,31 @@ export class DbStorage implements IStorage {
       .where(and(eq(productReviews.productId, productId), eq(productReviews.isApproved, true)))
       .orderBy(desc(productReviews.createdAt));
 
-    return reviews.map(r => ({
-      id: r.id,
-      productId: r.productId,
-      userId: r.userId,
-      rating: r.rating,
-      title: r.title,
-      content: r.content,
-      isApproved: r.isApproved,
-      createdAt: r.createdAt,
-      user: {
-        firstName: r.userFirstName,
-        lastName: r.userLastName,
-      }
-    }));
+    return reviews.map(r => {
+      // Misafir yorumu: guestName'den firstName türet, e-posta gizli kalır
+      const guestFirst = r.guestName?.split(' ')[0] || null;
+      const guestLastParts = (r.guestName || '').split(' ').slice(1);
+      const guestLast = guestLastParts.length ? guestLastParts.join(' ') : null;
+      return {
+        id: r.id,
+        productId: r.productId,
+        userId: r.userId,
+        guestName: r.guestName,
+        guestEmail: r.guestEmail,
+        rating: r.rating,
+        title: r.title,
+        content: r.content,
+        isApproved: r.isApproved,
+        rejectionReason: r.rejectionReason,
+        approvedAt: r.approvedAt,
+        approvedBy: r.approvedBy,
+        createdAt: r.createdAt,
+        user: {
+          firstName: r.userId ? r.userFirstName : guestFirst,
+          lastName: r.userId ? r.userLastName : guestLast,
+        }
+      };
+    });
   }
 
   async getProductAverageRating(productId: string): Promise<{ average: number; count: number }> {
@@ -965,6 +1012,139 @@ export class DbStorage implements IStorage {
       and(eq(productReviews.userId, userId), eq(productReviews.productId, productId))
     );
     return review;
+  }
+
+  async getRecentGuestReview(email: string, productId: string, sinceMs: number): Promise<ProductReview | undefined> {
+    const cutoff = new Date(Date.now() - sinceMs);
+    const [review] = await db
+      .select()
+      .from(productReviews)
+      .where(
+        and(
+          eq(productReviews.guestEmail, email.toLowerCase()),
+          eq(productReviews.productId, productId),
+          sql`${productReviews.createdAt} > ${cutoff}`,
+        ),
+      )
+      .limit(1);
+    return review;
+  }
+
+  async getReviewById(id: string): Promise<ProductReview | undefined> {
+    const [review] = await db.select().from(productReviews).where(eq(productReviews.id, id));
+    return review;
+  }
+
+  async getAdminReviews(filter: 'pending' | 'approved' | 'rejected' | 'all'): Promise<ReviewAdminRow[]> {
+    const baseSelect = {
+      id: productReviews.id,
+      productId: productReviews.productId,
+      userId: productReviews.userId,
+      guestName: productReviews.guestName,
+      guestEmail: productReviews.guestEmail,
+      rating: productReviews.rating,
+      title: productReviews.title,
+      content: productReviews.content,
+      isApproved: productReviews.isApproved,
+      rejectionReason: productReviews.rejectionReason,
+      approvedAt: productReviews.approvedAt,
+      approvedBy: productReviews.approvedBy,
+      createdAt: productReviews.createdAt,
+      userFirstName: users.firstName,
+      userLastName: users.lastName,
+      userEmail: users.email,
+      productName: products.name,
+      productSlug: products.slug,
+      productImage: sql<string | null>`(${products.images}->>0)`,
+    };
+
+    let whereClause: any = undefined;
+    if (filter === 'pending') {
+      whereClause = and(eq(productReviews.isApproved, false), sql`${productReviews.rejectionReason} IS NULL`);
+    } else if (filter === 'approved') {
+      whereClause = eq(productReviews.isApproved, true);
+    } else if (filter === 'rejected') {
+      whereClause = sql`${productReviews.rejectionReason} IS NOT NULL`;
+    }
+
+    const query = db
+      .select(baseSelect)
+      .from(productReviews)
+      .leftJoin(users, eq(productReviews.userId, users.id))
+      .leftJoin(products, eq(productReviews.productId, products.id));
+
+    const rows = whereClause
+      ? await query.where(whereClause).orderBy(desc(productReviews.createdAt))
+      : await query.orderBy(desc(productReviews.createdAt));
+
+    return rows.map(r => ({
+      id: r.id,
+      productId: r.productId,
+      userId: r.userId,
+      guestName: r.guestName,
+      guestEmail: r.guestEmail,
+      rating: r.rating,
+      title: r.title,
+      content: r.content,
+      isApproved: r.isApproved,
+      rejectionReason: r.rejectionReason,
+      approvedAt: r.approvedAt,
+      approvedBy: r.approvedBy,
+      createdAt: r.createdAt,
+      product: {
+        id: r.productId,
+        name: r.productName || 'Silinmiş ürün',
+        slug: r.productSlug || '',
+        image: r.productImage,
+      },
+      author: r.userId
+        ? {
+            type: 'user' as const,
+            displayName: [r.userFirstName, r.userLastName].filter(Boolean).join(' ') || (r.userEmail ?? 'Üye'),
+            email: r.userEmail,
+          }
+        : {
+            type: 'guest' as const,
+            displayName: r.guestName || 'Misafir',
+            email: r.guestEmail,
+          },
+    }));
+  }
+
+  async approveReview(id: string, adminId: string): Promise<ProductReview | undefined> {
+    const [updated] = await db
+      .update(productReviews)
+      .set({
+        isApproved: true,
+        rejectionReason: null,
+        approvedAt: new Date(),
+        approvedBy: adminId,
+      })
+      .where(eq(productReviews.id, id))
+      .returning();
+    return updated;
+  }
+
+  async rejectReview(id: string, reason: string, adminId: string): Promise<ProductReview | undefined> {
+    const [updated] = await db
+      .update(productReviews)
+      .set({
+        isApproved: false,
+        rejectionReason: reason,
+        approvedAt: new Date(),
+        approvedBy: adminId,
+      })
+      .where(eq(productReviews.id, id))
+      .returning();
+    return updated;
+  }
+
+  async getPendingReviewsCount(): Promise<number> {
+    const [result] = await db
+      .select({ count: sql<number>`count(*)::int` })
+      .from(productReviews)
+      .where(and(eq(productReviews.isApproved, false), sql`${productReviews.rejectionReason} IS NULL`));
+    return Number(result?.count || 0);
   }
 
   // Analytics methods

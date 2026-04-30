@@ -15,6 +15,7 @@ import SettingsTab from './admin/SettingsTab';
 import DatabaseTab from './admin/DatabaseTab';
 import MenuTab from './admin/MenuTab';
 import CouponsTab from './admin/CouponsTab';
+import ReviewsTab from './admin/ReviewsTab';
 
 import ProductModal from './admin/modals/ProductModal';
 import CategoryModal from './admin/modals/CategoryModal';
@@ -30,6 +31,7 @@ import {
   getStatusLabel,
 } from './admin/_shared/sidebarConfig';
 import { useAdminDashboardData } from './admin/_shared/useAdminDashboardData';
+import { usePendingReviewsCount } from '@/hooks/useReviews';
 
 export default function AdminDashboard() {
   const [, setLocation] = useLocation();
@@ -117,6 +119,8 @@ export default function AdminDashboard() {
   const pendingOrdersCount = orders.filter(
     (o) => o.status === 'pending' || o.status === 'confirmed',
   ).length;
+  const { data: pendingReviewsData } = usePendingReviewsCount();
+  const pendingReviewsCount = pendingReviewsData?.count ?? 0;
   const pageTitle = ALL_SIDEBAR_ITEMS.find((i) => i.id === activeTab)?.label ?? '';
 
   return (
@@ -128,6 +132,7 @@ export default function AdminDashboard() {
         onTabChange={handleTabChange}
         onLogout={() => logoutMutation.mutate()}
         pendingOrdersCount={pendingOrdersCount}
+        pendingReviewsCount={pendingReviewsCount}
         pageTitle={pageTitle}
       >
         {activeTab === 'dashboard' && (
@@ -193,6 +198,7 @@ export default function AdminDashboard() {
           />
         )}
         {activeTab === 'coupons' && <CouponsTab />}
+        {activeTab === 'reviews' && <ReviewsTab />}
       </AdminLayout>
 
       {showProductModal && (

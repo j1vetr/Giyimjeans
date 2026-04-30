@@ -141,4 +141,5 @@ export type TabType =
   | 'database'
   | 'menu'
   | 'marketplaces'
-  | 'coupons';
+  | 'coupons'
+  | 'reviews';

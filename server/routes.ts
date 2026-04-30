@@ -24,7 +24,11 @@ import {
   sendTestEmail,
   sendAbandonedCartEmail,
   sendBankTransferPendingEmail,
+  sendAdminReviewNotificationEmail,
+  sendGuestReviewApprovedEmail,
+  type AdminReviewNotificationPayload,
 } from "./emailService";
+import { verifyTurnstile, getClientIp } from "./captcha";
 import {
   sendOrderReceivedToCustomer,
   sendOrderReceivedToAdmin,
@@ -36,6 +40,7 @@ import {
   sendBankTransferPendingToCustomer,
   sendBankTransferPendingToAdmin,
   sendTestWhatsApp,
+  sendReviewPendingToAdmin,
 } from "./whatsappService";
 import { BANK_TRANSFER_DISCOUNT_RATE } from "./bankTransfer";
 import {
@@ -1811,31 +1816,208 @@ export async function registerRoutes(
     try {
       const payload = await getAuthPayload(req, res);
       const userId = payload?.type === 'user' ? payload.userId : null;
-      if (!userId) {
-        return res.status(401).json({ error: "Please login to write a review" });
-      }
 
-      // Check if user already reviewed this product
-      const existingReview = await storage.getUserReview(userId, req.params.productId);
-      if (existingReview) {
-        return res.status(400).json({ error: "You have already reviewed this product" });
-      }
+      const { rating, title, content, guestName, guestEmail, captchaToken } = req.body || {};
 
-      const { rating, title, content } = req.body;
       if (!rating || rating < 1 || rating > 5) {
-        return res.status(400).json({ error: "Rating must be between 1 and 5" });
+        return res.status(400).json({ error: "Lütfen 1 ile 5 arasında bir puan seçin." });
+      }
+
+      const cleanTitle = typeof title === 'string' ? title.trim().slice(0, 200) : '';
+      const cleanContent = typeof content === 'string' ? content.trim().slice(0, 4000) : '';
+
+      // Ürün gerçekten var mı?
+      const product = await storage.getProduct(req.params.productId);
+      if (!product) {
+        return res.status(404).json({ error: "Ürün bulunamadı." });
+      }
+
+      if (userId) {
+        // Üye yorumu — captcha bypass, çift yorum kontrolü
+        const existingReview = await storage.getUserReview(userId, req.params.productId);
+        if (existingReview) {
+          return res.status(400).json({ error: "Bu ürün için zaten bir değerlendirme yazdınız." });
+        }
+
+        const review = await storage.createReview({
+          productId: req.params.productId,
+          userId,
+          guestName: null,
+          guestEmail: null,
+          rating,
+          title: cleanTitle || null,
+          content: cleanContent || null,
+        });
+
+        // Bildirim — admin'e yeni yorum bekliyor
+        try {
+          const user = await storage.getUser(userId);
+          const author = user
+            ? `${user.firstName || ''} ${user.lastName || ''}`.trim() || user.email
+            : 'Üye';
+          notifyAdminNewReview({
+            productName: product.name,
+            productSlug: product.slug,
+            authorName: author,
+            authorEmail: user?.email || null,
+            rating,
+            title: cleanTitle || null,
+            content: cleanContent || null,
+            isGuest: false,
+          }).catch(err => console.error('[Reviews] notify admin failed:', err));
+        } catch {}
+
+        return res.status(201).json({
+          ...review,
+          message: "Yorumunuz alındı, onay sonrası ürün sayfasında görünecektir.",
+        });
+      }
+
+      // Misafir yorumu — captcha + form alan zorunluluğu
+      const trimmedName = typeof guestName === 'string' ? guestName.trim().slice(0, 100) : '';
+      const trimmedEmail = typeof guestEmail === 'string' ? guestEmail.trim().toLowerCase().slice(0, 200) : '';
+
+      if (!trimmedName || trimmedName.length < 2) {
+        return res.status(400).json({ error: "Lütfen adınızı yazın." });
+      }
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmedEmail)) {
+        return res.status(400).json({ error: "Lütfen geçerli bir e-posta adresi girin." });
+      }
+
+      const captcha = await verifyTurnstile(captchaToken, getClientIp(req));
+      if (!captcha.success) {
+        return res.status(400).json({
+          error: captcha.error || "Captcha doğrulaması başarısız. Lütfen tekrar deneyin.",
+        });
+      }
+
+      // 24 saat içinde aynı e-postadan aynı ürüne tekrar
+      const recent = await storage.getRecentGuestReview(
+        trimmedEmail,
+        req.params.productId,
+        24 * 60 * 60 * 1000,
+      );
+      if (recent) {
+        return res.status(400).json({
+          error: "Bu ürün için son 24 saat içinde zaten bir değerlendirme gönderdiniz. Onay sürecini bekleyin.",
+        });
       }
 
       const review = await storage.createReview({
         productId: req.params.productId,
-        userId,
+        userId: null,
+        guestName: trimmedName,
+        guestEmail: trimmedEmail,
         rating,
-        title: title || null,
-        content: content || null,
+        title: cleanTitle || null,
+        content: cleanContent || null,
       });
-      res.status(201).json(review);
+
+      // Bildirim — admin'e yeni misafir yorumu bekliyor
+      try {
+        notifyAdminNewReview({
+          productName: product.name,
+          productSlug: product.slug,
+          authorName: trimmedName,
+          authorEmail: trimmedEmail,
+          rating,
+          title: cleanTitle || null,
+          content: cleanContent || null,
+          isGuest: true,
+        }).catch(err => console.error('[Reviews] notify admin failed:', err));
+      } catch {}
+
+      return res.status(201).json({
+        ...review,
+        message: "Yorumunuz alındı, onay sonrası ürün sayfasında görünecektir.",
+      });
     } catch (error) {
-      res.status(500).json({ error: "Failed to create review" });
+      console.error('[Reviews] create error:', error);
+      res.status(500).json({ error: "Yorum gönderilemedi. Lütfen tekrar deneyin." });
+    }
+  });
+
+  // ─── Admin Reviews ──────────────────────────────────────────────────────
+  app.get("/api/admin/reviews", requireAdmin, async (req, res) => {
+    try {
+      const status = (req.query.status as string) || 'pending';
+      const filter = ['pending', 'approved', 'rejected', 'all'].includes(status)
+        ? (status as 'pending' | 'approved' | 'rejected' | 'all')
+        : 'pending';
+      const reviews = await storage.getAdminReviews(filter);
+      res.json(reviews);
+    } catch (error) {
+      console.error('[Admin Reviews] list error:', error);
+      res.status(500).json({ error: "Yorumlar getirilemedi" });
+    }
+  });
+
+  app.get("/api/admin/reviews/pending-count", requireAdmin, async (_req, res) => {
+    try {
+      const count = await storage.getPendingReviewsCount();
+      res.json({ count });
+    } catch (error) {
+      console.error('[Admin Reviews] pending count error:', error);
+      res.json({ count: 0 });
+    }
+  });
+
+  app.post("/api/admin/reviews/:id/approve", requireAdmin, async (req, res) => {
+    try {
+      const adminId = (req as any).adminId as string;
+      const review = await storage.getReviewById(req.params.id);
+      if (!review) return res.status(404).json({ error: "Yorum bulunamadı" });
+
+      const updated = await storage.approveReview(req.params.id, adminId);
+
+      // Misafir e-postası varsa bilgilendir
+      if (review.guestEmail) {
+        try {
+          const product = await storage.getProduct(review.productId);
+          if (product) {
+            sendGuestReviewApprovedEmail({
+              to: review.guestEmail,
+              guestName: review.guestName || 'Değerli müşterimiz',
+              productName: product.name,
+              productSlug: product.slug,
+              rating: review.rating,
+            }).catch(err => console.error('[Reviews] approval email failed:', err));
+          }
+        } catch {}
+      }
+
+      res.json(updated);
+    } catch (error) {
+      console.error('[Admin Reviews] approve error:', error);
+      res.status(500).json({ error: "Yorum onaylanamadı" });
+    }
+  });
+
+  app.post("/api/admin/reviews/:id/reject", requireAdmin, async (req, res) => {
+    try {
+      const adminId = (req as any).adminId as string;
+      const reason = typeof req.body?.reason === 'string' ? req.body.reason.trim().slice(0, 500) : '';
+      if (!reason) {
+        return res.status(400).json({ error: "Lütfen reddetme nedenini belirtin." });
+      }
+      const review = await storage.getReviewById(req.params.id);
+      if (!review) return res.status(404).json({ error: "Yorum bulunamadı" });
+
+      const updated = await storage.rejectReview(req.params.id, reason, adminId);
+      res.json(updated);
+    } catch (error) {
+      console.error('[Admin Reviews] reject error:', error);
+      res.status(500).json({ error: "Yorum reddedilemedi" });
+    }
+  });
+
+  app.delete("/api/admin/reviews/:id", requireAdmin, async (req, res) => {
+    try {
+      await storage.deleteReview(req.params.id);
+      res.json({ ok: true });
+    } catch (error) {
+      console.error('[Admin Reviews] delete error:', error);
+      res.status(500).json({ error: "Yorum silinemedi" });
     }
   });
 
@@ -6147,4 +6329,23 @@ function escapeXml(str: string): string {
     .replace(/>/g, "&gt;")
     .replace(/"/g, "&quot;")
     .replace(/'/g, "&apos;");
+}
+
+async function notifyAdminNewReview(payload: AdminReviewNotificationPayload): Promise<void> {
+  try {
+    await Promise.allSettled([
+      sendAdminReviewNotificationEmail(payload),
+      sendReviewPendingToAdmin({
+        productName: payload.productName,
+        authorName: payload.authorName,
+        authorEmail: payload.authorEmail,
+        rating: payload.rating,
+        title: payload.title,
+        content: payload.content,
+        isGuest: payload.isGuest,
+      }),
+    ]);
+  } catch (error) {
+    console.error('[Reviews] notifyAdminNewReview unexpected:', error);
+  }
 }
