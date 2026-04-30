@@ -155,8 +155,19 @@ export function usePendingReviewsCount(enabled: boolean = true) {
   });
 }
 
-function invalidateAdminReviews(queryClient: ReturnType<typeof useQueryClient>) {
+function invalidateAfterModeration(
+  queryClient: ReturnType<typeof useQueryClient>,
+  productId?: string,
+) {
   queryClient.invalidateQueries({ queryKey: ['admin', 'reviews'] });
+  if (productId) {
+    queryClient.invalidateQueries({ queryKey: ['reviews', productId] });
+    queryClient.invalidateQueries({ queryKey: ['rating', productId] });
+    queryClient.invalidateQueries({ queryKey: ['my-review', productId] });
+  } else {
+    queryClient.invalidateQueries({ queryKey: ['reviews'] });
+    queryClient.invalidateQueries({ queryKey: ['rating'] });
+  }
 }
 
 export function useApproveReview() {
@@ -169,9 +180,9 @@ export function useApproveReview() {
       });
       const body = await response.json().catch(() => ({}));
       if (!response.ok) throw new Error(body.error || 'Yorum onaylanamadı');
-      return body;
+      return body as { productId?: string };
     },
-    onSuccess: () => invalidateAdminReviews(queryClient),
+    onSuccess: (data) => invalidateAfterModeration(queryClient, data?.productId),
   });
 }
 
@@ -187,9 +198,9 @@ export function useRejectReview() {
       });
       const body = await response.json().catch(() => ({}));
       if (!response.ok) throw new Error(body.error || 'Yorum reddedilemedi');
-      return body;
+      return body as { productId?: string };
     },
-    onSuccess: () => invalidateAdminReviews(queryClient),
+    onSuccess: (data) => invalidateAfterModeration(queryClient, data?.productId),
   });
 }
 
@@ -203,8 +214,8 @@ export function useDeleteReview() {
       });
       const body = await response.json().catch(() => ({}));
       if (!response.ok) throw new Error(body.error || 'Yorum silinemedi');
-      return body;
+      return body as { productId?: string };
     },
-    onSuccess: () => invalidateAdminReviews(queryClient),
+    onSuccess: (data) => invalidateAfterModeration(queryClient, data?.productId),
   });
 }
