@@ -9,8 +9,6 @@ export interface Review {
   content: string | null;
   createdAt: string;
   isGuest: boolean;
-  // Sadece useUserReview (kullanıcının kendi yorumu) için döner;
-  // public reviews endpoint'inde alan yer almaz.
   isApproved?: boolean;
   rejectionReason?: string | null;
   user: {

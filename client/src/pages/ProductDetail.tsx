@@ -295,7 +295,11 @@ export default function ProductDetail() {
     setCaptchaToken(null);
     const ts = window.turnstile;
     if (ts && turnstileWidgetIdRef.current) {
-      try { ts.reset(turnstileWidgetIdRef.current); } catch {}
+      try {
+        ts.reset(turnstileWidgetIdRef.current);
+      } catch (err) {
+        console.warn('[Turnstile] reset failed:', err);
+      }
     }
   }, []);
 
@@ -390,7 +394,11 @@ export default function ProductDetail() {
       if (pollId) clearTimeout(pollId);
       const ts = window.turnstile;
       if (ts && turnstileWidgetIdRef.current) {
-        try { ts.remove(turnstileWidgetIdRef.current); } catch {}
+        try {
+          ts.remove(turnstileWidgetIdRef.current);
+        } catch (err) {
+          console.warn('[Turnstile] remove failed:', err);
+        }
         turnstileWidgetIdRef.current = null;
       }
     };

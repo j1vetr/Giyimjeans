@@ -1000,9 +1000,6 @@ export class DbStorage implements IStorage {
   }
 
   async createReview(review: InsertProductReview): Promise<ProductReview> {
-    // Defansif: yeni yorum DAİMA pending olarak kaydedilir.
-    // DB default'una güvenmek yerine açıkça set ediyoruz, böylece migration
-    // henüz uygulanmamış bir ortamda da onay sırasını atlamak imkansız olur.
     const [newReview] = await db
       .insert(productReviews)
       .values({ ...review, isApproved: false })
