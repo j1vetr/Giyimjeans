@@ -1,4 +1,5 @@
-import { storage } from "./storage";
+import { storage, db } from "./storage";
+import { productVariants } from "@shared/schema";
 
 const SITE_URL = "https://polenstone.com";
 const BRAND_NAME = "Polen Stone";
@@ -37,12 +38,20 @@ function formatPriceTRY(value: string | number | null | undefined): string {
 }
 
 export async function buildMetaCatalogXml(): Promise<string> {
-  const [allProducts, allCategories] = await Promise.all([
+  const [allProducts, allCategories, allVariants] = await Promise.all([
     storage.getAllProducts(),
     storage.getCategories(),
+    db.select().from(productVariants),
   ]);
 
   const categoryById = new Map(allCategories.map((c) => [c.id, c]));
+
+  // Toplam stok = ürünün tüm varyantlarının stok toplamı (sitedeki kuralla aynı)
+  const totalStockByProduct = new Map<string, number>();
+  for (const v of allVariants) {
+    const prev = totalStockByProduct.get(v.productId) ?? 0;
+    totalStockByProduct.set(v.productId, prev + (v.stock ?? 0));
+  }
 
   const items: string[] = [];
 
@@ -51,6 +60,10 @@ export async function buildMetaCatalogXml(): Promise<string> {
 
     const images = Array.isArray(p.images) ? p.images.filter(Boolean) : [];
     if (images.length === 0) continue;
+
+    // Stokta olmayan ürünleri akışa hiç koyma (sitedeki davranışla tutarlı)
+    const totalStock = totalStockByProduct.get(p.id) ?? 0;
+    if (totalStock <= 0) continue;
 
     const mainImage = absoluteUrl(images[0]);
     const additionalImages = images
