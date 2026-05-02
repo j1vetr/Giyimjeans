@@ -36,6 +36,44 @@ export const WHATSAPP_EVENT_LABELS: Record<WhatsAppEvent, string> = {
 
 const DIVIDER = '━━━━━━━━━━━━━━━';
 
+const PREVIOUS_DEFAULT_TEMPLATES: Record<WhatsAppEvent, string[]> = {
+  order_received_customer: [
+    'Merhaba {{musteriAdi}},\n\n{{siteAdi}}\'dan {{siparisNo}} numaralı siparişiniz alındı. Toplam tutar: {{toplam}} TL.\n\nSiparişiniz hazırlanmaya başladığında size tekrar haber vereceğiz.\n\nTeşekkürler!',
+    '✅ *Siparişiniz alındı*\n\nMerhaba {{musteriAdi}}, {{siteAdi}}\'dan *{{siparisNo}}* numaralı siparişiniz başarıyla alındı.\n\nToplam: *{{toplam}} TL*\n\nHazırlanmaya başladığında size tekrar haber vereceğiz. Bizi tercih ettiğiniz için teşekkürler.',
+  ],
+  order_received_admin: [
+    'Yeni sipariş geldi!\n\nSipariş No: {{siparisNo}}\nMüşteri: {{musteriAdi}}\nTelefon: {{musteriTelefon}}\nTutar: {{toplam}} TL',
+  ],
+  order_preparing_customer: [
+    'Merhaba {{musteriAdi}},\n\n{{siparisNo}} numaralı siparişiniz hazırlanmaya başladı. En kısa sürede kargoya teslim edilecek.\n\n{{siteAdi}}',
+    '📦 *Siparişiniz hazırlanıyor*\n\nMerhaba {{musteriAdi}}, *{{siparisNo}}* numaralı siparişiniz atölyemizde özenle hazırlanıyor. En kısa sürede kargoya teslim edilecek.\n\n— {{siteAdi}}',
+  ],
+  order_shipped_customer: [
+    'Merhaba {{musteriAdi}},\n\n{{siparisNo}} numaralı siparişiniz kargoya verildi.\n\nKargo Firması: {{kargoFirma}}\nTakip No: {{kargoTakipNo}}\nTakip Linki: {{kargoTakipLink}}\n\n{{siteAdi}}',
+    '🚚 *Kargoya verildi*\n\nMerhaba {{musteriAdi}}, *{{siparisNo}}* numaralı siparişiniz kargoya verildi.\n\nKargo: {{kargoFirma}}\nTakip No: *{{kargoTakipNo}}*\nTakip: {{kargoTakipLink}}\n\n— {{siteAdi}}',
+  ],
+  order_delivered_customer: [
+    'Merhaba {{musteriAdi}},\n\n{{siparisNo}} numaralı siparişiniz teslim edildi. Bizi tercih ettiğiniz için teşekkür ederiz.\n\n{{siteAdi}}',
+    '🎉 *Siparişiniz teslim edildi*\n\nMerhaba {{musteriAdi}}, *{{siparisNo}}* numaralı siparişiniz teslim edildi. Bizi tercih ettiğiniz için teşekkür ederiz. Memnun kaldıysanız bir değerlendirme bırakırsanız çok seviniriz.\n\n— {{siteAdi}}',
+  ],
+  order_cancelled_customer: [
+    'Merhaba {{musteriAdi}},\n\n{{siparisNo}} numaralı siparişiniz iptal edilmiştir. Detaylı bilgi için bizimle iletişime geçebilirsiniz.\n\n{{siteAdi}}',
+    'ℹ️ *Sipariş iptal bildirimi*\n\nMerhaba {{musteriAdi}}, *{{siparisNo}}* numaralı siparişiniz iptal edilmiştir. Detaylı bilgi veya yardım için bizimle iletişime geçebilirsiniz.\n\n— {{siteAdi}}',
+  ],
+  order_cancelled_admin: [
+    'Sipariş iptal edildi!\n\nSipariş No: {{siparisNo}}\nMüşteri: {{musteriAdi}}\nTutar: {{toplam}} TL',
+  ],
+  order_bank_transfer_pending_customer: [
+    `🏦 *Siparişiniz alındı – Havale onayı bekleniyor*\n\nMerhaba {{musteriAdi}}, *{{siparisNo}}* numaralı siparişiniz başarıyla oluşturuldu.\n\nÖdemenizi aşağıdaki hesaba *{{toplam}} TL* olarak gönderebilirsiniz:\n\nBanka: ${BANK_TRANSFER_INFO.bankName}\nIBAN: ${BANK_TRANSFER_INFO.iban}\nAd Soyad: ${BANK_TRANSFER_INFO.accountHolder}\n\nHavaleniz hesabımıza ulaştığında siparişiniz hazırlanmaya başlanacak ve size tekrar bilgi vereceğiz.\n\n— {{siteAdi}}`,
+  ],
+  order_bank_transfer_admin: [
+    '⚠️ *HAVALE İLE ÖDEME — KONTROL ET*\n\nMüşteri havale yöntemiyle yeni bir sipariş oluşturdu.\n\nSipariş No: {{siparisNo}}\nMüşteri: {{musteriAdi}}\nTelefon: {{musteriTelefon}}\nTutar: {{toplam}} TL\n\nHesap hareketlerini kontrol edip admin panelinden onaylayabilirsin.',
+  ],
+  review_pending_admin: [
+    '💬 *YENİ YORUM ONAY BEKLİYOR*\n\nÜrün: *{{urunAdi}}*\nYazan: {{yorumYazari}} {{misafirEtiketi}}\nPuan: {{yildizlar}} ({{puan}}/5)\n{{baslikSatiri}}{{icerikSatiri}}\nAdmin panelinden onaylamak için: {{adminPanelUrl}}',
+  ],
+};
+
 export const DEFAULT_TEMPLATES: Record<WhatsAppEvent, string> = {
   order_received_customer:
     `🎉 *SİPARİŞİNİZ ALINDI*\n${DIVIDER}\n\nMerhaba {{musteriAdi}} 👋\n\nBizi tercih ettiğiniz için teşekkürler! Siparişiniz başarıyla oluşturuldu ve hazırlık sırasına alındı.\n\n📦 *Sipariş No:* {{siparisNo}}\n🛒 *Ürün Sayısı:* {{urunSayisi}}\n💰 *Toplam:* {{toplam}} ₺\n💳 *Ödeme:* {{odemeYontemi}}\n🕐 *Tarih:* {{siparisTarihSaat}}\n\n🔍 Siparişinizi takip edin:\n{{siparisTakipLink}}\n\nHazırlığa başladığımızda yine haberdar edeceğiz. ✨\n\n— {{siteAdi}}`,
@@ -335,6 +373,41 @@ export async function sendTestWhatsApp(rawPhone: string, customMessage?: string)
 }
 
 export const WHATSAPP_EVENT_KEYS = Object.keys(DEFAULT_TEMPLATES) as WhatsAppEvent[];
+
+/**
+ * Migrates saved WhatsApp templates whose value still equals one of the
+ * previous shipped defaults to the latest DEFAULT_TEMPLATES. Templates that
+ * an admin has manually customized (not matching any previous default) are
+ * preserved untouched. Safe to call on every server boot.
+ */
+export async function upgradeOldDefaultTemplates(): Promise<{ upgraded: string[]; preserved: string[] }> {
+  const upgraded: string[] = [];
+  const preserved: string[] = [];
+  try {
+    const settings = await storage.getSiteSettings();
+    for (const evt of WHATSAPP_EVENT_KEYS) {
+      const tplKey = `wpileti_tpl_${evt}`;
+      const saved = settings[tplKey];
+      if (!saved || !saved.trim()) continue;
+      const previous = PREVIOUS_DEFAULT_TEMPLATES[evt] || [];
+      if (previous.includes(saved)) {
+        await storage.setSiteSetting(tplKey, DEFAULT_TEMPLATES[evt]);
+        upgraded.push(evt);
+      } else {
+        preserved.push(evt);
+      }
+    }
+    if (upgraded.length) {
+      console.log(`[WhatsApp] upgraded ${upgraded.length} stale default template(s): ${upgraded.join(', ')}`);
+    }
+    if (preserved.length) {
+      console.log(`[WhatsApp] preserved ${preserved.length} customized template(s): ${preserved.join(', ')}`);
+    }
+  } catch (err) {
+    console.error('[WhatsApp] upgradeOldDefaultTemplates failed:', err);
+  }
+  return { upgraded, preserved };
+}
 
 export const WHATSAPP_TEMPLATE_VARIABLES = [
   'musteriAdi',

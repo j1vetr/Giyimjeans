@@ -81,6 +81,15 @@ app.use((req, res, next) => {
 
   await registerRoutes(httpServer, app);
 
+  // WhatsApp şablonları: önceki varsayılanları yeni şablonlara yükselt
+  // (admin tarafından özelleştirilenler korunur)
+  try {
+    const { upgradeOldDefaultTemplates } = await import("./whatsappService");
+    await upgradeOldDefaultTemplates();
+  } catch (err) {
+    console.error("[index] WhatsApp default-template upgrade failed:", err);
+  }
+
   // Pazaryeri senkron zamanlayıcısı (Trendyol delta saatlik / full 03:00)
   try {
     const { startScheduler } = await import("./scheduler");

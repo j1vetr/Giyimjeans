@@ -9,7 +9,14 @@ type WhatsAppEvent =
   | 'order_shipped_customer'
   | 'order_delivered_customer'
   | 'order_cancelled_customer'
-  | 'order_cancelled_admin';
+  | 'order_cancelled_admin'
+  | 'order_bank_transfer_pending_customer'
+  | 'order_bank_transfer_admin'
+  | 'review_pending_admin';
+
+const BANK_NAME_PLACEHOLDER = 'ENPARA (QNB Finansbank)';
+const BANK_IBAN_PLACEHOLDER = 'TR28 0015 7000 0000 0149 6995 20';
+const BANK_HOLDER_PLACEHOLDER = 'Salih Kapıcıoğlu';
 
 const DIVIDER = '━━━━━━━━━━━━━━━';
 
@@ -55,6 +62,24 @@ const WHATSAPP_EVENTS: { key: WhatsAppEvent; label: string; defaultTpl: string }
     label: 'Sipariş iptal edildi (yöneticiye)',
     defaultTpl:
       `❌ *SİPARİŞ İPTAL EDİLDİ*\n${DIVIDER}\n\n📦 *Sipariş No:* {{siparisNo}}\n👤 *Müşteri:* {{musteriAdi}}\n📞 *Telefon:* {{musteriTelefon}}\n💰 *Tutar:* {{toplam}} ₺\n💳 *Ödeme:* {{odemeYontemi}}\n🕐 *Tarih:* {{siparisTarihSaat}}\n\n🔧 Yönetim paneli:\n{{adminPanelUrl}}`,
+  },
+  {
+    key: 'order_bank_transfer_pending_customer',
+    label: 'Havale ödeme bekleniyor (müşteriye)',
+    defaultTpl:
+      `🏦 *HAVALE ONAYI BEKLENİYOR*\n${DIVIDER}\n\nMerhaba {{musteriAdi}} 👋\n\n*{{siparisNo}}* numaralı siparişiniz oluşturuldu. Aşağıdaki hesaba ödemenizi gönderdiğinizde siparişiniz hazırlığa alınacak. ✅\n\n💰 *Tutar:* {{toplam}} ₺\n🛒 *Ürün Sayısı:* {{urunSayisi}}\n🕐 *Tarih:* {{siparisTarihSaat}}\n\n📋 *Banka Bilgileri*\n🏦 Banka: ${BANK_NAME_PLACEHOLDER}\n🔢 IBAN: \`${BANK_IBAN_PLACEHOLDER}\`\n👤 Ad Soyad: ${BANK_HOLDER_PLACEHOLDER}\n📝 Açıklama: {{siparisNo}}\n\n💡 Açıklamaya sipariş numaranızı yazmayı unutmayın.\n\n🔍 Sipariş takibi:\n{{siparisTakipLink}}\n\n— {{siteAdi}}`,
+  },
+  {
+    key: 'order_bank_transfer_admin',
+    label: 'Havale ödeme — kontrol et (yöneticiye)',
+    defaultTpl:
+      `⚠ *HAVALE ÖDEME — KONTROL ET*\n${DIVIDER}\n\nMüşteri havale yöntemiyle yeni bir sipariş oluşturdu. Hesap hareketlerini kontrol edip onaylayın. 🔍\n\n📦 *Sipariş No:* {{siparisNo}}\n👤 *Müşteri:* {{musteriAdi}}\n📞 *Telefon:* {{musteriTelefon}}\n📧 *E-posta:* {{musteriEposta}}\n💰 *Tutar:* {{toplam}} ₺\n🛒 *Ürün:* {{urunSayisi}} kalem\n🕐 *Tarih:* {{siparisTarihSaat}}\n\n🔧 Yönetim paneli:\n{{adminPanelUrl}}`,
+  },
+  {
+    key: 'review_pending_admin',
+    label: 'Yeni yorum onay bekliyor (yöneticiye)',
+    defaultTpl:
+      `💬 *YENİ YORUM — ONAY BEKLİYOR*\n${DIVIDER}\n\n🪨 *Ürün:* {{urunAdi}}\n👤 *Yazan:* {{yorumYazari}} {{misafirEtiketi}}\n⭐ *Puan:* {{yildizlar}} ({{puan}}/5)\n{{baslikSatiri}}{{icerikSatiri}}\n🔧 Onaylamak için:\n{{adminPanelUrl}}`,
   },
 ];
 
