@@ -4217,6 +4217,76 @@ export async function registerRoutes(
     }
   });
 
+  // Aras Kargo: Create shipment via SetOrder API
+  app.post("/api/admin/orders/:id/aras-kargo/create", requireAdmin, async (req, res) => {
+    try {
+      const { createShipment } = await import('./arasKargoService.js');
+      const order = await storage.getOrder(req.params.id);
+      if (!order) return res.status(404).json({ error: "Sipariş bulunamadı" });
+
+      const addr = order.shippingAddress as any;
+      const addressLine = [addr?.address, addr?.district, addr?.city].filter(Boolean).join(', ');
+      const isWorldwide = addr?.country && addr.country.toLowerCase() !== 'türkiye' && addr.country.toLowerCase() !== 'turkey' && addr.country !== 'TR';
+
+      const result = await createShipment({
+        orderNumber: order.orderNumber,
+        customerName: order.customerName,
+        customerPhone: order.customerPhone || '',
+        address: addressLine || addr?.address || '',
+        city: addr?.city || '',
+        district: addr?.district || addr?.city || '',
+        isWorldwide: !!isWorldwide,
+      });
+
+      if (result.success) {
+        await storage.createOrderNote({
+          orderId: req.params.id,
+          content: `Aras Kargo API'ye kayıt gönderildi. Entegrasyon kodu: ${result.integrationCode}. Şube irsaliye oluşturduktan sonra takip numarası "Durumu Sorgula" ile çekilebilir.`,
+          authorId: 'system',
+        });
+      }
+
+      res.json(result);
+    } catch (error: any) {
+      console.error('[ArasKargo] Create shipment error:', error);
+      res.status(500).json({ success: false, error: error.message || 'Kargo oluşturulamadı' });
+    }
+  });
+
+  // Aras Kargo: Query shipment status
+  app.get("/api/admin/orders/:id/aras-kargo/status", requireAdmin, async (req, res) => {
+    try {
+      const { queryShipmentByIntegrationCode } = await import('./arasKargoService.js');
+      const order = await storage.getOrder(req.params.id);
+      if (!order) return res.status(404).json({ error: "Sipariş bulunamadı" });
+
+      const result = await queryShipmentByIntegrationCode(order.orderNumber);
+
+      // If tracking number found and order doesn't have one yet, save it
+      if (result.success && result.found && result.trackingNumber && !order.trackingNumber) {
+        const trackingUrl = `https://kargotakip.araskargo.com.tr/mainpage.aspx?code=${result.trackingNumber}`;
+        await storage.updateOrderTracking(req.params.id, {
+          trackingNumber: result.trackingNumber,
+          trackingUrl,
+          shippingCarrier: 'Aras Kargo',
+        });
+        if (order.status !== 'shipped' && order.status !== 'delivered') {
+          await storage.updateOrder(req.params.id, { status: 'shipped', shippedAt: new Date() });
+        }
+        await storage.createOrderNote({
+          orderId: req.params.id,
+          content: `Aras Kargo takip numarası otomatik alındı: ${result.trackingNumber}`,
+          authorId: 'system',
+        });
+      }
+
+      res.json({ ...result, savedToOrder: result.success && result.found && !!result.trackingNumber && !order.trackingNumber });
+    } catch (error: any) {
+      console.error('[ArasKargo] Query status error:', error);
+      res.status(500).json({ success: false, error: error.message || 'Durum sorgulanamadı' });
+    }
+  });
+
   app.put("/api/admin/orders/:id/tracking", requireAdmin, async (req, res) => {
     try {
       const { trackingNumber, trackingUrl, shippingCarrier } = req.body;
@@ -4789,6 +4859,9 @@ export async function registerRoutes(
       if (settings.turnstile_secret_key) {
         settings.turnstile_secret_key = '••••••••';
       }
+      if (settings.aras_kargo_password) {
+        settings.aras_kargo_password = '••••••••';
+      }
       res.json(settings);
     } catch (error) {
       res.status(500).json({ error: "Failed to fetch settings" });
@@ -4807,6 +4880,9 @@ export async function registerRoutes(
       }
       if (settings.turnstile_secret_key === '••••••••') {
         delete settings.turnstile_secret_key;
+      }
+      if (settings.aras_kargo_password === '••••••••') {
+        delete settings.aras_kargo_password;
       }
       await storage.setSiteSettings(settings);
       res.json({ success: true });

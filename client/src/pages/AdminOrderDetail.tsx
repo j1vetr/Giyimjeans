@@ -19,6 +19,8 @@ import {
   Loader2,
   Banknote,
   CheckCircle2,
+  Send,
+  RefreshCw,
 } from 'lucide-react';
 import {
   Card,
@@ -154,6 +156,9 @@ export default function AdminOrderDetail() {
     isInfluencerCode: boolean;
     influencerInstagram?: string;
   } | null>(null);
+  const [arasCreating, setArasCreating] = useState(false);
+  const [arasQuerying, setArasQuerying] = useState(false);
+  const [arasMessage, setArasMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
   useEffect(() => {
     let cancelled = false;
     const fetchOrder = async () => {
@@ -274,6 +279,65 @@ export default function AdminOrderDetail() {
       console.error('Tracking update failed:', error);
     } finally {
       setIsUpdating(false);
+    }
+  };
+
+  const handleArasCreate = async () => {
+    if (!order) return;
+    setArasCreating(true);
+    setArasMessage(null);
+    try {
+      const res = await fetch(`/api/admin/orders/${order.id}/aras-kargo/create`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+      });
+      const data = await res.json();
+      if (data.success) {
+        setArasMessage({ type: 'success', text: `Aras Kargo sistemine kayıt gönderildi. Kargo şubeye teslim ettikten sonra "Takip No Sorgula" butonuna basın.` });
+        setNotes((prev) => [{
+          id: Date.now().toString(),
+          content: `Aras Kargo API'ye kayıt gönderildi. Entegrasyon kodu: ${data.integrationCode}`,
+          createdAt: new Date().toISOString(),
+        }, ...prev]);
+      } else {
+        setArasMessage({ type: 'error', text: data.error || data.resultMessage || 'Kargo oluşturulamadı' });
+      }
+    } catch {
+      setArasMessage({ type: 'error', text: 'Bağlantı hatası. Lütfen tekrar deneyin.' });
+    } finally {
+      setArasCreating(false);
+    }
+  };
+
+  const handleArasQuery = async () => {
+    if (!order) return;
+    setArasQuerying(true);
+    setArasMessage(null);
+    try {
+      const res = await fetch(`/api/admin/orders/${order.id}/aras-kargo/status`, {
+        credentials: 'include',
+      });
+      const data = await res.json();
+      if (data.success && data.found && data.trackingNumber) {
+        const msg = data.savedToOrder
+          ? `Takip numarası alındı ve siparişe kaydedildi: ${data.trackingNumber}`
+          : `Takip numarası: ${data.trackingNumber}${data.cargoStatus ? ` — Durum: ${data.cargoStatus}` : ''}`;
+        setArasMessage({ type: 'success', text: msg });
+        if (data.savedToOrder) {
+          setTrackingNumber(data.trackingNumber);
+          setOrder({ ...order, trackingNumber: data.trackingNumber, status: 'shipped' });
+          setStatus('shipped');
+        }
+      } else if (data.success && !data.found) {
+        setArasMessage({ type: 'error', text: data.error || 'Şube henüz irsaliye oluşturmadı. Kargo fiziksel teslimden sonra tekrar sorgulayın.' });
+      } else {
+        setArasMessage({ type: 'error', text: data.error || 'Durum sorgulanamadı' });
+      }
+    } catch {
+      setArasMessage({ type: 'error', text: 'Bağlantı hatası. Lütfen tekrar deneyin.' });
+    } finally {
+      setArasQuerying(false);
     }
   };
 
@@ -785,43 +849,89 @@ export default function AdminOrderDetail() {
             <Card className="p-5">
               <SectionHeading
                 title="Aras Kargo"
-                description="Takip bilgisi girildiğinde sipariş otomatik kargoya alınır."
+                description="API ile otomatik gönder veya takip numarasını elle gir."
               />
               <div className="space-y-2.5">
-                <FormField label="Takip Numarası">
-                  <TextInput
-                    placeholder="Örn. 1234567890"
-                    value={trackingNumber}
-                    onChange={(e) => setTrackingNumber(e.target.value)}
-                    data-testid="input-tracking-number"
-                  />
-                </FormField>
-                <FormField label="Takip URL" hint="Boş bırakılırsa Aras Kargo bağlantısı oluşturulur.">
-                  <TextInput
-                    placeholder="https://…"
-                    value={trackingUrl}
-                    onChange={(e) => setTrackingUrl(e.target.value)}
-                    data-testid="input-tracking-url"
-                  />
-                </FormField>
-                <PrimaryButton
-                  onClick={handleTrackingUpdate}
-                  disabled={isUpdating || !trackingNumber}
-                  className="w-full"
-                  data-testid="button-save-tracking"
-                >
-                  {isUpdating ? (
-                    <>
-                      <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                      Kaydediliyor…
-                    </>
-                  ) : (
-                    <>
-                      <Truck className="w-3.5 h-3.5" />
-                      Kargoya Ver
-                    </>
-                  )}
-                </PrimaryButton>
+
+                {/* API Buttons */}
+                <div className="flex gap-2">
+                  <button
+                    type="button"
+                    onClick={handleArasCreate}
+                    disabled={arasCreating || arasQuerying || isTerminal}
+                    className="flex-1 inline-flex items-center justify-center gap-1.5 h-9 rounded-md bg-neutral-900 text-white text-[12px] font-semibold hover:bg-neutral-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                    data-testid="button-aras-create"
+                    title="SetOrder API'ye sipariş bilgilerini gönderir"
+                  >
+                    {arasCreating ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Send className="w-3.5 h-3.5" />}
+                    {arasCreating ? 'Gönderiliyor…' : 'API\'ye Gönder'}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleArasQuery}
+                    disabled={arasQuerying || arasCreating}
+                    className="flex-1 inline-flex items-center justify-center gap-1.5 h-9 rounded-md border border-neutral-200 bg-white text-[12px] font-semibold text-neutral-700 hover:bg-neutral-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                    data-testid="button-aras-query"
+                    title="Aras sisteminden takip numarasını çeker"
+                  >
+                    {arasQuerying ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <RefreshCw className="w-3.5 h-3.5" />}
+                    {arasQuerying ? 'Sorgulanıyor…' : 'Takip No Sorgula'}
+                  </button>
+                </div>
+
+                {/* API result message */}
+                {arasMessage && (
+                  <div className={`text-[11.5px] px-3 py-2 rounded-md leading-relaxed ${
+                    arasMessage.type === 'success'
+                      ? 'bg-emerald-50 border border-emerald-200 text-emerald-800'
+                      : 'bg-red-50 border border-red-200 text-red-700'
+                  }`} data-testid="text-aras-message">
+                    {arasMessage.text}
+                  </div>
+                )}
+
+                <div className="border-t border-neutral-100 pt-2.5">
+                  <p className="text-[10.5px] text-neutral-400 mb-2">Elle takip bilgisi</p>
+                  <FormField label="Takip Numarası">
+                    <TextInput
+                      placeholder="Örn. 1234567890"
+                      value={trackingNumber}
+                      onChange={(e) => setTrackingNumber(e.target.value)}
+                      data-testid="input-tracking-number"
+                    />
+                  </FormField>
+                  <div className="mt-2">
+                    <FormField label="Takip URL" hint="Boş bırakılırsa Aras Kargo linki oluşturulur.">
+                      <TextInput
+                        placeholder="https://…"
+                        value={trackingUrl}
+                        onChange={(e) => setTrackingUrl(e.target.value)}
+                        data-testid="input-tracking-url"
+                      />
+                    </FormField>
+                  </div>
+                  <div className="mt-2">
+                    <PrimaryButton
+                      onClick={handleTrackingUpdate}
+                      disabled={isUpdating || !trackingNumber}
+                      className="w-full"
+                      data-testid="button-save-tracking"
+                    >
+                      {isUpdating ? (
+                        <>
+                          <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                          Kaydediliyor…
+                        </>
+                      ) : (
+                        <>
+                          <Truck className="w-3.5 h-3.5" />
+                          Takibi Kaydet
+                        </>
+                      )}
+                    </PrimaryButton>
+                  </div>
+                </div>
+
                 {order.trackingNumber && order.trackingUrl && (
                   <a
                     href={order.trackingUrl}

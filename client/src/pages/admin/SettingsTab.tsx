@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { useState, useEffect } from 'react';
-import { Settings, Mail, Loader2, CheckCircle2, XCircle, Send, Server, CreditCard, Copy, AlertTriangle, Wrench, MessageCircle, KeyRound, ShieldCheck } from 'lucide-react';
+import { Settings, Mail, Loader2, CheckCircle2, XCircle, Send, Server, CreditCard, Copy, AlertTriangle, Wrench, MessageCircle, KeyRound, ShieldCheck, Truck } from 'lucide-react';
 import { BANK_TRANSFER_INFO } from '@shared/bankInfo';
 
 type WhatsAppEvent =
@@ -117,6 +117,14 @@ export default function SettingsPanel() {
     wpileti_admin_phone: '',
     turnstile_site_key: '',
     turnstile_secret_key: '',
+    aras_kargo_enabled: 'false',
+    aras_kargo_username: '',
+    aras_kargo_password: '',
+    aras_kargo_customer_code: '',
+    aras_kargo_setorder_url: 'https://customerws.araskargo.com.tr/arascargoservice.asmx',
+    aras_kargo_query_url: 'https://customerservices.araskargo.com.tr/ArasCargoCustomerIntegrationService/ArasCargoIntegrationService.svc',
+    aras_kargo_sender_address_id: '',
+    aras_kargo_default_desi: '1',
     ...Object.fromEntries(WHATSAPP_EVENTS.flatMap(({ key, defaultTpl }) => [
       [`wpileti_evt_${key}`, 'true'],
       [`wpileti_tpl_${key}`, defaultTpl],
@@ -768,6 +776,109 @@ export default function SettingsPanel() {
             </div>
           </div>
         )}
+      </div>
+
+      {/* Aras Kargo Section */}
+      <div className="bg-white border border-neutral-200 rounded-xl p-6" data-testid="card-aras-kargo-settings">
+        <div className="flex items-center gap-3 mb-6">
+          <div className="p-2 bg-orange-50 rounded-lg">
+            <Truck className="w-5 h-5 text-orange-600" />
+          </div>
+          <div className="flex-1">
+            <h3 className="text-lg font-semibold text-neutral-900">Aras Kargo API</h3>
+            <p className="text-sm text-neutral-500">
+              Sipariş detayında "API'ye Gönder" butonuyla SetOrder çağrısı yapar; takip numarası otomatik alınır.
+            </p>
+          </div>
+          <label className="flex items-center gap-2 cursor-pointer">
+            <input
+              type="checkbox"
+              checked={settings.aras_kargo_enabled === 'true'}
+              onChange={(e) => setSettings(s => ({ ...s, aras_kargo_enabled: e.target.checked ? 'true' : 'false' }))}
+              className="w-5 h-5 rounded"
+              data-testid="checkbox-aras-kargo-enabled"
+            />
+            <span className="text-sm font-medium text-neutral-900">Etkin</span>
+          </label>
+        </div>
+
+        <div className="grid md:grid-cols-2 gap-4 mb-4">
+          <div>
+            <label className="block text-sm font-medium text-neutral-500 mb-2">Kullanıcı Adı (UserName)</label>
+            <input
+              type="text"
+              value={settings.aras_kargo_username}
+              onChange={(e) => setSettings(s => ({ ...s, aras_kargo_username: e.target.value }))}
+              placeholder="Aras API kullanıcı adı"
+              className="w-full px-4 py-3 bg-neutral-50 border border-neutral-200 rounded-lg text-neutral-900 font-mono text-sm"
+              data-testid="input-aras-username"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-neutral-500 mb-2">Şifre (Password)</label>
+            <input
+              type="password"
+              value={settings.aras_kargo_password}
+              onChange={(e) => setSettings(s => ({ ...s, aras_kargo_password: e.target.value }))}
+              placeholder="••••••••"
+              className="w-full px-4 py-3 bg-neutral-50 border border-neutral-200 rounded-lg text-neutral-900"
+              data-testid="input-aras-password"
+            />
+          </div>
+        </div>
+
+        <div className="grid md:grid-cols-2 gap-4 mb-4">
+          <div>
+            <label className="block text-sm font-medium text-neutral-500 mb-2">Müşteri Kodu (CustomerCode)</label>
+            <input
+              type="text"
+              value={settings.aras_kargo_customer_code}
+              onChange={(e) => setSettings(s => ({ ...s, aras_kargo_customer_code: e.target.value }))}
+              placeholder="Müşteri kodu"
+              className="w-full px-4 py-3 bg-neutral-50 border border-neutral-200 rounded-lg text-neutral-900 font-mono text-sm"
+              data-testid="input-aras-customer-code"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-neutral-500 mb-2">Gönderici Adres ID <span className="text-neutral-400 font-normal">(opsiyonel)</span></label>
+            <input
+              type="text"
+              value={settings.aras_kargo_sender_address_id}
+              onChange={(e) => setSettings(s => ({ ...s, aras_kargo_sender_address_id: e.target.value }))}
+              placeholder="SenderAccountAddressId"
+              className="w-full px-4 py-3 bg-neutral-50 border border-neutral-200 rounded-lg text-neutral-900 font-mono text-sm"
+              data-testid="input-aras-sender-address"
+            />
+          </div>
+        </div>
+
+        <div className="grid md:grid-cols-3 gap-4 mb-4">
+          <div>
+            <label className="block text-sm font-medium text-neutral-500 mb-2">Varsayılan Desi</label>
+            <input
+              type="number"
+              min="1"
+              value={settings.aras_kargo_default_desi}
+              onChange={(e) => setSettings(s => ({ ...s, aras_kargo_default_desi: e.target.value }))}
+              className="w-full px-4 py-3 bg-neutral-50 border border-neutral-200 rounded-lg text-neutral-900"
+              data-testid="input-aras-desi"
+            />
+          </div>
+          <div className="md:col-span-2">
+            <label className="block text-sm font-medium text-neutral-500 mb-2">SetOrder URL</label>
+            <input
+              type="text"
+              value={settings.aras_kargo_setorder_url}
+              onChange={(e) => setSettings(s => ({ ...s, aras_kargo_setorder_url: e.target.value }))}
+              className="w-full px-4 py-3 bg-neutral-50 border border-neutral-200 rounded-lg text-neutral-900 font-mono text-xs"
+              data-testid="input-aras-setorder-url"
+            />
+          </div>
+        </div>
+
+        <p className="text-xs text-neutral-400 mt-1">
+          Değişiklikler ana ayarlar kaydedildiğinde (aşağıdaki "Ayarları Kaydet" butonu) uygulanır.
+        </p>
       </div>
 
       <div className="bg-white border border-neutral-200 rounded-xl p-6">
