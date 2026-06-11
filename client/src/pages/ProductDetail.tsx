@@ -885,6 +885,32 @@ export default function ProductDetail() {
                 </div>
               )}
 
+              {/* Ürün Özellikleri (attributes) */}
+              {product.attributes && Object.keys(product.attributes).length > 0 && (
+                <div className="mb-6 border border-black/8">
+                  <div className="px-4 py-2.5 border-b border-black/8 bg-stone-50">
+                    <span className="text-[10px] font-semibold uppercase tracking-[0.2em] text-black/50">
+                      Ürün Özellikleri
+                    </span>
+                  </div>
+                  <table className="w-full text-[12px]" data-testid="table-product-attributes">
+                    <tbody>
+                      {Object.entries(product.attributes).map(([key, val], i) => (
+                        <tr
+                          key={key}
+                          className={i % 2 === 0 ? 'bg-white' : 'bg-stone-50'}
+                        >
+                          <td className="px-4 py-2.5 font-medium text-black/55 w-2/5 border-r border-black/5">
+                            {key}
+                          </td>
+                          <td className="px-4 py-2.5 text-black">{val}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+
               {/* Beden / Renk seçici */}
               {product.variants && product.variants.length > 0 && (() => {
                 const sizes = [...new Set(product.variants!.filter(v => v.size).map(v => v.size!))];

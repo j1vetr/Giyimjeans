@@ -65,6 +65,18 @@ export default function ProductModal({
   onSave: (product: Partial<Product>) => void;
   isSaving: boolean;
 }) {
+  const JEANS_ATTR_KEYS = [
+    { key: 'Materyal', label: 'Materyal', placeholder: 'Örn: %98 Pamuk, %2 Elastan' },
+    { key: 'Likra', label: 'Likra / Elastan', placeholder: 'Örn: %2' },
+    { key: 'Kumaş Tipi', label: 'Kumaş Tipi', placeholder: 'Örn: Dokuma, Örme' },
+    { key: 'Paça Tipi', label: 'Paça Tipi', placeholder: 'Örn: Skinny, Straight, Wide Leg' },
+    { key: 'Bel', label: 'Bel', placeholder: 'Örn: Normal Bel, Yüksek Bel, Düşük Bel' },
+    { key: 'Kalıp', label: 'Kalıp', placeholder: 'Örn: Slim Fit, Regular Fit, Loose Fit' },
+    { key: 'Desen', label: 'Desen', placeholder: 'Örn: Düz, Çizgili, Baskılı' },
+    { key: 'Renk', label: 'Renk Tonu', placeholder: 'Örn: Açık Mavi, Koyu İndigo' },
+    { key: 'Cep', label: 'Cep', placeholder: 'Örn: 5 Cep, Kargo Cepli' },
+  ] as const;
+
   const [formData, setFormData] = useState({
     name: product?.name || '',
     slug: product?.slug || '',
@@ -76,6 +88,7 @@ export default function ProductModal({
       product?.categoryIds || (product?.categoryId ? [product.categoryId] : ([] as string[])),
     images: product?.images || ([] as string[]),
     availableColors: product?.availableColors || [],
+    attributes: product?.attributes || ({} as Record<string, string>),
     isActive: product?.isActive ?? true,
     isFeatured: product?.isFeatured ?? false,
     isNew: product?.isNew ?? false,
@@ -114,6 +127,7 @@ export default function ProductModal({
         product?.categoryIds || (product?.categoryId ? [product.categoryId] : ([] as string[])),
       images: product?.images || ([] as string[]),
       availableColors: product?.availableColors || [],
+      attributes: product?.attributes || ({} as Record<string, string>),
       isActive: product?.isActive ?? true,
       isFeatured: product?.isFeatured ?? false,
       isNew: product?.isNew ?? false,
@@ -211,12 +225,19 @@ export default function ProductModal({
       ? [{ name: toTurkishUpper(trimmedColor), hex: null }]
       : [];
 
+    // Boş attribute değerlerini temizle
+    const cleanAttributes: Record<string, string> = {};
+    for (const [k, v] of Object.entries(formData.attributes)) {
+      if (v && v.trim()) cleanAttributes[k] = v.trim();
+    }
+
     onSave({
       ...product,
       ...formData,
       slug: formData.slug || generateSlug(formData.name),
       images: [...formData.images, ...uploadedUrls],
       availableColors: normalizedColors,
+      attributes: cleanAttributes,
     });
   };
 
@@ -593,10 +614,37 @@ export default function ProductModal({
             </div>
           </section>
 
-          {/* Section 6 — Görünürlük */}
+          {/* Section 6 — Ürün Özellikleri (Jeans) */}
           <section>
             <SectionHeading
               number={6}
+              title="Ürün Özellikleri"
+              description="Trendyol'dan otomatik doldurulur; manuel olarak da girilebilir."
+            />
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              {JEANS_ATTR_KEYS.map(({ key, label, placeholder }) => (
+                <FormField key={key} label={label}>
+                  <TextInput
+                    type="text"
+                    value={formData.attributes[key] || ''}
+                    onChange={(e) =>
+                      setFormData((prev) => ({
+                        ...prev,
+                        attributes: { ...prev.attributes, [key]: e.target.value },
+                      }))
+                    }
+                    placeholder={placeholder}
+                    data-testid={`input-attr-${key.replace(/\s+/g, '-').toLowerCase()}`}
+                  />
+                </FormField>
+              ))}
+            </div>
+          </section>
+
+          {/* Section 7 — Görünürlük */}
+          <section>
+            <SectionHeading
+              number={7}
               title="Görünürlük"
               description="Ürünün mağazadaki yerini kontrol edin."
             />

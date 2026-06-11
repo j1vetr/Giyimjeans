@@ -11,6 +11,7 @@ export interface Product {
   images: string[];
   availableSizes: string[];
   availableColors: { name: string; hex: string | null }[];
+  attributes?: Record<string, string>;
   isActive: boolean;
   isFeatured: boolean;
   isNew: boolean;

@@ -64,6 +64,8 @@ export interface NormalizedProduct {
   variants: NormalizedVariant[];
   /** Pazaryerinden gelen ürün durumu — `false` ise site'da gizlenir. */
   isActive: boolean;
+  /** Pazaryerinden çekilen ürün özellikleri (jean attribute'ları vs.). */
+  attributes?: Record<string, string>;
 }
 
 /** Bir tek ürünün stok+fiyat snapshot'ı (delta sync için). */

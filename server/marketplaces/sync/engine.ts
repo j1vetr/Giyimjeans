@@ -246,6 +246,7 @@ function contentHash(p: NormalizedProduct): string {
       size: v.size,
       color: v.color?.name ?? null,
     })),
+    attributes: p.attributes ?? {},
   });
   return crypto.createHash("sha256").update(blob).digest("hex");
 }
@@ -625,6 +626,7 @@ async function upsertProduct(
       .map((v) => v.color)
       .filter((c): c is { name: string; hex?: string | null } => !!c)
       .map((c) => ({ name: c.name, hex: c.hex ?? "#cccccc" })),
+    attributes: np.attributes ?? {},
     isActive: np.isActive,
     isFeatured: siteProduct?.isFeatured ?? false,
     isNew: siteProduct?.isNew ?? false,

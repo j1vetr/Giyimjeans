@@ -260,27 +260,69 @@ class TrendyolAdapter implements MarketplaceAdapter {
   }
 }
 
+/**
+ * Trendyol attribute array'inden belirtilen regex ile eşleşen ilk değeri döner.
+ * Hem attributeName hem attributeValue alanları dolu olmalıdır.
+ */
+function findAttr(attrs: TrendyolAttribute[], namePattern: RegExp): string | undefined {
+  return attrs.find(
+    (a) => a.attributeName && namePattern.test(a.attributeName) && a.attributeValue,
+  )?.attributeValue;
+}
+
+/** Trendyol beden değerini normalize et: "32", "W32", "W32L30" → "32" */
+function normalizeDenimSize(raw: string | null | undefined): string | null {
+  if (!raw) return null;
+  // Sadece rakam içeriyorsa, 28-44 arası denim beden aralığında ise doğrudan döndür
+  const trimmed = raw.trim();
+  const numMatch = trimmed.match(/^W?(\d+)/i);
+  if (numMatch) {
+    const num = parseInt(numMatch[1], 10);
+    if (num >= 28 && num <= 44) return String(num);
+  }
+  return trimmed;
+}
+
 function normalize(p: TrendyolProduct): NormalizedProduct {
   const externalId = String(p.contentId ?? p.barcode);
   const code = p.productMainId || p.productCode || p.stockCode || p.barcode;
 
+  const attrs = p.attributes ?? [];
+
   // Renk attribute'sini bul
-  const colorAttr = (p.attributes ?? []).find(
-    (a) => a.attributeName && /renk|color/i.test(a.attributeName),
-  );
-  const sizeAttr = (p.attributes ?? []).find(
-    (a) => a.attributeName && /(beden|size)/i.test(a.attributeName),
-  );
+  const colorAttr = findAttr(attrs, /renk|color/i);
+  const sizeAttr = findAttr(attrs, /beden|size/i);
+
+  // 9 jeans attribute — Trendyol'da "Materyal", "Likra Oranı", "Kumaş Tipi", vb.
+  const attributes: Record<string, string> = {};
+  const materyal = findAttr(attrs, /materyal|malzeme|material/i);
+  if (materyal) attributes["Materyal"] = materyal;
+  const likra = findAttr(attrs, /likra|elastan|elastane/i);
+  if (likra) attributes["Likra"] = likra;
+  const kumasTipi = findAttr(attrs, /kumaş\s*tip|fabric\s*type|dokuma/i);
+  if (kumasTipi) attributes["Kumaş Tipi"] = kumasTipi;
+  const pacaTipi = findAttr(attrs, /paça|paca|bacak\s*tip|leg\s*type|kesim\s*tip/i);
+  if (pacaTipi) attributes["Paça Tipi"] = pacaTipi;
+  const bel = findAttr(attrs, /bel\s*(yüksekl|tipi?|hizası?|seviye)|waist/i);
+  if (bel) attributes["Bel"] = bel;
+  const kalip = findAttr(attrs, /kalıp|kalip|fit\s*tip|kesim/i);
+  if (kalip) attributes["Kalıp"] = kalip;
+  const desen = findAttr(attrs, /desen|pattern|baskı/i);
+  if (desen) attributes["Desen"] = desen;
+  const renk = colorAttr ?? findAttr(attrs, /renk|color/i);
+  if (renk) attributes["Renk"] = renk;
+  const cep = findAttr(attrs, /cep\s*(say|tip|model|özellik)|pocket/i);
+  if (cep) attributes["Cep"] = cep;
 
   const variant: NormalizedVariant = {
     externalVariantId: String(p.barcode),
     sku: p.stockCode ?? p.productCode ?? null,
     barcode: p.barcode,
-    size: p.size ?? sizeAttr?.attributeValue ?? null,
+    size: normalizeDenimSize(p.size ?? sizeAttr ?? null),
     color: p.color
       ? { name: p.color, hex: null }
-      : colorAttr?.attributeValue
-        ? { name: colorAttr.attributeValue, hex: null }
+      : colorAttr
+        ? { name: colorAttr, hex: null }
         : null,
     price: Number(p.salePrice ?? 0),
     stock: Number(p.quantity ?? 0),
@@ -312,6 +354,7 @@ function normalize(p: TrendyolProduct): NormalizedProduct {
       .map((i, idx) => ({ url: i.url, order: idx })),
     variants: [variant],
     isActive,
+    attributes: Object.keys(attributes).length > 0 ? attributes : undefined,
   };
 }
 
