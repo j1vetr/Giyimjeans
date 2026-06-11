@@ -570,7 +570,7 @@ export default function ProductModal({
                 Jean Bedenleri (sayısal)
               </p>
               <div className="flex flex-wrap gap-1.5">
-                {[32, 33, 34, 36, 38, 40, 42, 44].map((s) => {
+                {[32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44].map((s) => {
                   const sz = String(s);
                   const selected = formData.availableSizes.includes(sz);
                   return (
