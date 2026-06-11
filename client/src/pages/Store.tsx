@@ -128,7 +128,7 @@ export default function Store() {
     <div className="min-h-screen bg-white overflow-x-hidden">
       <SEO
         title="Mağaza"
-        description="Polen Stone doğal taş ve mermer koleksiyonunun tamamı. Mermer, granit, traverten ve oniks ürünlerini keşfedin."
+        description="Marka güncel giyim koleksiyonu. Kadın, erkek ve çocuk giyiminde tüm ürünleri keşfedin."
         url="/magaza"
         breadcrumbs={[
           { name: 'Ana Sayfa', url: '/' },
@@ -180,8 +180,8 @@ export default function Store() {
                 transition={{ delay: 0.3 }}
                 className="text-black/55 mt-5 text-[15px] max-w-xl leading-relaxed"
               >
-                Anadolu'nun zengin doğal taş mirasından özenle seçilmiş ürünler.
-                Mermer, granit, traverten ve daha fazlası.
+                Güncel moda koleksiyonunu keşfedin.
+                Kadın, erkek ve çocuk giyiminde yüzlerce ürün sizi bekliyor.
               </motion.p>
             </div>
             <motion.div

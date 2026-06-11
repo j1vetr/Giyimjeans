@@ -2,7 +2,7 @@ import { storage, db } from "./storage";
 import { productVariants } from "@shared/schema";
 
 const SITE_URL = "https://polenstone.com";
-const BRAND_NAME = "Polen Stone";
+const BRAND_NAME = "Marka";
 
 function escapeXml(value: string | null | undefined): string {
   if (value === null || value === undefined) return "";

@@ -119,7 +119,7 @@ async function getConfig(): Promise<WhatsAppConfig | null> {
 
   const endpoint = settings.wpileti_endpoint || DEFAULT_ENDPOINT;
   const adminPhone = settings.wpileti_admin_phone || '';
-  const siteName = settings.site_name || 'Polen Stone';
+  const siteName = settings.site_name || 'Marka';
 
   const events = {} as Record<WhatsAppEvent, boolean>;
   const templates = {} as Record<WhatsAppEvent, string>;

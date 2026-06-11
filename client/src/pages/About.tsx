@@ -13,17 +13,17 @@ const values = [
 ];
 
 const stats = [
-  { number: '500+', label: 'Tamamlanan Proje' },
-  { number: '%100', label: 'Türk Mermeri' },
+  { number: '10.000+', label: 'Ürün Çeşidi' },
+  { number: '%100', label: 'Güvenli Ödeme' },
   { number: '10+', label: 'Yıl Deneyim' },
   { number: '81', label: 'İl Teslimat' },
 ];
 
 const features = [
-  { icon: Award, title: 'Premium Kalite', desc: 'Her bir blok özenle seçilmiş, kusursuz işlenmiş doğal taş' },
-  { icon: Users, title: 'Uzman Danışmanlık', desc: 'Mekânınıza en uygun taşı birlikte seçiyoruz' },
-  { icon: Truck, title: 'Türkiye Geneli', desc: '81 ile özenli paketleme ve güvenli teslimat' },
-  { icon: ShieldCheck, title: 'Garantili Ürün', desc: 'Her ürün test edilir, kalite belgesiyle gönderilir' },
+  { icon: Award, title: 'Premium Kalite', desc: 'Özenle seçilmiş, kalite denetiminden geçirilmiş ürünler' },
+  { icon: Users, title: 'Uzman Destek', desc: 'Stil danışmanlığı ve müşteri hizmetleriyle yanınızdayız' },
+  { icon: Truck, title: 'Hızlı Teslimat', desc: '81 ile özenli paketleme ve hızlı kargo' },
+  { icon: ShieldCheck, title: 'Kolay İade', desc: '30 gün ücretsiz iade hakkı, zahmetsiz süreç' },
 ];
 
 export default function About() {
@@ -31,7 +31,7 @@ export default function About() {
     <div className="min-h-screen bg-stone-50">
       <SEO
         title="Hakkımızda"
-        description="Polen Stone — Anadolu'nun zengin doğal taş mirasını modern mekânlara taşıyan premium mermer ve doğal taş markası."
+        description="Marka — Türkiye'nin önde gelen online giyim platformu. Yüzlerce marka ve binlerce model, hızlı teslimat."
       />
       <Header />
 
@@ -56,16 +56,16 @@ export default function About() {
                 transition={{ duration: 0.6 }}
               >
                 <span className="text-xs tracking-[0.3em] uppercase text-polen-orange mb-4 block font-semibold">
-                  Türkiye'nin Doğal Taş Mirası
+                  Türkiye'nin Online Giyim Mağazası
                 </span>
                 <h1 className="font-display text-4xl sm:text-5xl lg:text-6xl tracking-wider mb-6 text-black leading-tight">
-                  POLEN <span className="text-polen-orange">STONE</span><br />
-                  <span className="text-black/45 text-2xl sm:text-3xl lg:text-4xl">Doğal Taş & Mermer</span>
+                  MARKA <span className="text-polen-orange">GİYİM</span><br />
+                  <span className="text-black/45 text-2xl sm:text-3xl lg:text-4xl">Giyim & Moda</span>
                 </h1>
                 <p className="text-lg text-black/65 leading-relaxed mb-8">
-                  Anadolu'nun bin yıllık taş kültürünü modern mekânlara taşıyan
-                  premium doğal taş markasıyız. Mermer, granit, traverten ve oniks
-                  koleksiyonumuzla mekânlarınıza eşsiz bir karakter katıyoruz.
+                  Kadın, erkek ve çocuk giyiminde yüzlerce marka ve binlerce modeli
+                  tek platformda buluşturuyoruz. Trendyol ile senkronize güncel
+                  koleksiyonumuzla stilinizi özgürce ifade edin.
                 </p>
 
                 <div className="flex flex-wrap gap-3">
@@ -118,7 +118,7 @@ export default function About() {
               viewport={{ once: true }}
               className="text-center mb-12"
             >
-              <span className="text-xs tracking-[0.3em] uppercase text-polen-orange mb-4 block font-semibold">Neden Polen Stone?</span>
+              <span className="text-xs tracking-[0.3em] uppercase text-polen-orange mb-4 block font-semibold">Neden Marka?</span>
               <h2 className="font-display text-3xl sm:text-4xl tracking-wider text-black">FARK YARATAN ÖZELLİKLER</h2>
             </motion.div>
 
@@ -169,9 +169,9 @@ export default function About() {
                 </div>
                 <h3 className="font-display text-2xl tracking-wide mb-4 text-black">VİZYONUMUZ</h3>
                 <p className="text-black/65 leading-relaxed">
-                  Anadolu'nun zengin doğal taş kaynaklarını, dünyanın dört bir yanındaki
-                  prestijli projelere ulaştırmak. Her mekâna doğanın ihtişamını taşıyarak
-                  Türk mermer ve doğal taş kültürünü uluslararası standartlarda temsil etmek.
+                  Türkiye'nin her köşesine ulaşan giyim ve moda platformu olmak.
+                  Her bütçeye uygun, her zevke hitap eden koleksiyonlarla
+                  online alışverişi keyifli ve güvenli kılmak.
                 </p>
               </motion.div>
 
@@ -186,9 +186,9 @@ export default function About() {
                 </div>
                 <h3 className="font-display text-2xl tracking-wide mb-4 text-black">MİSYONUMUZ</h3>
                 <p className="text-black/65 leading-relaxed">
-                  Doğanın milyonlarca yılda ürettiği eşsiz dokuları, ustalıkla işleyip
-                  müşterilerimize sunmak. Her projeyi kişiye özel bir hikâye olarak ele
-                  alıp, kalite ve estetikten ödün vermeden teslim etmek.
+                  Güncel trendleri hızla müşterilerimizle buluşturmak. Her siparişi
+                  kişiye özel bir deneyim olarak ele alıp, kalite ve hızdan ödün
+                  vermeden teslim etmek.
                 </p>
               </motion.div>
             </div>
@@ -210,7 +210,7 @@ export default function About() {
                 </div>
                 <h3 className="font-display text-2xl tracking-wider mb-4 text-black">BİZİ TAKİP EDİN</h3>
                 <p className="text-black/65 mb-6">
-                  Yeni gelen taşlar, tamamlanan projeler ve mekân ilhamları için
+                  Yeni sezon koleksiyonları, stil önerileri ve kampanyalar için
                   Instagram'da bizi takip edin.
                 </p>
                 <a

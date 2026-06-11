@@ -173,7 +173,7 @@ export async function createShipment(params: {
               <Weight>${escapeXml(desi)}</Weight>
               <BarcodeNumber>${escapeXml(barcodeNumber)}</BarcodeNumber>
               <ProductNumber></ProductNumber>
-              <Description>Polen Stone Siparis</Description>
+              <Description>Marka Siparis</Description>
             </PieceDetail>
           </PieceDetails>
           <SenderAccountAddressId>${escapeXml(creds.senderAddressId)}</SenderAccountAddressId>

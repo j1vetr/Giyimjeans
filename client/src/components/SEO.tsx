@@ -20,9 +20,9 @@ interface SEOProps {
   breadcrumbs?: Array<{ name: string; url: string }>;
 }
 
-const DEFAULT_TITLE = 'Polen Stone | Doğal Taş ve Mermer';
-const DEFAULT_DESCRIPTION = 'Polen Stone, premium mermer, granit, traverten ve oniks koleksiyonu sunan doğal taş markasıdır. Mekânlarınıza doğanın ihtişamını taşıyın.';
-const SITE_NAME = 'Polen Stone';
+const DEFAULT_TITLE = 'Marka | Giyim & Moda';
+const DEFAULT_DESCRIPTION = 'Marka, Türkiye\'nin önde gelen online giyim mağazasıdır. Kadın, erkek ve çocuk giyiminde güncel koleksiyon sizi bekliyor.';
+const SITE_NAME = 'Marka';
 const BASE_URL = typeof window !== 'undefined' ? window.location.origin : '';
 
 export function SEO({ 
@@ -80,7 +80,7 @@ export function SEO({
     schemas.push({
       '@context': 'https://schema.org',
       '@type': 'Organization',
-      name: 'Polen Stone',
+      name: 'Marka',
       url: BASE_URL,
       logo: `${BASE_URL}/logo.png`,
       sameAs: [
@@ -113,7 +113,7 @@ export function SEO({
         sku: product.sku,
         brand: {
           '@type': 'Brand',
-          name: product.brand || 'Polen Stone'
+          name: product.brand || 'Marka'
         },
         category: product.category,
         offers: {
@@ -124,7 +124,7 @@ export function SEO({
           availability: `https://schema.org/${product.availability || 'InStock'}`,
           seller: {
             '@type': 'Organization',
-            name: 'Polen Stone'
+            name: 'Marka'
           }
         }
       });
@@ -147,7 +147,7 @@ export function SEO({
       schemas.push({
         '@context': 'https://schema.org',
         '@type': 'WebSite',
-        name: 'Polen Stone',
+        name: 'Marka',
         url: BASE_URL,
         potentialAction: {
           '@type': 'SearchAction',

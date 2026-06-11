@@ -126,6 +126,7 @@ export default function ProductDetail() {
   const [selectedImage, setSelectedImage] = useState(0);
   const [quantity, setQuantity] = useState(1);
   const [isAdding, setIsAdding] = useState(false);
+  const [selectedVariantId, setSelectedVariantId] = useState<string | null>(null);
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const [showFullDesc, setShowFullDesc] = useState(false);
   const [showShareMenu, setShowShareMenu] = useState(false);
@@ -251,11 +252,13 @@ export default function ProductDetail() {
     return () => observer.disconnect();
   }, [product?.id]);
 
-  // Reset image index on product change
+  // Reset image index on product change; auto-select first variant
   useEffect(() => {
     setSelectedImage(0);
     setQuantity(1);
     setShowFullDesc(false);
+    const firstVariant = product?.variants?.find((v) => v.isActive && v.stock > 0) ?? product?.variants?.find((v) => v.isActive);
+    setSelectedVariantId(firstVariant?.id ?? null);
   }, [product?.id]);
 
   const handleHeroMove = (e: React.MouseEvent<HTMLDivElement>) => {
@@ -270,10 +273,7 @@ export default function ProductDetail() {
     if (!product) return;
     setIsAdding(true);
     try {
-      // Her ölçü/varyant artık ayrı ürün. Yine de legacy varyantlı ürünler
-      // için: ilk aktif varyant id'sini geçir; varyant yoksa undefined.
-      const variant = product.variants?.find((v) => v.isActive);
-      await addToCart(product.id, variant?.id, quantity);
+      await addToCart(product.id, selectedVariantId ?? undefined, quantity);
       const mainImage =
         product.images && product.images.length > 0
           ? product.images[0]
@@ -462,7 +462,7 @@ export default function ProductDetail() {
   const moreProducts = [...sameCategory, ...fillers].slice(0, 4);
 
   const shareUrl = typeof window !== 'undefined' ? window.location.href : '';
-  const shareText = `${product.name} - Polen Stone`;
+  const shareText = `${product.name} - Marka`;
   const socialLinks = [
     {
       name: 'WhatsApp',
@@ -503,7 +503,7 @@ export default function ProductDetail() {
         title={product.name}
         description={
           product.description?.replace(/<[^>]*>/g, '').slice(0, 160) ||
-          `${product.name}. Polen Stone premium doğal taş ve mermer koleksiyonundan.`
+          `${product.name}. Marka güncel giyim koleksiyonundan.`
         }
         image={images[0]}
         url={`/urun/${product.slug}`}
@@ -514,7 +514,7 @@ export default function ProductDetail() {
           currency: 'TRY',
           availability: isOutOfStock ? 'OutOfStock' : 'InStock',
           sku: product.sku || undefined,
-          brand: 'Polen Stone',
+          brand: 'Marka',
           category: category?.name,
           images,
         }}
@@ -871,6 +871,121 @@ export default function ProductDetail() {
                   </button>
                 </div>
               )}
+
+              {/* Beden / Renk seçici */}
+              {product.variants && product.variants.length > 0 && (() => {
+                const sizes = [...new Set(product.variants!.filter(v => v.size).map(v => v.size!))];
+                const colors = [...new Set(product.variants!.filter(v => v.color).map(v => v.color!))];
+                const selectedVariant = product.variants!.find(v => v.id === selectedVariantId);
+
+                return (
+                  <div className="mb-6 space-y-4">
+                    {/* Beden seçici */}
+                    {sizes.length > 0 && (
+                      <div>
+                        <div className="flex items-center justify-between mb-2">
+                          <span className="text-[11px] font-semibold uppercase tracking-[0.18em] text-black">
+                            Beden
+                            {selectedVariant?.size && (
+                              <span className="ml-2 text-black/50 normal-case font-normal tracking-normal">
+                                {selectedVariant.size}
+                              </span>
+                            )}
+                          </span>
+                        </div>
+                        <div className="flex flex-wrap gap-2">
+                          {sizes.map((size) => {
+                            const sizeVariants = product.variants!.filter(v => v.size === size);
+                            const hasColorSelection = colors.length > 0;
+                            const isSelected = hasColorSelection
+                              ? selectedVariant?.size === size
+                              : sizeVariants.some(v => v.id === selectedVariantId);
+                            const isAvailable = sizeVariants.some(v => v.stock > 0 && v.isActive);
+                            return (
+                              <button
+                                key={size}
+                                type="button"
+                                onClick={() => {
+                                  const candidate = sizeVariants.find(v => v.isActive && v.stock > 0) ?? sizeVariants.find(v => v.isActive);
+                                  if (candidate) setSelectedVariantId(candidate.id);
+                                }}
+                                className={`min-w-[44px] h-10 px-3 text-[12px] font-medium border transition-all ${
+                                  isSelected
+                                    ? 'border-black bg-black text-white'
+                                    : isAvailable
+                                      ? 'border-black/20 text-black hover:border-black'
+                                      : 'border-black/10 text-black/25 line-through cursor-not-allowed'
+                                }`}
+                                disabled={!isAvailable}
+                                data-testid={`button-size-${size}`}
+                              >
+                                {size}
+                              </button>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Renk seçici */}
+                    {colors.length > 0 && (
+                      <div>
+                        <div className="flex items-center mb-2">
+                          <span className="text-[11px] font-semibold uppercase tracking-[0.18em] text-black">
+                            Renk
+                            {selectedVariant?.color && (
+                              <span className="ml-2 text-black/50 normal-case font-normal tracking-normal">
+                                {selectedVariant.color}
+                              </span>
+                            )}
+                          </span>
+                        </div>
+                        <div className="flex flex-wrap gap-2">
+                          {colors.map((color) => {
+                            const colorVariants = product.variants!.filter(v => v.color === color);
+                            const isSelected = colorVariants.some(v => v.id === selectedVariantId);
+                            const isAvailable = colorVariants.some(v => v.stock > 0 && v.isActive);
+                            const hex = product.variants!.find(v => v.color === color)?.colorHex;
+                            return (
+                              <button
+                                key={color}
+                                type="button"
+                                onClick={() => {
+                                  const candidate = colorVariants.find(v => v.isActive && v.stock > 0) ?? colorVariants.find(v => v.isActive);
+                                  if (candidate) setSelectedVariantId(candidate.id);
+                                }}
+                                title={color}
+                                className={`relative h-8 px-3 text-[11px] font-medium border transition-all flex items-center gap-2 ${
+                                  isSelected
+                                    ? 'border-black bg-black text-white'
+                                    : isAvailable
+                                      ? 'border-black/20 text-black hover:border-black'
+                                      : 'border-black/10 text-black/25 cursor-not-allowed'
+                                }`}
+                                disabled={!isAvailable}
+                                data-testid={`button-color-${color}`}
+                              >
+                                {hex && (
+                                  <span
+                                    className="w-4 h-4 rounded-full border border-black/15 shrink-0"
+                                    style={{ backgroundColor: hex }}
+                                  />
+                                )}
+                                {color}
+                                {!isAvailable && (
+                                  <span className="absolute inset-0 flex items-center justify-center">
+                                    <span className="w-full h-px bg-black/25 rotate-45 absolute" />
+                                  </span>
+                                )}
+                              </button>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                );
+              })()}
 
               {/* Quantity + Add to cart */}
               <div className="space-y-4 mb-6">

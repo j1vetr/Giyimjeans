@@ -533,18 +533,18 @@ export default function ProductModal({
             )}
           </section>
 
-          {/* Section 4 — Renk / Taş Tonu */}
+          {/* Section 4 — Renk */}
           <section>
             <SectionHeading
               number={4}
-              title="Taş Tonu / Renk"
-              description="Ürünün taş tonunu belirtin (opsiyonel)."
+              title="Renk"
+              description="Ürünün rengini belirtin (opsiyonel)."
             />
             <FormField label="Renk (otomatik büyük harf)">
               <TextInput
                 value={colorInput}
                 onChange={(e) => setColorInput(toTurkishUpper(e.target.value))}
-                placeholder="Örn. BEYAZ MERMER, SİYAH ABSOLUTE, BEJ TRAVERTEN"
+                placeholder="Örn. SİYAH, BEYAZ, LACİVERT, KIRMIZI"
                 data-testid="input-product-color"
               />
               <p className="mt-1 text-[11px] text-neutral-500">

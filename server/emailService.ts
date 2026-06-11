@@ -52,7 +52,7 @@ async function createTransporter() {
 // ─────────────────────────────────────────────────────────────────────────────
 // EMAIL TEMPLATE SYSTEM
 // Outlook + Gmail + Apple Mail uyumlu, table-based, inline-style.
-// Marka: Polen Stone — açık tema, sıcak krem zemin, marka sarısı (#fdb51d) vurgu.
+// Marka: Marka — açık tema, sıcak krem zemin, marka vurgu rengi.
 // ─────────────────────────────────────────────────────────────────────────────
 
 const BRAND = {
@@ -141,18 +141,18 @@ function brandHeader(): string {
         <tr>
           <td align="center" style="line-height:0;font-size:0;">
             <a href="${CONTACT.siteUrl}" style="text-decoration:none;color:${BRAND.ink};">
-              <img src="${LOGO_URL}" alt="POLEN STONE" width="120" height="48" style="display:block;width:120px;height:auto;max-width:120px;border:0;outline:none;text-decoration:none;-ms-interpolation-mode:bicubic;" />
+              <img src="${LOGO_URL}" alt="MARKA" width="120" height="48" style="display:block;width:120px;height:auto;max-width:120px;border:0;outline:none;text-decoration:none;-ms-interpolation-mode:bicubic;" />
             </a>
           </td>
         </tr>
         <tr>
           <td align="center" style="padding-top:14px;font-family:'Helvetica Neue',Helvetica,Arial,sans-serif;color:${BRAND.ink};font-size:20px;font-weight:800;letter-spacing:5px;line-height:1;">
-            <a href="${CONTACT.siteUrl}" style="color:${BRAND.ink};text-decoration:none;">POLEN<span style="color:${BRAND.primary};">·</span>STONE</a>
+            <a href="${CONTACT.siteUrl}" style="color:${BRAND.ink};text-decoration:none;">MARKA<span style="color:${BRAND.primary};">·</span>GİYİM</a>
           </td>
         </tr>
         <tr>
           <td align="center" style="padding-top:6px;font-family:Helvetica,Arial,sans-serif;color:${BRAND.muted};font-size:10px;font-weight:600;letter-spacing:3px;text-transform:uppercase;">
-            Doğal Taş &amp; Mermer
+            Giyim &amp; Moda
           </td>
         </tr>
       </table>
@@ -180,7 +180,7 @@ function brandFooter(opts?: { unsubscribeEmail?: string }): string {
       <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%">
         <tr>
           <td align="center" style="font-size:14px;font-weight:700;letter-spacing:3px;color:#ffffff;padding-bottom:4px;">
-            POLEN<span style="color:${BRAND.primary};">·</span>STONE
+            MARKA<span style="color:${BRAND.primary};">·</span>GİYİM
           </td>
         </tr>
         <tr>
@@ -203,7 +203,7 @@ function brandFooter(opts?: { unsubscribeEmail?: string }): string {
         <tr>
           <td align="center" style="padding-top:18px;border-top:1px solid rgba(255,255,255,0.08);">
             <p style="margin:0;font-size:11px;color:rgba(255,255,255,0.4);line-height:1.6;">
-              © ${new Date().getFullYear()} Polen Stone. Tüm hakları saklıdır.<br>
+              © ${new Date().getFullYear()} Marka. Tüm hakları saklıdır.<br>
               Bu e-postayı, hesabınızla ilgili bir işlem nedeniyle aldınız.
             </p>
           </td>
@@ -216,7 +216,7 @@ function brandFooter(opts?: { unsubscribeEmail?: string }): string {
 
 function wrapTemplate(content: string, opts?: { preheader?: string; title?: string; unsubscribeEmail?: string }): string {
   const preheader = opts?.preheader ?? '';
-  const title = opts?.title ?? 'Polen Stone';
+  const title = opts?.title ?? 'Marka';
   const unsubscribeEmail = opts?.unsubscribeEmail;
   return `<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
 <html xmlns="http://www.w3.org/1999/xhtml" lang="tr">
@@ -288,7 +288,7 @@ function welcomeEmailTemplate(userName: string): string {
   const safeName = escapeHtml(userName);
   return wrapTemplate(`
     ${H1(`Hoş geldiniz, ${safeName}.`)}
-    ${Lede('Polen Stone ailesine katıldığınız için çok mutluyuz. Atölyemizde el işçiliğiyle şekillenen mermer parçalar artık sizin için bir tık uzakta.')}
+    ${Lede('Marka ailesine katıldığınız için çok mutluyuz. Güncel giyim koleksiyonumuz artık sizin için bir tık uzakta.')}
 
     ${infoCard(`
       <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%">
@@ -319,7 +319,7 @@ function welcomeEmailTemplate(userName: string): string {
     ${emailButton(CONTACT.siteUrl, 'Koleksiyona Göz At')}
 
     ${Small(`Sorularınız için <a href="mailto:${CONTACT.email}" style="color:${BRAND.primaryDeep};text-decoration:none;">${CONTACT.email}</a> adresinden bize ulaşabilirsiniz.`)}
-  `, { preheader: `Hoş geldiniz ${safeName} — Polen Stone ailesindesiniz.`, title: 'Hoş geldiniz' });
+  `, { preheader: `Hoş geldiniz ${safeName} — Marka ailesindesiniz.`, title: 'Hoş geldiniz' });
 }
 
 type OrderItemForEmail = OrderItem & { productImage?: string | null };
@@ -780,9 +780,9 @@ export async function sendWelcomeEmail(user: User): Promise<EmailResult> {
     const userName = user.firstName || 'Değerli Müşterimiz';
     
     await transporter.sendMail({
-      from: `"Polen Stone" <${fromEmail}>`,
+      from: `"Marka" <${fromEmail}>`,
       to: user.email,
-      subject: 'Polen Stone\'a Hoş Geldiniz!',
+      subject: 'Marka\'ya Hoş Geldiniz!',
       html: welcomeEmailTemplate(userName),
     });
     
@@ -819,7 +819,7 @@ export async function sendOrderConfirmationEmail(order: Order, items: OrderItem[
     );
 
     await transporter.sendMail({
-      from: `"Polen Stone" <${fromEmail}>`,
+      from: `"Marka" <${fromEmail}>`,
       to: order.customerEmail,
       subject: `Siparişiniz Alındı - #${order.orderNumber}`,
       html: orderConfirmationTemplate(order, enrichedItems),
@@ -844,7 +844,7 @@ export async function sendPreparingNotificationEmail(order: Order): Promise<Emai
     const fromEmail = settings.smtp_user || 'no-reply@polenstone.com';
     
     await transporter.sendMail({
-      from: `"Polen Stone" <${fromEmail}>`,
+      from: `"Marka" <${fromEmail}>`,
       to: order.customerEmail,
       subject: `Siparişiniz Hazırlanıyor - #${order.orderNumber}`,
       html: preparingNotificationTemplate(order),
@@ -869,7 +869,7 @@ export async function sendShippingNotificationEmail(order: Order): Promise<Email
     const fromEmail = settings.smtp_user || 'no-reply@polenstone.com';
     
     await transporter.sendMail({
-      from: `"Polen Stone" <${fromEmail}>`,
+      from: `"Marka" <${fromEmail}>`,
       to: order.customerEmail,
       subject: `Siparişiniz Kargoya Verildi - #${order.orderNumber}`,
       html: shippingNotificationTemplate(order),
@@ -922,7 +922,7 @@ export async function sendAdminOrderNotificationEmail(order: Order, items: Order
     }
 
     await transporter.sendMail({
-      from: `"Polen Stone Sistem" <${fromEmail}>`,
+      from: `"Marka Sistem" <${fromEmail}>`,
       to: adminEmail,
       subject: `${subjectPrefix}Yeni Sipariş - #${order.orderNumber} - ${order.total}₺`,
       html,
@@ -1015,7 +1015,7 @@ export async function sendAdminReviewNotificationEmail(
     });
 
     await transporter.sendMail({
-      from: `"Polen Stone Sistem" <${fromEmail}>`,
+      from: `"Marka Sistem" <${fromEmail}>`,
       to: adminEmail,
       subject: `Yeni yorum onay bekliyor — ${payload.productName}`,
       html,
@@ -1060,14 +1060,14 @@ export async function sendGuestReviewApprovedEmail(
 
       ${emailButton(productUrl, 'Ürün Sayfasını Gör')}
 
-      ${Small('Polen Stone — doğal taşın sıcaklığını evinize taşıyoruz.')}
+      ${Small('Marka — güncel giyim koleksiyonu kapınıza geliyor.')}
     `, {
       preheader: `Yorumunuz yayında — ${payload.productName}`,
       title: 'Yorumunuz yayında',
     });
 
     await transporter.sendMail({
-      from: `"Polen Stone" <${fromEmail}>`,
+      from: `"Marka" <${fromEmail}>`,
       to: payload.to,
       subject: `Yorumunuz yayında — ${payload.productName}`,
       html,
@@ -1107,14 +1107,14 @@ export async function sendGuestReviewRejectedEmail(
         <p style="margin:0;font-size:14px;color:#1f2937;line-height:1.5;">${escapeHtml(payload.reason)}</p>
       `)}
 
-      ${Small('Polen Stone — doğal taşın sıcaklığını evinize taşıyoruz.')}
+      ${Small('Marka — güncel giyim koleksiyonu kapınıza geliyor.')}
     `, {
       preheader: `Yorumunuz onaylanmadı — ${payload.productName}`,
       title: 'Yorumunuz onaylanmadı',
     });
 
     await transporter.sendMail({
-      from: `"Polen Stone" <${fromEmail}>`,
+      from: `"Marka" <${fromEmail}>`,
       to: payload.to,
       subject: `Yorumunuz onaylanmadı — ${payload.productName}`,
       html,
@@ -1152,7 +1152,7 @@ export async function sendBankTransferPendingEmail(order: Order, items: OrderIte
     );
 
     await transporter.sendMail({
-      from: `"Polen Stone" <${fromEmail}>`,
+      from: `"Marka" <${fromEmail}>`,
       to: order.customerEmail,
       subject: `Havalenizi Bekliyoruz - #${order.orderNumber}`,
       html: bankTransferPendingTemplate(order, enrichedItems),
@@ -1181,7 +1181,7 @@ export async function sendPasswordResetEmail(user: User, resetToken: string): Pr
     const userName = user.firstName || 'Değerli Müşterimiz';
     
     await transporter.sendMail({
-      from: `"Polen Stone" <${fromEmail}>`,
+      from: `"Marka" <${fromEmail}>`,
       to: user.email,
       subject: 'Şifre Sıfırlama Talebi',
       html: passwordResetTemplate(userName, resetLink),
@@ -1211,7 +1211,7 @@ export async function sendReviewRequestEmail(
     const fromEmail = settings.smtp_user || 'no-reply@polenstone.com';
     
     await transporter.sendMail({
-      from: `"Polen Stone" <${fromEmail}>`,
+      from: `"Marka" <${fromEmail}>`,
       to: userEmail,
       subject: 'Deneyiminizi Paylaşın',
       html: reviewRequestTemplate(userName, orderNumber, products, userEmail),
@@ -1236,9 +1236,9 @@ export async function sendTestEmail(toEmail: string): Promise<EmailResult> {
     const fromEmail = settings.smtp_user || 'no-reply@polenstone.com';
     
     await transporter.sendMail({
-      from: `"Polen Stone" <${fromEmail}>`,
+      from: `"Marka" <${fromEmail}>`,
       to: toEmail,
-      subject: 'Polen Stone - Test E-postası',
+      subject: 'Marka - Test E-postası',
       html: wrapTemplate(`
         ${H1('Test e-postası.')}
         ${Lede('Bu bir test e-postasıdır. SMTP ayarlarınız başarıyla yapılandırıldı.')}
@@ -1276,7 +1276,7 @@ export async function sendAbandonedCartEmail(
     const siteUrl = settings.site_url || 'https://polenstone.com';
     
     await transporter.sendMail({
-      from: `"Polen Stone" <${fromEmail}>`,
+      from: `"Marka" <${fromEmail}>`,
       to: userEmail,
       subject: 'Sepetiniz Sizi Bekliyor! 🛒',
       html: abandonedCartTemplate(userName, cartItems, cartTotal, siteUrl, userEmail),
@@ -1345,7 +1345,7 @@ function quoteEmailTemplate(data: QuoteEmailData): string {
 
     ${emailButton(CONTACT.siteUrl, 'Web Sitemizi Ziyaret Edin')}
 
-    ${Small('Bizi tercih ettiğiniz için teşekkür ederiz — Polen Stone Ekibi')}
+    ${Small('Bizi tercih ettiğiniz için teşekkür ederiz — Marka Ekibi')}
   `, { preheader: `Teklif ${data.quoteNumber} hazır — toplam ${grandTotalFormatted} TL`, title: `Teklif ${data.quoteNumber}` });
 }
 
@@ -1364,9 +1364,9 @@ export async function sendQuoteEmail(
     const fromEmail = settings.smtp_user || 'no-reply@polenstone.com';
     
     await transporter.sendMail({
-      from: `"Polen Stone B2B" <${fromEmail}>`,
+      from: `"Marka B2B" <${fromEmail}>`,
       to: dealerEmail,
-      subject: `Polen Stone Teklif - ${quoteData.quoteNumber}`,
+      subject: `Marka Teklif - ${quoteData.quoteNumber}`,
       html: quoteEmailTemplate(quoteData),
       attachments: [
         {

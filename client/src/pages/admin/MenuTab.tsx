@@ -156,7 +156,7 @@ export default function MenuManagementPanel({ categories }: MenuManagementPanelP
       alert(
         `✅ Otomatik gruplandırma tamamlandı!\n\n` +
         `${result.createdParents} ana grup, ${result.createdChildren} alt kategori oluşturuldu.\n` +
-        `Toplam ${result.totalCategories} kategori, ${result.unmatchedCount} tanesi "Diğer Doğal Taş" altına düştü.\n\n` +
+        `Toplam ${result.totalCategories} kategori, ${result.unmatchedCount} tanesi "Diğer Giyim" altına düştü.\n\n` +
         `Oluşturulan gruplar:\n${lines}`
       );
     },

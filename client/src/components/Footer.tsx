@@ -32,13 +32,12 @@ export function Footer() {
             <Link href="/" className="inline-block mb-5" data-testid="link-footer-logo">
               <img
                 src={polenLogo}
-                alt="Polen Stone — Doğal Taş & Mermer"
+                alt="Marka — Giyim & Moda"
                 className="h-[112px] w-auto object-contain"
               />
             </Link>
             <p className="text-white/55 text-[14px] leading-[1.7] max-w-md mb-6">
-              Doğal mermerden el işçiliğiyle üretilen banyo setleri, mermer lavabolar, servis tabakları ve dekoratif objeler.
-              Her parça, atölyemizde tek tek şekillendirilir; taşın damarına ve karakterine saygılı tasarımlarla evlerinize zamansız bir zarafet taşır.
+              Kadın, erkek ve çocuk giyiminde yüzlerce marka ve binlerce model. Trendyol ile senkronize güncel koleksiyon, güvenli ödeme ve hızlı kargo ile kapınıza geliyor.
             </p>
 
             <a
@@ -116,7 +115,7 @@ export function Footer() {
         {/* ── Alt çizgi: copyright + geliştirici ── */}
         <div className="mt-12 lg:mt-16 pt-6 border-t border-white/[0.08] flex flex-col sm:flex-row items-center justify-between gap-4">
           <p className="text-[12px] text-white/40">
-            © 2026 Polen Stone. Tüm hakları saklıdır.
+            © 2026 Marka. Tüm hakları saklıdır.
           </p>
           <div className="flex items-center gap-2 text-[11px] text-white/35">
             <span>Geliştirici & Tasarım</span>

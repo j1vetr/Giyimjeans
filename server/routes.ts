@@ -192,7 +192,7 @@ async function generateQuotePdfBuffer(quote: any, dealer: any, items: any[]): Pr
       }
       
       if (!logoAdded) {
-        doc.fontSize(28).font(fontBold).fillColor('#000000').text('Polen Stone', 50, 50);
+        doc.fontSize(28).font(fontBold).fillColor('#000000').text('Marka', 50, 50);
       }
       
       // Quote title
@@ -313,7 +313,7 @@ async function generateQuotePdfBuffer(quote: any, dealer: any, items: any[]): Pr
       
       // Footer
       doc.fontSize(8).font(fontRegular).fillColor('#999999');
-      doc.text('Polen Stone Doğal Taş & Mermer | www.polenstone.com | info@polenstone.com', 50, 780, { align: 'center', width: 495 });
+      doc.text('Marka | www.polenstone.com | info@polenstone.com', 50, 780, { align: 'center', width: 495 });
       
       doc.end();
     } catch (error) {
@@ -466,14 +466,14 @@ export async function registerRoutes(
       const price = parseFloat(product.basePrice || '0');
       const description = product.description 
         ? escapeHtml(product.description.substring(0, 200))
-        : `${escapeHtml(product.name)} - Polen Stone premium doğal taş ve mermer`;
+        : `${escapeHtml(product.name)} - Marka güncel giyim koleksiyonu`;
 
       const html = `<!DOCTYPE html>
 <html lang="tr">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>${escapeHtml(product.name)} | Polen Stone</title>
+  <title>${escapeHtml(product.name)} | Marka</title>
   <meta name="description" content="${description}">
   
   <!-- Open Graph -->
@@ -484,7 +484,7 @@ export async function registerRoutes(
   <meta property="og:image:width" content="1200">
   <meta property="og:image:height" content="630">
   <meta property="og:url" content="${pageUrl}">
-  <meta property="og:site_name" content="Polen Stone">
+  <meta property="og:site_name" content="Marka">
   <meta property="og:locale" content="tr_TR">
   <meta property="product:price:amount" content="${price}">
   <meta property="product:price:currency" content="TRY">
@@ -533,30 +533,30 @@ export async function registerRoutes(
       const mainImage = category.image 
         ? normalizeImageUrl(baseUrl, category.image)
         : `${baseUrl}/logo.png`;
-      const description = `${escapeHtml(category.name)} koleksiyonu - Polen Stone premium doğal taş ve mermer`;
+      const description = `${escapeHtml(category.name)} koleksiyonu - Marka güncel giyim`;
 
       const html = `<!DOCTYPE html>
 <html lang="tr">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>${escapeHtml(category.name)} | Polen Stone</title>
+  <title>${escapeHtml(category.name)} | Marka</title>
   <meta name="description" content="${description}">
   
   <!-- Open Graph -->
   <meta property="og:type" content="website">
-  <meta property="og:title" content="${escapeHtml(category.name)} | Polen Stone">
+  <meta property="og:title" content="${escapeHtml(category.name)} | Marka">
   <meta property="og:description" content="${description}">
   <meta property="og:image" content="${mainImage}">
   <meta property="og:image:width" content="1200">
   <meta property="og:image:height" content="630">
   <meta property="og:url" content="${pageUrl}">
-  <meta property="og:site_name" content="Polen Stone">
+  <meta property="og:site_name" content="Marka">
   <meta property="og:locale" content="tr_TR">
   
   <!-- Twitter Card -->
   <meta name="twitter:card" content="summary_large_image">
-  <meta name="twitter:title" content="${escapeHtml(category.name)} | Polen Stone">
+  <meta name="twitter:title" content="${escapeHtml(category.name)} | Marka">
   <meta name="twitter:description" content="${description}">
   <meta name="twitter:image" content="${mainImage}">
   
@@ -1310,7 +1310,7 @@ export async function registerRoutes(
         await storage.setProductCategories(product.id, [product.categoryId]);
       }
       
-      // Auto-create variants — bedensiz mantık (Polen Stone: ev ürünleri)
+      // Auto-create variants — beden/renk mantığı (giyim ürünleri)
       const sizes = product.availableSizes || [];
       const colors = product.availableColors || [];
       const baseSku = product.sku || '';
@@ -1669,10 +1669,8 @@ export async function registerRoutes(
         return res.status(400).json({ error: "Geçersiz ürün" });
       }
 
-      // Polen Stone artık varyantsız (her ürün tek başına). Eğer client variant
-      // göndermediyse ürünün ilk aktif & stoklu varyantını otomatik seçeriz —
-      // böylece "Lütfen beden seçimi yapın" hatası alınmaz ve stok yine
-      // varyant bazlı olarak doğru düşer.
+      // Giyim: eğer client variant göndermediyse ürünün ilk aktif & stoklu
+      // varyantını otomatik seçeriz — böylece stok yine varyant bazlı doğru düşer.
       let variantId: string | null = rawVariantId ?? null;
       let resolvedVariant = variantId ? await storage.getProductVariant(variantId) : null;
 
@@ -2157,8 +2155,8 @@ export async function registerRoutes(
             iyzicoBasketItems.push({
               id: `${product.id}-${variant?.id || 'base'}-${qi}`,
               name: product.name.substring(0, 250),
-              category1: 'Doğal Taş',
-              category2: 'Mermer',
+              category1: 'Giyim',
+              category2: 'Moda',
               itemType: 'PHYSICAL',
               price: itemPrice.toFixed(2),
             });
@@ -4281,8 +4279,8 @@ export async function registerRoutes(
       const receiverAddr = [model?.ReceiverAddress, model?.ReceiverAddress2, model?.ReceiverAddress3].filter(Boolean).join(', ') || addressLine;
       const receiverCity = [model?.ReceiverTown, model?.ReceiverCity].filter(Boolean).join(' / ') || (addr?.city || '');
       const receiverPhone = model?.ReceiverPhone || order.customerPhone || '';
-      const senderName = model?.SenderAccountName || 'POLEN STONE';
-      const senderAddr = [model?.SenderAddress, model?.SenderAddress2].filter(Boolean).join(', ') || 'Polen Stone Doğal Taş & Mermer';
+      const senderName = model?.SenderAccountName || 'MARKA';
+      const senderAddr = [model?.SenderAddress, model?.SenderAddress2].filter(Boolean).join(', ') || 'Marka Giyim & Moda';
       const barcodeNumber = model?.BarcodeNumber || order.orderNumber;
       const trackingNumber = label.trackingNumber || order.trackingNumber || '-';
       const deliveryUnit = model?.DeliveryUnitName || '';
@@ -4489,9 +4487,9 @@ export async function registerRoutes(
 
   <!-- Header -->
   <div class="header">
-    <div class="header-brand">POLEN <span>STONE</span></div>
+    <div class="header-brand">MARKA <span>GİYİM</span></div>
     <div class="header-sub">
-      Doğal Taş &amp; Mermer<br>
+      Giyim &amp; Moda<br>
       polenstone.com · info@polenstone.com
     </div>
   </div>
@@ -6003,7 +6001,7 @@ Sitemap: ${baseUrl}/sitemap.xml
       }
       
       if (!logoAdded) {
-        doc.fontSize(28).font(fontBold).fillColor('#000000').text('Polen Stone', 50, 50);
+        doc.fontSize(28).font(fontBold).fillColor('#000000').text('Marka', 50, 50);
       }
       
       // Quote title
@@ -6146,7 +6144,7 @@ Sitemap: ${baseUrl}/sitemap.xml
       
       // Footer
       doc.fontSize(8).font(fontRegular).fillColor('#999999');
-      doc.text('Polen Stone Doğal Taş & Mermer | www.polenstone.com | info@polenstone.com', 50, 780, { align: 'center', width: 495 });
+      doc.text('Marka | www.polenstone.com | info@polenstone.com', 50, 780, { align: 'center', width: 495 });
       
       doc.end();
     } catch (error) {
@@ -6805,7 +6803,7 @@ Sitemap: ${baseUrl}/sitemap.xml
 ${additionalImages}
       <g:price>${Number(variantPrice).toFixed(2)} TRY</g:price>
       <g:availability>${availability}</g:availability>
-      <g:brand>POLEN STONE</g:brand>
+      <g:brand>MARKA</g:brand>
       <g:condition>new</g:condition>
       <g:google_product_category>Giyim ve Aksesuar > Giyim</g:google_product_category>
       <g:product_type>${escapeXml(categoryName)}</g:product_type>
@@ -6830,7 +6828,7 @@ ${colorAttr}
 ${additionalImages}
       <g:price>${Number(product.basePrice).toFixed(2)} TRY</g:price>
       <g:availability>${availability}</g:availability>
-      <g:brand>POLEN STONE</g:brand>
+      <g:brand>MARKA</g:brand>
       <g:condition>new</g:condition>
       <g:google_product_category>Giyim ve Aksesuar > Giyim</g:google_product_category>
       <g:product_type>${escapeXml(categoryName)}</g:product_type>
@@ -6847,9 +6845,9 @@ ${additionalImages}
       const xml = `<?xml version="1.0" encoding="UTF-8"?>
 <rss version="2.0" xmlns:g="http://base.google.com/ns/1.0">
   <channel>
-    <title>Polen Stone — Doğal Taş &amp; Mermer</title>
+    <title>Marka — Giyim &amp; Moda</title>
     <link>${baseUrl}</link>
-    <description>Polen Stone — Premium doğal taş ve mermer markası</description>
+    <description>Marka — Kadın, Erkek ve Çocuk Giyim</description>
 ${items.join("\n")}
   </channel>
 </rss>`;
@@ -6993,7 +6991,7 @@ ${items.join("\n")}
         }
       }
       if (!logoAdded) {
-        doc.fontSize(22).font(fontB).fillColor(darkColor).text('Polen Stone', marginL, logoTopY + 15);
+        doc.fontSize(22).font(fontB).fillColor(darkColor).text('Marka', marginL, logoTopY + 15);
       }
 
       const dateStr = new Date().toLocaleDateString('tr-TR', {

@@ -1050,7 +1050,7 @@ export default function SettingsPanel() {
               type="text"
               value={settings.site_name}
               onChange={(e) => setSettings(s => ({ ...s, site_name: e.target.value }))}
-              placeholder="Polen Stone"
+              placeholder="Marka"
               className="w-full px-4 py-3 bg-neutral-50 border border-neutral-200 rounded-lg text-neutral-900"
               data-testid="input-site-name"
             />

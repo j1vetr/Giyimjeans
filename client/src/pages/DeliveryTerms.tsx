@@ -16,8 +16,8 @@ export default function DeliveryTerms() {
   return (
     <div className="min-h-screen bg-stone-50">
       <SEO
-        title="Teslimat Koşulları - Polen Stone Doğal Taş & Mermer"
-        description="Polen Stone Doğal Taş & Mermer teslimat koşulları, kargo süreleri ve ücretsiz kargo bilgileri."
+        title="Teslimat Koşulları - Marka Giyim & Moda"
+        description="Marka Giyim & Moda teslimat koşulları, kargo süreleri ve ücretsiz kargo bilgileri."
       />
       <Header />
 
@@ -74,7 +74,7 @@ export default function DeliveryTerms() {
               <div className="prose prose-zinc max-w-none prose-headings:font-display prose-headings:tracking-wide prose-headings:text-black prose-h2:text-xl prose-h2:border-b prose-h2:border-black/10 prose-h2:pb-3 prose-h2:mb-4 prose-p:text-black/70 prose-li:text-black/70 prose-strong:text-black prose-a:text-polen-orange hover:prose-a:underline">
                 <h2>1) Genel Bilgiler</h2>
                 <p>
-                  Polen Stone olarak siparişlerinizi güvenli, hızlı ve eksiksiz şekilde teslim etmeyi hedefliyoruz.
+                  Marka olarak siparişlerinizi güvenli, hızlı ve eksiksiz şekilde teslim etmeyi hedefliyoruz.
                   Web sitemiz üzerinden yapılan tüm alışverişlerde aşağıdaki koşullar geçerlidir.
                 </p>
 

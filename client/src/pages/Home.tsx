@@ -79,7 +79,7 @@ function HeroSceneStatic() {
   return (
     <section
       className="relative h-[100svh] min-h-[560px] w-full overflow-hidden bg-black lg:h-[calc(100svh-200px)] lg:min-h-[560px]"
-      aria-label="Polen Stone tanıtım"
+      aria-label="Marka giyim tanıtım"
     >
       <img
         src={heroPosterImage}
@@ -198,11 +198,11 @@ function HeroOverlayContent({ animated = false }: { animated?: boolean }) {
             style={{ fontSize: 'clamp(40px, 11vw, 64px)', letterSpacing: '-0.02em', fontWeight: 700 }}
             data-testid="text-hero-title-mobile"
           >
-            Doğal Taşın
-            <span className="block text-polen-orange mt-5">Zarafeti</span>
+            Yeni Sezon
+            <span className="block text-polen-orange mt-5">Koleksiyon</span>
           </h1>
           <p className="mt-5 text-[11px] tracking-[0.22em] uppercase text-white/75 font-mono">
-            Banyo · Lavabo · Dekor · Mutfak
+            Kadın · Erkek · Aksesuar · Spor
           </p>
           <Link
             href="/magaza"
@@ -229,13 +229,13 @@ function HeroOverlayContent({ animated = false }: { animated?: boolean }) {
               }}
               data-testid="text-hero-title"
             >
-              Doğal Taşın <span className="text-polen-orange">Zamansız Zarafeti</span>
+              Yeni Sezon <span className="text-polen-orange">Koleksiyonu Keşfet</span>
             </h1>
 
             <span aria-hidden className="block w-16 h-px bg-polen-orange mt-8 mb-6" />
 
             <p className="max-w-[640px] text-[14px] xl:text-[15px] leading-relaxed text-white/80">
-              Doğal mermerden el işçiliğiyle üretilen banyo setleri, lavabolar, servis tabakları ve dekoratif objeler. Her parça atölyemizde özenle hazırlanır.
+              Kadın, erkek ve çocuk giyiminde yüzlerce marka ve binlerce model. Trendyol ile senkronize güncel koleksiyon, kapınıza hızlı teslimat.
             </p>
 
             <Link
@@ -322,7 +322,7 @@ function PinnedShowcaseScene({ products }: { products: Product[] }) {
                     <div className="absolute bottom-0 left-0 right-0 p-4 lg:p-5 flex items-end justify-between gap-3">
                       <div className="min-w-0">
                         <div className="text-[10px] font-mono tracking-[0.22em] uppercase text-white/55 mb-1">
-                          Doğal Taş
+                          Giyim
                         </div>
                         <div className="text-sm lg:text-base font-medium text-white truncate">
                           {p.name}
@@ -377,7 +377,7 @@ function ProductGridScene({ products }: { products: Product[] }) {
               letterSpacing: '-0.02em',
             }}
           >
-            Polen Stone Koleksiyonu
+            Editörün Seçimi
           </h2>
         </div>
         <Link
@@ -403,9 +403,9 @@ function ProductGridScene({ products }: { products: Product[] }) {
 
 function StatementMarqueeScene() {
   const items = [
-    'POLEN STONE',
+    'YENİ SEZON',
     '◆',
-    'ANADOLU\'DAN MEKÂNINIZA',
+    'KADIN · ERKEK · ÇOCUK',
     '✦',
     'TÜRKİYE GENELİ KARGO',
     '◆',
@@ -413,7 +413,7 @@ function StatementMarqueeScene() {
     '✦',
     'GÜVENLİ ÖDEME',
     '◆',
-    'MERMER · GRANİT · TRAVERTEN · ONİKS',
+    'ÜST GİYİM · ALT GİYİM · DIŞ GİYİM · AKSESUAR',
     '✦',
   ];
   const doubled = [...items, ...items, ...items];
@@ -475,7 +475,7 @@ function FinalCtaScene() {
             transition={{ duration: 0.45, ease: [0.16, 1, 0.3, 1] }}
             className="block"
           >
-            Mekânınıza
+            Stilinizi
           </motion.span>
           <motion.span
             initial={{ opacity: 0, y: 40 }}
@@ -483,7 +483,7 @@ function FinalCtaScene() {
             transition={{ duration: 0.45, delay: 0.06, ease: [0.16, 1, 0.3, 1] }}
             className="block"
           >
-            doğanın ihtişamını
+            yansıtan
           </motion.span>
           <motion.span
             initial={{ opacity: 0, y: 40 }}
@@ -491,7 +491,7 @@ function FinalCtaScene() {
             transition={{ duration: 0.45, delay: 0.12, ease: [0.16, 1, 0.3, 1] }}
             className="block text-polen-orange"
           >
-            taşıyalım.
+            koleksiyon.
           </motion.span>
         </h2>
 
@@ -502,8 +502,8 @@ function FinalCtaScene() {
           className="mt-12 lg:mt-16 flex flex-col lg:flex-row lg:items-center lg:justify-between gap-8"
         >
           <p className="max-w-[560px] text-base lg:text-lg text-black/65 leading-relaxed">
-            Anadolu'nun zengin doğal taş mirasını mekânınıza taşıyoruz.
-            Mermer, granit, traverten ve oniks koleksiyonumuzu keşfedin.
+            Trendyol ile senkronize güncel koleksiyonumuzdan seçim yapın.
+            Kadın, erkek ve çocuk giyiminde yüzlerce model sizi bekliyor.
           </p>
           <div className="flex flex-col sm:flex-row items-start sm:items-center gap-5 sm:gap-8">
             <Link
@@ -560,8 +560,8 @@ export default function Home() {
   return (
     <>
       <SEO
-        title="Doğal Taş ve Mermer Koleksiyonu"
-        description="Polen Stone, premium mermer, granit, traverten ve oniks koleksiyonu sunan doğal taş markasıdır. Mekânlarınıza doğanın ihtişamını taşıyın."
+        title="Giyim & Moda Koleksiyonu"
+        description="Marka, Türkiye'nin önde gelen online giyim mağazasıdır. Kadın, erkek ve çocuk giyiminde güncel koleksiyon sizi bekliyor."
         url="/"
       />
       <Header />

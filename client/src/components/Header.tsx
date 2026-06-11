@@ -134,7 +134,7 @@ export function Header() {
           <Link href="/" data-testid="link-logo" className="justify-self-center block">
             <img
               src={polenLogo}
-              alt="Polen Stone — Doğal Taş & Mermer"
+              alt="Marka — Giyim & Moda"
               className="h-[96px] w-auto object-contain"
               data-testid="img-logo"
             />
@@ -183,7 +183,7 @@ export function Header() {
             <Link href="/" data-testid="link-logo-mobile-header" className="justify-self-center block">
               <motion.img
                 src={polenLogo}
-                alt="Polen Stone — Doğal Taş & Mermer"
+                alt="Marka — Giyim & Moda"
                 animate={{ height: scrolled ? 60 : 72 }}
                 transition={{ duration: 0.35, ease: [0.33, 1, 0.68, 1] }}
                 className="w-auto object-contain"
@@ -244,7 +244,7 @@ export function Header() {
                     <Link href="/" data-testid="link-logo-compact" className="block shrink-0">
                       <img
                         src={polenLogo}
-                        alt="Polen Stone"
+                        alt="Marka"
                         className="h-[44px] w-auto object-contain"
                       />
                     </Link>
@@ -494,7 +494,7 @@ export function Header() {
                   >
                     <img
                       src={polenLogo}
-                      alt="Polen Stone"
+                      alt="Marka"
                       className="h-[120px] w-[120px] object-contain"
                       data-testid="img-logo-mobile-drawer"
                     />

@@ -15,8 +15,8 @@ export default function CancellationPolicy() {
   return (
     <div className="min-h-screen bg-stone-50">
       <SEO
-        title="İptal ve İade Politikası - Polen Stone Doğal Taş & Mermer"
-        description="Polen Stone Doğal Taş & Mermer ürün iade, değişim ve iptal koşulları."
+        title="İptal ve İade Politikası - Marka Giyim & Moda"
+        description="Marka Giyim & Moda ürün iade, değişim ve iptal koşulları."
       />
       <Header />
 
@@ -108,15 +108,15 @@ export default function CancellationPolicy() {
                 <ul className="space-y-2 text-sm text-black/70">
                   <li className="flex items-start gap-2">
                     <span className="text-rose-600 mt-1">•</span>
-                    Projeye özel ölçüde kesilmiş veya işlenmiş plaka, fayans ve tezgâh ürünleri
+                    Kişiye özel dikilmiş, işlenmiş veya üzerine isim/baskı uygulanmış ürünler
                   </li>
                   <li className="flex items-start gap-2">
                     <span className="text-rose-600 mt-1">•</span>
-                    Yerine monte edilmiş, yapıştırılmış veya işlem görmüş doğal taşlar
+                    Kullanılmış, yıkanmış veya ambalajı açılmış iç giyim ve mayo ürünleri
                   </li>
                   <li className="flex items-start gap-2">
                     <span className="text-rose-600 mt-1">•</span>
-                    Doğal taşın yapısından kaynaklanan ton, damar ve desen farklılıkları (kusur sayılmaz)
+                    Kumaşın yapısından kaynaklanan renk tonu ve doku farklılıkları (kusur sayılmaz)
                   </li>
                 </ul>
               </div>

@@ -91,7 +91,7 @@ function renderMaintenancePage(): string {
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <meta name="robots" content="noindex,nofollow" />
-<title>Bakım Modu — Polen Stone</title>
+<title>Bakım Modu — Marka</title>
 <style>
   *, *::before, *::after { box-sizing: border-box; }
   html, body { height: 100%; margin: 0; padding: 0; }
@@ -161,7 +161,7 @@ function renderMaintenancePage(): string {
 </head>
 <body>
   <main>
-    <img class="logo" src="/uploads/branding/polen-logo.png" alt="Polen Stone" />
+    <img class="logo" src="/uploads/branding/polen-logo.png" alt="Marka" />
     <h1>Yakında yeni tasarımımız ile sizlerle birlikteyiz.</h1>
     <p>Sitemiz şu anda bakımda. Daha iyi bir deneyim için çalışıyoruz, kısa süre içinde yeniden hizmetinizdeyiz.</p>
   </main>

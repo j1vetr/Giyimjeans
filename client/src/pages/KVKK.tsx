@@ -16,8 +16,8 @@ export default function KVKK() {
   return (
     <div className="min-h-screen bg-stone-50">
       <SEO
-        title="KVKK Aydınlatma Metni - Polen Stone Doğal Taş & Mermer"
-        description="Polen Stone Doğal Taş & Mermer kişisel verilerin korunması kanunu aydınlatma metni."
+        title="KVKK Aydınlatma Metni - Marka Giyim & Moda"
+        description="Marka Giyim & Moda kişisel verilerin korunması kanunu aydınlatma metni."
       />
       <Header />
 
@@ -75,7 +75,7 @@ export default function KVKK() {
                 <p>
                   KVKK (Kişisel Verilerin Korunması Kanunu) kapsamında kişisel verilerinizi işleyen veri sorumlusu aşağıdaki şekildedir:
                 </p>
-                <p><strong>Polen Stone Doğal Taş & Mermer</strong></p>
+                <p><strong>Marka Giyim & Moda</strong></p>
                 <p><strong>Web Sitesi:</strong> <a href="https://www.polenstone.com">www.polenstone.com</a></p>
                 <p><strong>E-posta:</strong> <a href="mailto:info@polenstone.com">info@polenstone.com</a></p>
                 <p><strong>Telefon:</strong> <a href="tel:+905326956183">0532 695 61 83</a></p>
@@ -123,7 +123,7 @@ export default function KVKK() {
 
                 <h2>7) Kişisel Verilerin Güvenliği</h2>
                 <p>
-                  Polen Stone, kişisel verilerinizi korumak için gerekli tüm teknik ve idari tedbirleri almaktadır. Verileriniz SSL sertifikaları, güvenli sunucular ve erişim yetkilendirme sistemleriyle korunmaktadır.
+                  Marka, kişisel verilerinizi korumak için gerekli tüm teknik ve idari tedbirleri almaktadır. Verileriniz SSL sertifikaları, güvenli sunucular ve erişim yetkilendirme sistemleriyle korunmaktadır.
                 </p>
 
                 <h2>8) İlgili Kişi Olarak Haklarınız</h2>

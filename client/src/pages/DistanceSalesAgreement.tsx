@@ -16,8 +16,8 @@ export default function DistanceSalesAgreement() {
   return (
     <div className="min-h-screen bg-stone-50">
       <SEO
-        title="Mesafeli Satış Sözleşmesi - Polen Stone Doğal Taş & Mermer"
-        description="Polen Stone Doğal Taş & Mermer mesafeli satış sözleşmesi ve alışveriş koşulları."
+        title="Mesafeli Satış Sözleşmesi - Marka Giyim & Moda"
+        description="Marka Giyim & Moda mesafeli satış sözleşmesi ve alışveriş koşulları."
       />
       <Header />
 
@@ -72,7 +72,7 @@ export default function DistanceSalesAgreement() {
             <div className="bg-white border border-black/[0.08] rounded-2xl p-6 sm:p-8 lg:p-10 shadow-[0_2px_24px_-12px_rgba(0,0,0,0.08)]">
               <div className="prose prose-zinc max-w-none prose-headings:font-display prose-headings:tracking-wide prose-headings:text-black prose-h2:text-xl prose-h2:border-b prose-h2:border-black/10 prose-h2:pb-3 prose-h2:mb-4 prose-p:text-black/70 prose-li:text-black/70 prose-strong:text-black prose-a:text-polen-orange hover:prose-a:underline">
                 <h2>1) Taraflar</h2>
-                <p><strong>Satıcı:</strong> Polen Stone Doğal Taş & Mermer</p>
+                <p><strong>Satıcı:</strong> Marka Giyim & Moda</p>
                 <p><strong>Adres:</strong> Yunus Emre, Barbaros Blv. 42 d, 34791 Sancaktepe / İstanbul</p>
                 <p><strong>Telefon:</strong> <a href="tel:+905326956183">0532 695 61 83</a></p>
                 <p><strong>E-posta:</strong> <a href="mailto:info@polenstone.com">info@polenstone.com</a></p>
@@ -109,20 +109,20 @@ export default function DistanceSalesAgreement() {
 
                 <h2>7) Cayma Hakkının Kullanılamayacağı Durumlar</h2>
                 <ul>
-                  <li>Alıcının isteği üzerine özel ölçü, kesim, yüzey işlemi veya işleme ile üretilen plaka, fayans ve tezgâh ürünlerinde,</li>
-                  <li>Yerine monte edilmiş, yapıştırılmış veya işçilik uygulanmış doğal taş ürünlerinde,</li>
+                  <li>Alıcının isteği üzerine kişiye özel dikilmiş, işlenmiş veya üzerine baskı/nakış uygulanmış ürünlerde,</li>
+                  <li>Kullanılmış, yıkanmış veya ambalajı açılmış iç giyim, çorap ve mayo gibi hijyenik ürünlerde,</li>
                   <li>Ambalajı açılmış, kullanılmış veya yeniden satılamayacak duruma gelmiş ürünlerde,</li>
-                  <li>Doğal taşın yapısından kaynaklanan ton, damar ve desen farklılıkları cayma hakkı gerekçesi olarak kabul edilmez.</li>
+                  <li>Kumaşın yapısından kaynaklanan renk tonu ve doku farklılıkları cayma hakkı gerekçesi olarak kabul edilmez.</li>
                 </ul>
 
                 <h2>8) İade Süreci</h2>
                 <p>
-                  Alıcı cayma hakkını kullandığında, ürünün fatura, kutu, aksesuar ve tüm parçalarıyla birlikte eksiksiz olarak Polen Stone'a iade edilmesi gerekir. Ürün tarafımıza ulaştıktan sonra <strong>en geç 7 iş günü</strong> içinde, alıcının ödeme yaptığı yönteme ücret iadesi yapılır.
+                  Alıcı cayma hakkını kullandığında, ürün fatura ve aksesuarlarıyla birlikte eksiksiz olarak Marka'ya iade edilmesi gerekir. Ürün tarafımıza ulaştıktan sonra <strong>en geç 7 iş günü</strong> içinde, alıcının ödeme yaptığı yönteme ücret iadesi yapılır.
                 </p>
 
                 <h2>9) Garanti ve Ürün Sorumluluğu</h2>
                 <p>
-                  Satıcı, satılan doğal taş ürünlerdeki üretim ve işleme kaynaklı hatalardan sorumludur. Kullanıcı hatası (uygun olmayan kimyasal ve aşındırıcı temizleyici kullanımı, hatalı montaj veya derz uygulaması, ağır darbe, yanlış uygulama alanında kullanım vb.) ile doğal taşın yapısından kaynaklanan ton, damar ve desen farklılıkları garanti kapsamı dışındadır. Garanti süreleri ve koşulları ürüne göre değişebilir.
+                  Satıcı, satılan giyim ürünlerindeki üretim kaynaklı hatalardan sorumludur. Kullanıcı hatası (yanlış yıkama, renk akması, uygunsuz kullanım vb.) ile kumaşın yapısından kaynaklanan renk tonu ve doku farklılıkları garanti kapsamı dışındadır. Garanti süreleri ve koşulları ürüne göre değişebilir.
                 </p>
 
                 <h2>10) Gizlilik ve Kişisel Verilerin Korunması</h2>
