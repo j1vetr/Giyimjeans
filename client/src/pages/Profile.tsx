@@ -126,6 +126,9 @@ export default function Profile() {
     lastName: '',
     phone: '',
   });
+  const [payAmount, setPayAmount] = useState('');
+  const [payDescription, setPayDescription] = useState('');
+  const isWholesale = user?.customerType === 'wholesale';
 
   const { data: orders = [], isLoading: ordersLoading } = useQuery<Order[]>({
     queryKey: ['my-orders'],
@@ -147,6 +150,37 @@ export default function Profile() {
     enabled: !!user,
   });
   const pendingPaymentCount = paymentRequests.filter((p) => p.status === 'pending').length;
+
+  const createPaymentMutation = useMutation({
+    mutationFn: async (data: { amount: number; description: string }) => {
+      const res = await fetch('/api/payment-requests', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify(data),
+      });
+      const json = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(json?.error || 'Ödeme talebi oluşturulamadı');
+      return json as { token: string; paymentUrl: string };
+    },
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ['my-payment-requests'] });
+      navigate(data.paymentUrl || `/odeme/${data.token}`);
+    },
+    onError: (err: any) => {
+      toast({ title: 'Hata', description: err?.message || 'Ödeme talebi oluşturulamadı', variant: 'destructive' });
+    },
+  });
+
+  const handleCreatePayment = (e: React.FormEvent) => {
+    e.preventDefault();
+    const amount = parseFloat(payAmount.replace(',', '.'));
+    if (!Number.isFinite(amount) || amount <= 0) {
+      toast({ title: 'Geçersiz tutar', description: 'Lütfen geçerli bir tutar girin.', variant: 'destructive' });
+      return;
+    }
+    createPaymentMutation.mutate({ amount, description: payDescription.trim() });
+  };
 
   const { data: favorites = [], isLoading: favoritesLoading } = useFavorites();
 
@@ -567,6 +601,54 @@ export default function Profile() {
                       <p className="text-sm text-black/45">{pendingPaymentCount} bekliyor</p>
                     </div>
 
+                    {isWholesale && (
+                      <form
+                        onSubmit={handleCreatePayment}
+                        className="bg-white border border-black/8 rounded-2xl p-6 mb-6"
+                        data-testid="form-create-payment"
+                      >
+                        <h3 className="text-base font-semibold text-black mb-1">Ödeme Yap</h3>
+                        <p className="text-sm text-black/45 mb-4">Tutar ve açıklama girip kredi kartıyla ödeme yapın.</p>
+                        <div className="grid grid-cols-1 sm:grid-cols-[160px_1fr] gap-3">
+                          <div>
+                            <label className="block text-xs uppercase tracking-[0.14em] text-black/50 mb-1.5">Tutar (₺)</label>
+                            <input
+                              type="number"
+                              min="1"
+                              step="0.01"
+                              required
+                              value={payAmount}
+                              onChange={(e) => setPayAmount(e.target.value)}
+                              placeholder="0,00"
+                              className="w-full px-4 py-2.5 border border-black/12 rounded-lg text-black focus:border-black/40 outline-none"
+                              data-testid="input-payment-amount"
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-xs uppercase tracking-[0.14em] text-black/50 mb-1.5">Açıklama</label>
+                            <input
+                              type="text"
+                              maxLength={500}
+                              value={payDescription}
+                              onChange={(e) => setPayDescription(e.target.value)}
+                              placeholder="Örn. Sipariş bakiyesi"
+                              className="w-full px-4 py-2.5 border border-black/12 rounded-lg text-black focus:border-black/40 outline-none"
+                              data-testid="input-payment-description"
+                            />
+                          </div>
+                        </div>
+                        <button
+                          type="submit"
+                          disabled={createPaymentMutation.isPending}
+                          className="mt-4 inline-flex items-center gap-2 px-6 py-2.5 bg-polen-orange text-black hover:bg-[hsl(var(--polen-orange-deep))] hover:text-white rounded-none text-sm font-semibold tracking-[0.04em] uppercase transition-colors disabled:opacity-60"
+                          data-testid="button-create-payment"
+                        >
+                          {createPaymentMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <CreditCard className="w-4 h-4" />}
+                          Ödemeye Geç
+                        </button>
+                      </form>
+                    )}
+
                     {paymentRequestsLoading ? (
                       <div className="flex items-center justify-center py-20">
                         <Loader2 className="w-8 h-8 animate-spin text-black/30" />
@@ -613,7 +695,7 @@ export default function Profile() {
                                   </span>
                                 </div>
                                 {pr.status === 'pending' && (
-                                  <Link href={`/odeme-talebi/${pr.token}`}>
+                                  <Link href={`/odeme/${pr.token}`}>
                                     <button
                                       className="flex items-center gap-2 px-5 py-2.5 bg-polen-orange text-black hover:bg-[hsl(var(--polen-orange-deep))] hover:text-white rounded-none text-sm font-semibold tracking-[0.04em] uppercase transition-colors"
                                       data-testid={`button-pay-${pr.token}`}

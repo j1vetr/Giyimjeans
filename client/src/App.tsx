@@ -64,6 +64,7 @@ function Router() {
         <Route path="/odeme" component={Checkout} />
         <Route path="/odeme-basarili" component={PaymentSuccess} />
         <Route path="/odeme-basarisiz" component={PaymentFail} />
+        <Route path="/odeme/:token" component={PaymentRequest} />
         <Route path="/odeme-talebi/:token" component={PaymentRequest} />
         <Route path="/siparis-takip" component={OrderTracking} />
         <Route path="/hesabim" component={Profile} />

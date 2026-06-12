@@ -48,6 +48,7 @@ import {
   sendAdminReviewNotificationEmail,
   sendGuestReviewApprovedEmail,
   sendGuestReviewRejectedEmail,
+  sendPaymentRequestPaidEmail,
   type AdminReviewNotificationPayload,
 } from "./emailService";
 import { verifyTurnstile, getClientIp } from "./captcha";
@@ -61,6 +62,7 @@ import {
   sendOrderCancelledToAdmin,
   sendBankTransferPendingToCustomer,
   sendBankTransferPendingToAdmin,
+  sendPaymentRequestPaidToCustomer,
   sendTestWhatsApp,
   sendReviewPendingToAdmin,
 } from "./whatsappService";
@@ -1302,6 +1304,55 @@ export async function registerRoutes(
       res.json(merged);
     } catch (error) {
       res.status(500).json({ error: "Ödeme talepleri yüklenemedi" });
+    }
+  });
+
+  // Wholesale customer self-service: create a free-amount payment request for the
+  // logged-in wholesale user, then pay it by card via the public /odeme/:token
+  // flow. Retail/guest users are rejected (wholesale-only per spec).
+  app.post("/api/payment-requests", async (req: Request, res) => {
+    const payload = await getAuthPayload(req, res);
+    if (!payload || payload.type !== 'user' || !payload.userId) {
+      return res.status(401).json({ error: "Giriş yapılmamış" });
+    }
+    try {
+      const user = await storage.getUser(payload.userId);
+      if (!user) {
+        return res.status(404).json({ error: "Kullanıcı bulunamadı" });
+      }
+      if (user.customerType !== 'wholesale') {
+        return res.status(403).json({ error: "Bu işlem yalnızca toptan müşteriler içindir" });
+      }
+      const amountNum = parseFloat(String(req.body?.amount));
+      if (!Number.isFinite(amountNum) || amountNum <= 0) {
+        return res.status(400).json({ error: "Geçerli bir tutar girin" });
+      }
+      const description = typeof req.body?.description === 'string'
+        ? req.body.description.trim().slice(0, 500)
+        : null;
+      const customerName = [user.firstName, user.lastName].filter(Boolean).join(' ').trim()
+        || user.companyName || null;
+      const token = crypto.randomBytes(32).toString('hex');
+      const created = await storage.createPaymentRequest({
+        token,
+        userId: user.id,
+        customerName,
+        customerEmail: user.email,
+        customerPhone: user.phone || null,
+        amount: amountNum.toFixed(2),
+        description: description || null,
+        status: 'pending',
+        merchantOid: null,
+        paymentToken: null,
+        iyzicoPaymentId: null,
+        createdBy: 'customer',
+        paidAt: null,
+        expiresAt: null,
+      });
+      res.json({ token: created.token, paymentUrl: `/odeme/${created.token}` });
+    } catch (error) {
+      console.error('[payment-requests] self-service create error:', error);
+      res.status(500).json({ error: "Ödeme talebi oluşturulamadı" });
     }
   });
 
@@ -2892,7 +2943,7 @@ export async function registerRoutes(
   });
 
   // ─── Payment Requests (standalone payment links) ─────────────────────────────
-  // Admin generates a tokenized link (/odeme-talebi/:token) for ad-hoc collection.
+  // Admin generates a tokenized link (/odeme/:token) for ad-hoc collection.
   // Payment runs through a SEPARATE iyzico callback so there is zero coupling to the
   // cart/order flow: a paid request creates NO order and touches NO stock.
 
@@ -2927,7 +2978,7 @@ export async function registerRoutes(
         paidAt: null,
         expiresAt,
       });
-      res.json({ ...created, paymentUrl: `/odeme-talebi/${created.token}` });
+      res.json({ ...created, paymentUrl: `/odeme/${created.token}` });
     } catch (error) {
       console.error('[payment-requests] create error:', error);
       res.status(500).json({ error: "Ödeme talebi oluşturulamadı" });
@@ -3109,13 +3160,13 @@ export async function registerRoutes(
           id: reqRow.id,
           token: String(token),
         });
-        return sendRedirect(`/odeme-talebi/${reqRow.token}?durum=basarili`);
+        return sendRedirect(`/odeme/${reqRow.token}?durum=basarili`);
       }
 
       const result = await retrieveCheckoutForm(String(token));
       const isPaid = result.status === 'success' && result.paymentStatus === 'SUCCESS';
       if (!isPaid) {
-        return sendRedirect(`/odeme-talebi/${reqRow.token}?durum=basarisiz`);
+        return sendRedirect(`/odeme/${reqRow.token}?durum=basarisiz`);
       }
 
       // Verify the captured amount matches the request (within 1 kuruş).
@@ -3123,11 +3174,19 @@ export async function registerRoutes(
       const paid = result.paidPrice ?? 0;
       if (Math.abs(expected - paid) > 0.01) {
         console.error('[payment-request callback] amount mismatch', { expected, paid, id: reqRow.id });
-        return sendRedirect(`/odeme-talebi/${reqRow.token}?durum=basarisiz`);
+        return sendRedirect(`/odeme/${reqRow.token}?durum=basarisiz`);
       }
 
-      await storage.markPaymentRequestPaid(reqRow.id, result.paymentId || null);
-      return sendRedirect(`/odeme-talebi/${reqRow.token}?durum=basarili`);
+      const settledRow = await storage.markPaymentRequestPaid(reqRow.id, result.paymentId || null);
+      // Fire-and-forget completion notification via the existing email / WhatsApp
+      // infra. Only the callback that WON the atomic pending→paid update gets a row
+      // back, so concurrent callbacks can't double-send. settledRow carries the
+      // freshly-set paidAt; both notifications fall back gracefully if unconfigured.
+      if (settledRow) {
+        sendPaymentRequestPaidEmail(settledRow).catch(err => console.error('[Email] Payment request paid email failed:', err));
+        sendPaymentRequestPaidToCustomer(settledRow).catch(err => console.error('[WhatsApp] Payment request paid failed:', err));
+      }
+      return sendRedirect(`/odeme/${reqRow.token}?durum=basarili`);
     } catch (error) {
       console.error('[payment-request callback] error:', error);
       return sendRedirect('/odeme-basarisiz');

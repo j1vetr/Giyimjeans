@@ -1,5 +1,5 @@
 import { storage } from './storage';
-import type { Order } from '@shared/schema';
+import type { Order, PaymentRequest } from '@shared/schema';
 import { BANK_TRANSFER_INFO } from '@shared/bankInfo';
 import { formatTRDate, formatTRTime, formatTRDateTime } from '@shared/dateFormat';
 
@@ -156,7 +156,7 @@ async function sendRaw(
   config: WhatsAppConfig,
   rawPhone: string | null | undefined,
   message: string,
-  event: WhatsAppEvent | 'test'
+  event: WhatsAppEvent | 'test' | 'payment_request_paid'
 ): Promise<WhatsAppResult> {
   const receiver = normalizePhone(rawPhone);
   if (!receiver) {
@@ -320,6 +320,36 @@ export async function sendOrderCancelledToAdmin(order: Order) {
 }
 export async function sendBankTransferPendingToCustomer(order: Order) {
   return sendEventToCustomer(order, 'order_bank_transfer_pending_customer');
+}
+
+// Standalone payment-request paid notification. Not tied to the order/event
+// template system (a payment request is a pure money move with no order), so it
+// builds its own transactional message and sends via the shared wpileti channel.
+export async function sendPaymentRequestPaidToCustomer(reqRow: PaymentRequest): Promise<WhatsAppResult> {
+  const config = await getConfig();
+  if (!config) return { success: false, skipped: true, error: 'WhatsApp servisi kapalı' };
+
+  // KVKK opt-out: skip if the linked/registered customer turned off WhatsApp.
+  if (reqRow.customerEmail) {
+    try {
+      const user = await storage.getUserByEmail(reqRow.customerEmail);
+      if (user && user.whatsappOptIn === false) {
+        return { success: false, skipped: true, error: 'Müşteri WhatsApp bildirimlerini kapatmış' };
+      }
+    } catch (err) {
+      console.error('[WhatsApp] payment-request opt-in lookup failed, sending anyway:', err);
+    }
+  }
+
+  const name = reqRow.customerName?.trim() || 'Değerli müşterimiz';
+  const amount = Number(reqRow.amount).toLocaleString('tr-TR', { minimumFractionDigits: 2 });
+  const lines = [
+    `Merhaba ${name},`,
+    `${amount} ₺ tutarındaki ödemeniz başarıyla alınmıştır.`,
+  ];
+  if (reqRow.description) lines.push(`Açıklama: ${reqRow.description}`);
+  lines.push(`${config.siteName} olarak teşekkür ederiz.`);
+  return sendRaw(config, reqRow.customerPhone, lines.join('\n'), 'payment_request_paid');
 }
 export async function sendBankTransferPendingToAdmin(order: Order) {
   return sendEventToAdmin(order, 'order_bank_transfer_admin');

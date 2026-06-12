@@ -123,7 +123,7 @@ export default function PaymentRequestsTab() {
   };
 
   const copyLink = (token: string) => {
-    const url = `${window.location.origin}/odeme-talebi/${token}`;
+    const url = `${window.location.origin}/odeme/${token}`;
     navigator.clipboard?.writeText(url).then(() => {
       setCopiedToken(token);
       setTimeout(() => setCopiedToken((t) => (t === token ? null : t)), 2000);

@@ -624,7 +624,8 @@ export const pendingPayments = pgTable("pending_payments", {
 export type PendingPayment = typeof pendingPayments.$inferSelect;
 
 // Payment requests — flexible/standalone payment links for a custom amount.
-// Admin creates a request, sends the /odeme-talebi/:token link to a customer,
+// Admin (or a wholesale customer self-service) creates a request, sends the
+// /odeme/:token link to a customer,
 // who pays via iyzico. Decoupled from cart orders (no stock, no order_items).
 export const paymentRequests = pgTable("payment_requests", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),

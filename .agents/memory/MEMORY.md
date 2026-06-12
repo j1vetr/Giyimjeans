@@ -1,2 +1,2 @@
 - [drizzle-kit push friction](drizzle-push-friction.md) — push hangs/aborts on non-TTY prompts (user_sessions rename + refresh_tokens drift); apply additive DDL via idempotent SQL instead.
-- [Wholesale explode-at-payment](wholesale-explode-at-payment.md) — a wholesale "seri" stays ONE cart row; only `expandCartLinesToOrderItems` (at payment) explodes it into per-variant order rows, keeping stock/idempotency paths untouched.
+- [Wholesale explode-at-payment](wholesale-explode-at-payment.md) — a wholesale "seri" stays ONE cart row; explosion into per-variant order rows happens only at payment, keeping stock/idempotency paths untouched.

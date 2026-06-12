@@ -1,6 +1,6 @@
 import nodemailer from 'nodemailer';
 import { storage } from './storage';
-import type { Order, OrderItem, User } from '@shared/schema';
+import type { Order, OrderItem, User, PaymentRequest } from '@shared/schema';
 import { BANK_TRANSFER_INFO } from '@shared/bankInfo';
 import { formatTRDateTime } from '@shared/dateFormat';
 
@@ -1162,6 +1162,54 @@ export async function sendBankTransferPendingEmail(order: Order, items: OrderIte
     return { success: true };
   } catch (error: any) {
     console.error('[Email] Failed to send bank transfer pending email:', error);
+    return { success: false, error: error.message };
+  }
+}
+
+function paymentRequestPaidTemplate(reqRow: PaymentRequest): string {
+  const name = reqRow.customerName?.trim() || 'Değerli müşterimiz';
+  const amount = Number(reqRow.amount).toLocaleString('tr-TR', { minimumFractionDigits: 2 });
+  const paidStr = formatTRDateTime(reqRow.paidAt ?? new Date());
+  return wrapTemplate(`
+    ${H1('Ödemeniz alındı.')}
+    ${P(`Merhaba ${escapeHtml(name)},`)}
+    ${Lede('Kredi kartı ödemeniz başarıyla tahsil edildi. Detaylar aşağıdadır.')}
+
+    ${infoCard(`
+      <div style="font-size:13px;color:${BRAND.body};line-height:1.8;">
+        <div><strong style="color:${BRAND.ink};">Tutar:</strong> ${amount} ₺</div>
+        ${reqRow.description ? `<div><strong style="color:${BRAND.ink};">Açıklama:</strong> ${escapeHtml(reqRow.description)}</div>` : ''}
+        <div><strong style="color:${BRAND.ink};">Ödeme Tarihi:</strong> ${escapeHtml(paidStr)}</div>
+      </div>
+    `)}
+
+    ${P('Bizi tercih ettiğiniz için teşekkür ederiz.', BRAND.muted)}
+  `, { preheader: `Ödemeniz alındı — ${amount} ₺`, title: 'Ödeme Alındı' });
+}
+
+export async function sendPaymentRequestPaidEmail(reqRow: PaymentRequest): Promise<EmailResult> {
+  try {
+    if (!reqRow.customerEmail) {
+      return { success: false, error: 'E-posta adresi yok' };
+    }
+    const transporter = await createTransporter();
+    if (!transporter) {
+      return { success: false, error: 'SMTP yapılandırması eksik' };
+    }
+    const settings = await storage.getSiteSettings();
+    const fromEmail = settings.smtp_user || 'no-reply@ecartejeans.com';
+
+    await transporter.sendMail({
+      from: `"Marka" <${fromEmail}>`,
+      to: reqRow.customerEmail,
+      subject: 'Ödemeniz Alındı',
+      html: paymentRequestPaidTemplate(reqRow),
+    });
+
+    console.log(`[Email] Payment request paid email sent to ${reqRow.customerEmail}`);
+    return { success: true };
+  } catch (error: any) {
+    console.error('[Email] Failed to send payment request paid email:', error);
     return { success: false, error: error.message };
   }
 }
