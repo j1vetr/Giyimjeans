@@ -1,8 +1,7 @@
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Check, ShoppingBag, ArrowRight, Truck } from 'lucide-react';
 import { Link } from 'wouter';
-import { Button } from '@/components/ui/button';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
 interface CartSuccessModalProps {
   isOpen: boolean;
@@ -19,188 +18,179 @@ interface CartSuccessModalProps {
 }
 
 const FREE_SHIPPING_THRESHOLD = 2500;
-
-function useIsMobile() {
-  const [isMobile, setIsMobile] = useState(false);
-  useEffect(() => {
-    const check = () => setIsMobile(window.innerWidth < 640);
-    check();
-    window.addEventListener('resize', check);
-    return () => window.removeEventListener('resize', check);
-  }, []);
-  return isMobile;
-}
+const AUTO_CLOSE_MS = 4500;
 
 export function CartSuccessModal({ isOpen, onClose, product, cartTotal, cartItemCount }: CartSuccessModalProps) {
-  const isMobile = useIsMobile();
+  const [progress, setProgress] = useState(100);
+  const rafRef = useRef<number | null>(null);
+  const startRef = useRef<number | null>(null);
+
+  useEffect(() => {
+    if (!isOpen) {
+      setProgress(100);
+      return;
+    }
+
+    startRef.current = performance.now();
+
+    const tick = (now: number) => {
+      const elapsed = now - (startRef.current ?? now);
+      const remaining = Math.max(0, 1 - elapsed / AUTO_CLOSE_MS);
+      setProgress(remaining * 100);
+      if (remaining > 0) {
+        rafRef.current = requestAnimationFrame(tick);
+      } else {
+        onClose();
+      }
+    };
+
+    rafRef.current = requestAnimationFrame(tick);
+    return () => {
+      if (rafRef.current !== null) cancelAnimationFrame(rafRef.current);
+    };
+  }, [isOpen, onClose]);
 
   if (!product) return null;
 
   const remainingForFreeShipping = Math.max(0, FREE_SHIPPING_THRESHOLD - cartTotal);
-  const shippingProgress = Math.min((cartTotal / FREE_SHIPPING_THRESHOLD) * 100, 100);
   const freeShipReached = remainingForFreeShipping === 0;
+  const shippingProgress = Math.min((cartTotal / FREE_SHIPPING_THRESHOLD) * 100, 100);
 
   return (
     <AnimatePresence>
       {isOpen && (
-        <>
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.18, ease: 'easeOut' }}
-            onClick={onClose}
-            className="fixed inset-0 bg-black/65 z-[100]"
-          />
-
-          <motion.div
-            initial={isMobile ? { y: '100%' } : { opacity: 0, scale: 0.96, y: 8 }}
-            animate={isMobile ? { y: 0 } : { opacity: 1, scale: 1, y: 0 }}
-            exit={isMobile ? { y: '100%' } : { opacity: 0, scale: 0.96, y: 8 }}
-            transition={{ duration: 0.22, ease: [0.22, 1, 0.36, 1] }}
-            className={
-              isMobile
-                ? 'fixed left-0 right-0 bottom-0 z-[101] w-full'
-                : 'fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-[101] w-full max-w-md px-4'
-            }
-            style={{ willChange: 'transform, opacity' }}
-          >
-            <div
-              className={
-                isMobile
-                  ? 'relative bg-zinc-950/95 backdrop-blur-xl border-t border-white/10 shadow-2xl shadow-black/40 rounded-t-2xl overflow-hidden'
-                  : 'relative bg-zinc-950/95 backdrop-blur-xl border border-white/10 shadow-2xl shadow-black/40 overflow-hidden'
-              }
-            >
-              {isMobile && (
-                <div className="pt-2 pb-1 flex justify-center">
-                  <div className="w-10 h-1 rounded-full bg-white/20" />
-                </div>
-              )}
-
+        <motion.div
+          key="cart-toast"
+          initial={{ opacity: 0, y: 24, scale: 0.97 }}
+          animate={{ opacity: 1, y: 0, scale: 1 }}
+          exit={{ opacity: 0, y: 16, scale: 0.97 }}
+          transition={{ duration: 0.22, ease: [0.22, 1, 0.36, 1] }}
+          className="fixed bottom-4 right-4 sm:bottom-6 sm:right-6 z-[200] w-[calc(100vw-2rem)] sm:w-[360px]"
+          data-testid="toast-cart-success"
+        >
+          <div className="bg-[hsl(var(--polen-stone))] border border-white/10 shadow-2xl shadow-black/50 overflow-hidden">
+            {/* Header */}
+            <div className="flex items-center justify-between px-4 py-3 border-b border-white/[0.08]">
+              <div className="flex items-center gap-2.5">
+                <span className="w-5 h-5 rounded-full bg-[hsl(var(--polen-orange))] flex items-center justify-center shrink-0">
+                  <Check className="w-3 h-3 text-white" strokeWidth={3} />
+                </span>
+                <span className="text-[11px] font-semibold tracking-[0.20em] uppercase text-white">
+                  Sepete Eklendi
+                </span>
+              </div>
               <button
                 onClick={onClose}
-                className="absolute top-3 right-3 w-8 h-8 bg-white/[0.06] hover:bg-white/[0.12] flex items-center justify-center transition-colors z-10 rounded-full"
-                data-testid="button-close-modal"
+                className="w-6 h-6 flex items-center justify-center text-white/40 hover:text-white transition-colors"
+                data-testid="button-close-toast"
                 aria-label="Kapat"
               >
-                <X className="w-4 h-4 text-white/60" strokeWidth={2} />
+                <X className="w-3.5 h-3.5" strokeWidth={2} />
               </button>
+            </div>
 
-              <div className="px-5 sm:px-6 pt-4 pb-5">
-                <div className="flex items-center gap-2.5 mb-4">
-                  <span className="w-7 h-7 rounded-full bg-polen-orange flex items-center justify-center shrink-0">
-                    <Check className="w-4 h-4 text-black" strokeWidth={3} />
-                  </span>
-                  <div className="leading-tight">
-                    <h3 className="font-display text-[15px] tracking-[0.14em] uppercase text-white">
-                      Sepete Eklendi
-                    </h3>
-                    <p className="text-[11px] text-white/45 mt-0.5">Harika seçim</p>
-                  </div>
-                </div>
-
-                <div className="flex gap-3.5 bg-white/[0.04] border border-white/10 p-3.5">
-                  <div className="relative w-20 h-24 sm:w-24 sm:h-28 overflow-hidden shrink-0 bg-white/[0.04]">
-                    <img
-                      src={product.image}
-                      alt={product.name}
-                      className="w-full h-full object-cover"
-                      loading="eager"
-                    />
-                  </div>
-                  <div className="flex-1 min-w-0 flex flex-col">
-                    <h4
-                      className="font-medium text-[13px] sm:text-sm leading-snug line-clamp-2 mb-2 text-white"
-                      data-testid="text-modal-product-name"
-                    >
-                      {product.name}
-                    </h4>
-                    <div className="flex flex-wrap items-center gap-1.5 text-[10.5px] text-white/55 mb-auto">
-                      {product.size && (
-                        <span className="px-1.5 py-0.5 bg-white/[0.06] border border-white/10 text-white/70">
-                          {product.size}
-                        </span>
-                      )}
-                      <span className="px-1.5 py-0.5 bg-white/[0.06] border border-white/10 text-white/70">
-                        Adet: {product.quantity}
-                      </span>
-                    </div>
-                    <p
-                      className="font-bold text-[17px] text-white mt-1.5"
-                      data-testid="text-modal-price"
-                    >
-                      {product.price.toLocaleString('tr-TR')} ₺
-                    </p>
-                  </div>
-                </div>
-
-                <div className="mt-3.5">
-                  {freeShipReached ? (
-                    <div className="bg-polen-orange/15 border border-polen-orange/40 px-3 py-2.5 flex items-center gap-2">
-                      <Truck className="w-4 h-4 text-polen-orange shrink-0" strokeWidth={2} />
-                      <span className="text-[12px] text-white/90 font-medium">
-                        Ücretsiz kargo kazandınız.
-                      </span>
-                    </div>
-                  ) : (
-                    <div className="bg-white/[0.04] border border-white/10 px-3 py-2.5">
-                      <div className="flex items-center gap-2 mb-1.5">
-                        <Truck className="w-4 h-4 text-polen-orange shrink-0" strokeWidth={2} />
-                        <span className="text-[11.5px] text-white/65 leading-tight">
-                          Ücretsiz kargo için{' '}
-                          <span className="font-semibold text-white">
-                            {remainingForFreeShipping.toLocaleString('tr-TR')} ₺
-                          </span>{' '}
-                          daha ekleyin
-                        </span>
-                      </div>
-                      <div className="h-1 bg-white/[0.08] overflow-hidden rounded-full">
-                        <div
-                          className="h-full bg-polen-orange rounded-full transition-all"
-                          style={{ width: `${shippingProgress}%`, transitionDuration: '300ms' }}
-                        />
-                      </div>
-                    </div>
+            {/* Product row */}
+            <div className="flex gap-3 px-4 py-3.5">
+              <div className="w-14 h-16 shrink-0 overflow-hidden bg-white/[0.05]">
+                <img
+                  src={product.image}
+                  alt={product.name}
+                  className="w-full h-full object-cover"
+                  loading="eager"
+                />
+              </div>
+              <div className="flex-1 min-w-0 flex flex-col justify-between">
+                <p
+                  className="text-[12.5px] font-medium text-white leading-snug line-clamp-2"
+                  data-testid="text-toast-product-name"
+                >
+                  {product.name}
+                </p>
+                <div className="flex items-center gap-1.5 mt-1">
+                  {product.size && (
+                    <span className="px-1.5 py-0.5 text-[10px] border border-white/15 text-white/60">
+                      {product.size}
+                    </span>
                   )}
-                </div>
-
-                <div className="flex items-center justify-between mt-3.5 py-2.5 border-t border-white/10">
-                  <div className="flex items-center gap-2 text-[12px] text-white/55">
-                    <ShoppingBag className="w-3.5 h-3.5" strokeWidth={2} />
-                    <span>Sepetinizde {cartItemCount} ürün</span>
-                  </div>
-                  <span className="font-bold text-[14px] text-white">
-                    {cartTotal.toLocaleString('tr-TR')} ₺
+                  <span className="px-1.5 py-0.5 text-[10px] border border-white/15 text-white/60">
+                    {product.quantity} Adet
                   </span>
-                </div>
-
-                <div className="grid grid-cols-2 gap-2.5 mt-3.5">
-                  <Button
-                    variant="outline"
-                    onClick={onClose}
-                    className="h-11 bg-transparent border-white/20 text-white hover:bg-white/[0.06] hover:text-white rounded-none text-[11.5px] font-semibold tracking-[0.08em] uppercase"
-                    data-testid="button-continue-shopping"
-                  >
-                    Alışverişe Devam
-                  </Button>
-                  <Link href="/sepet" onClick={onClose}>
-                    <Button
-                      className="w-full h-11 bg-polen-orange text-black hover:bg-[hsl(var(--polen-orange-deep))] hover:text-white font-semibold tracking-[0.08em] text-[11.5px] uppercase group rounded-none"
-                      data-testid="button-go-to-cart"
-                    >
-                      Sepete Git
-                      <ArrowRight
-                        className="w-3.5 h-3.5 ml-1.5 transition-transform group-hover:translate-x-0.5"
-                        strokeWidth={2.5}
-                      />
-                    </Button>
-                  </Link>
                 </div>
               </div>
+              <div className="shrink-0 text-right">
+                <p
+                  className="text-[15px] font-bold text-white tabular-nums"
+                  data-testid="text-toast-price"
+                >
+                  {product.price.toLocaleString('tr-TR', { minimumFractionDigits: 2 })} ₺
+                </p>
+              </div>
             </div>
-          </motion.div>
-        </>
+
+            {/* Shipping bar */}
+            <div className="px-4 pb-3.5">
+              {freeShipReached ? (
+                <div className="flex items-center gap-2 text-[11px] text-[hsl(var(--polen-orange))]">
+                  <Truck className="w-3.5 h-3.5 shrink-0" strokeWidth={2} />
+                  <span className="font-semibold">Ücretsiz Kargo Kazandınız!</span>
+                </div>
+              ) : (
+                <div>
+                  <div className="flex items-center justify-between mb-1.5">
+                    <div className="flex items-center gap-1.5 text-[10.5px] text-white/45">
+                      <Truck className="w-3 h-3 shrink-0" strokeWidth={2} />
+                      <span>
+                        Ücretsiz kargo için{' '}
+                        <span className="font-semibold text-white/70">
+                          {remainingForFreeShipping.toLocaleString('tr-TR')} ₺
+                        </span>{' '}
+                        daha
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-1.5 text-[10.5px] text-white/40">
+                      <ShoppingBag className="w-3 h-3" strokeWidth={2} />
+                      <span>{cartItemCount} Ürün</span>
+                    </div>
+                  </div>
+                  <div className="h-0.5 bg-white/[0.08] overflow-hidden">
+                    <div
+                      className="h-full bg-[hsl(var(--polen-orange))] transition-all duration-300"
+                      style={{ width: `${shippingProgress}%` }}
+                    />
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Actions */}
+            <div className="grid grid-cols-2 border-t border-white/[0.08]">
+              <button
+                onClick={onClose}
+                className="px-4 py-3 text-[11px] font-semibold tracking-[0.10em] uppercase text-white/50 hover:text-white hover:bg-white/[0.04] transition-colors border-r border-white/[0.08]"
+                data-testid="button-continue-shopping"
+              >
+                Alışverişe Devam
+              </button>
+              <Link
+                href="/sepet"
+                onClick={onClose}
+                data-testid="button-go-to-cart"
+                className="flex items-center justify-center gap-2 px-4 py-3 text-[11px] font-semibold tracking-[0.10em] uppercase text-[hsl(var(--polen-orange))] hover:bg-[hsl(var(--polen-orange))]/10 transition-colors"
+              >
+                Sepete Git
+                <ArrowRight className="w-3.5 h-3.5" strokeWidth={2.5} />
+              </Link>
+            </div>
+
+            {/* Auto-close progress line */}
+            <div className="h-[2px] bg-white/[0.05]">
+              <div
+                className="h-full bg-[hsl(var(--polen-orange))]/50"
+                style={{ width: `${progress}%` }}
+              />
+            </div>
+          </div>
+        </motion.div>
       )}
     </AnimatePresence>
   );
