@@ -371,6 +371,23 @@ export const paymentCreateSchema = z.object({
   accountPassword: z.string().max(200).optional().nullable(),
 }).passthrough();
 
+// ─── Bank transfer order ─────────────────────────────────────────────────────
+// Same payload shape as paymentCreateSchema — reuse the same object definition
+export const bankTransferOrderSchema = paymentCreateSchema;
+
+// ─── Coupon validate ─────────────────────────────────────────────────────────
+
+export const couponValidateSchema = z.object({
+  code: z.string().min(1, "Kupon kodu gerekli").max(100),
+  orderTotal: z.number({ invalid_type_error: "Sipariş tutarı sayı olmalı" }).min(0, "Sipariş tutarı gerekli"),
+});
+
+// ─── Admin: Maintenance ──────────────────────────────────────────────────────
+
+export const maintenanceSchema = z.object({
+  enabled: z.boolean({ required_error: "enabled alanı zorunludur" }),
+});
+
 // ─── Admin: WhatsApp test ─────────────────────────────────────────────────────
 
 export const whatsappTestSchema = z.object({

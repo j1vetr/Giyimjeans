@@ -27,6 +27,7 @@ import {
   influencerBulkSchema, paymentCreateSchema, whatsappTestSchema,
   confirmBankTransferSchema, rejectBankTransferSchema,
   adminLoginSchema, userLoginSchema, registerWriteSchema, forgotPasswordSchema, resetPasswordSchema,
+  bankTransferOrderSchema, couponValidateSchema, maintenanceSchema,
 } from "./validation";
 import { optimizeImage, optimizeImageBuffer, optimizeUploadedFiles } from "./imageOptimizer";
 import { 
@@ -2400,12 +2401,10 @@ export async function registerRoutes(
         return res.status(400).json({ error: "Sepet boş" });
       }
 
-      const { customerName, customerEmail, customerPhone, address, city, district, postalCode, country, couponCode, createAccount, accountPassword } = req.body;
+      const parsedBT = bankTransferOrderSchema.safeParse(req.body);
+      if (!parsedBT.success) return res.status(400).json({ error: firstZodMessage(parsedBT.error) });
+      const { customerName, customerEmail, customerPhone, address, city, district, postalCode, country, couponCode, createAccount, accountPassword } = parsedBT.data;
       const selectedCountry = country || 'Türkiye';
-
-      if (!customerName || !customerEmail || !customerPhone || !address || !city || !district) {
-        return res.status(400).json({ error: "Lütfen tüm alanları doldurun" });
-      }
 
       let accountPasswordHash: string | null = null;
       if (createAccount && accountPassword) {
@@ -2876,7 +2875,9 @@ export async function registerRoutes(
 
   app.post("/api/admin/maintenance", requireAdmin, async (req, res) => {
     try {
-      const enabled = Boolean(req.body?.enabled);
+      const parsedMaint = maintenanceSchema.safeParse(req.body);
+      if (!parsedMaint.success) return res.status(400).json({ error: firstZodMessage(parsedMaint.error) });
+      const { enabled } = parsedMaint.data;
       const { setMaintenanceMode } = await import("./maintenance");
       await setMaintenanceMode(enabled);
       console.log("[maintenance] mode switched →", enabled ? "ON" : "OFF");
@@ -3940,16 +3941,12 @@ export async function registerRoutes(
   // Public coupon validation
   app.post("/api/coupons/validate", couponLimiter, async (req: Request, res) => {
     try {
-      const { code, orderTotal } = req.body;
-      if (!code || typeof code !== 'string' || code.trim().length === 0) {
-        return res.status(400).json({ error: "Kupon kodu gerekli" });
-      }
-      if (orderTotal === undefined || orderTotal === null || isNaN(Number(orderTotal))) {
-        return res.status(400).json({ error: "Sipariş tutarı gerekli" });
-      }
+      const parsedCV = couponValidateSchema.safeParse(req.body);
+      if (!parsedCV.success) return res.status(400).json({ error: firstZodMessage(parsedCV.error) });
+      const { code, orderTotal } = parsedCV.data;
       const payload = await getAuthPayload(req, res);
       const userId = payload?.type === 'user' ? payload.userId ?? null : null;
-      const result = await storage.validateCoupon(code.trim().toUpperCase(), Number(orderTotal), userId || undefined);
+      const result = await storage.validateCoupon(code.trim().toUpperCase(), orderTotal, userId || undefined);
       res.json(result);
     } catch (error) {
       res.status(500).json({ error: "Failed to validate coupon" });
