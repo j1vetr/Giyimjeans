@@ -338,6 +338,7 @@ function normalize(p: TrendyolProduct): NormalizedProduct {
 
   return {
     externalId,
+    externalGroupId: p.productMainId ?? null,
     externalProductCode: code ?? null,
     // Trendyol Listings API'da leaf kategori ID'si `pimCategoryId` alanında
     // gelir; eski/bazı yanıtlarda `categoryId`. İkisi de yoksa string("undefined")

@@ -63,6 +63,11 @@ export interface NormalizedProduct {
   images: NormalizedImage[];
   /** Trendyol'dan gelen ürün videosu (varsa ilk video URL'si). */
   videoUrl?: string | null;
+  /**
+   * Ürün grubu ID'si — productMainId gibi, aynı modelin farklı beden/renklerini
+   * tek bir site ürününde toplamak için kullanılır. Yoksa externalId kullanılır.
+   */
+  externalGroupId?: string | null;
   variants: NormalizedVariant[];
   /** Pazaryerinden gelen ürün durumu — `false` ise site'da gizlenir. */
   isActive: boolean;

@@ -70,6 +70,8 @@ interface SyncStats {
   imagesSkipped: number;
   /** İndirme sırasında patlayıp atlanan görsel sayısı (404, SSRF, format vb.). */
   imagesFailed: number;
+  /** İndirilen video dosyası sayısı. */
+  videosDownloaded: number;
   pagesProcessed: number;
   /** Canlı ilerleme — şu ana kadar işlenmiş ürün sayısı. */
   processedTotal: number;
@@ -100,6 +102,8 @@ interface SyncErrorEntry {
 type ErrorKind = "http4xx" | "http5xx" | "network" | "parse" | "other";
 
 const UPLOAD_DIR = path.join(process.cwd(), "client", "public", "uploads", "products");
+const UPLOAD_VIDEO_DIR = path.join(UPLOAD_DIR, "videos");
+const MAX_VIDEO_BYTES = 200 * 1024 * 1024; // 200 MB
 
 function emptyStats(): SyncStats {
   return {
@@ -114,6 +118,7 @@ function emptyStats(): SyncStats {
     imagesDownloaded: 0,
     imagesSkipped: 0,
     imagesFailed: 0,
+    videosDownloaded: 0,
     pagesProcessed: 0,
     processedTotal: 0,
     expectedTotal: 0,
@@ -470,6 +475,48 @@ async function syncImages(
 }
 
 /**
+ * Video dosyasını indirir, hash-bazlı isimle `uploads/products/videos/` altına kaydeder.
+ * Görsel indirmeden farklı olarak optimize edilmez; ham byte olarak saklanır.
+ * Dosya zaten varsa (hash eşleşiyorsa) tekrar indirmez.
+ */
+async function downloadVideo(url: string): Promise<string | null> {
+  // URL güvenlik kontrolü (SSRF)
+  await assertSafeImageUrl(url);
+  const controller = new AbortController();
+  // Video büyük olabilir → 3 dakika timeout
+  const timer = setTimeout(() => controller.abort(), 180_000);
+  let resp: Response;
+  try {
+    resp = await fetch(url, {
+      redirect: "follow",
+      signal: controller.signal,
+      headers: { "User-Agent": "EcarteJeans-MarketplaceSync/1.0" },
+    });
+  } finally {
+    clearTimeout(timer);
+  }
+  if (!resp.ok) throw new Error(`video fetch failed (${resp.status}) for ${url}`);
+  const len = Number(resp.headers.get("content-length") ?? 0);
+  if (len > MAX_VIDEO_BYTES) throw new Error(`video too large: ${len} bytes`);
+  const buf = Buffer.from(await resp.arrayBuffer());
+  if (buf.length === 0) return null;
+  if (buf.length > MAX_VIDEO_BYTES) throw new Error(`video too large: ${buf.length} bytes`);
+  const hash = crypto.createHash("sha256").update(buf).digest("hex");
+  if (!fs.existsSync(UPLOAD_VIDEO_DIR)) fs.mkdirSync(UPLOAD_VIDEO_DIR, { recursive: true });
+  // Uzantıyı URL'den veya Content-Type'tan belirle
+  const ct = resp.headers.get("content-type") ?? "";
+  let ext = ".mp4";
+  if (/video\/webm/i.test(ct) || /\.webm($|\?)/i.test(url)) ext = ".webm";
+  else if (/video\/ogg/i.test(ct)) ext = ".ogv";
+  const filePath = path.join(UPLOAD_VIDEO_DIR, `${hash}${ext}`);
+  if (!fs.existsSync(filePath)) {
+    fs.writeFileSync(filePath, buf);
+  }
+  const publicRoot = path.join(process.cwd(), "client", "public");
+  return "/" + path.relative(publicRoot, filePath).split(path.sep).join("/");
+}
+
+/**
  * Kategori upsert — Trendyol kategorisi → Ecarte Jeans kategorisi.
  *
  * `cameFromTree=true` ise externalName güvenilir leaf adıdır. Bu durumda mevcut
@@ -632,6 +679,24 @@ async function upsertProduct(
     isFeatured: siteProduct?.isFeatured ?? false,
     isNew: siteProduct?.isNew ?? false,
   };
+
+  // Video indir: CDN URL varsa yerel kopyasını çek (CDN linki expire olabilir).
+  if (np.videoUrl && (np.videoUrl.startsWith("http://") || np.videoUrl.startsWith("https://"))) {
+    try {
+      const localVideoPath = await downloadVideo(np.videoUrl);
+      if (localVideoPath) {
+        productPayload.videoUrl = localVideoPath;
+        stats.videosDownloaded += 1;
+      }
+    } catch (err) {
+      // Video indirme başarısız olursa CDN URL'si ile devam et
+      errors.push({
+        context: `${ctx} video ${np.videoUrl}`,
+        message: err instanceof Error ? err.message : String(err),
+        kind: "network",
+      });
+    }
+  }
 
   if (siteProduct) {
     await storage.updateProduct(siteProduct.id, productPayload);
@@ -941,19 +1006,16 @@ async function runFullSync(
   //    düşeriz (eski davranış).
   const treeCache = await loadOrRefreshCategoryTree(mp, adapter, stats, errors);
 
-  // 2. Sayfa sayfa ürünleri çek
+  // 2. Tüm sayfaları tamponla, sonra productMainId (externalGroupId) bazında grupla.
+  //    Amaç: Trendyol'da her beden ayrı bir SKU/satır olarak gelir. Gruplama sonrası
+  //    her model tek bir site ürünü haline gelir; bedenleri product_variants'a yazılır.
+  const rawBuffer: NormalizedProduct[] = [];
   const seen = new Set<string>();
-  const catCache = new Map<string, string>();
-  // Sync süresince paylaşılan görsel URL → indirme sonucu cache'i. Aynı görsel
-  // URL'i farklı ürünlerde tekrar geçtiğinde downloadImage'i atlatır
-  // (network/disk tasarrufu). Sync arası persist DEĞİL — sadece bu run.
-  const imageUrlCache = new Map<string, { relativePath: string; hash: string } | null>();
   let cursor: PageCursor = null;
   let page = 0;
-  // Bu bayrak deactivateMissing'in kararını yönetir: yalnız tüm sayfalar
-  // başarıyla okunduysa "missing = orphan" varsayımı güvenlidir. Aksi halde
-  // bir sayfa hatası tüm kataloğun deactive edilmesine yol açabilir.
   let fullScanCompleted = false;
+
+  // 2a. Sayfalama: tüm ürünleri raw olarak topla
   while (true) {
     stats.currentPage = page;
     let resp: ProductsPage;
@@ -970,72 +1032,10 @@ async function runFullSync(
       break;
     }
     stats.pagesProcessed += 1;
-    // Adapter total verdiyse, expectedTotal'ı buna sabitle.
     if (typeof resp.total === "number" && resp.total >= 0) {
       stats.expectedTotal = resp.total;
-    } else if (stats.processedTotal + resp.products.length > stats.expectedTotal) {
-      // Total bilinmiyor: alt sınır olarak şimdiye kadar gördüklerimizi kullan.
-      stats.expectedTotal = stats.processedTotal + resp.products.length;
     }
-    let processedSinceFlush = 0;
-    for (const np of resp.products) {
-      seen.add(np.externalId);
-      stats.currentProductName = np.name;
-      try {
-        // Kategori adı önceliği (yeni):
-        //   1) Snapshot'tan leaf — `treeCache.map[externalCategoryId]` (en güvenilir).
-        //   2) Ürünün kendi payload'ı (`externalCategoryName`) — leaf olmayabilir
-        //      (Trendyol bazen parent adı veriyor; bu durumda snapshot kazanır).
-        //   3) Daha önce upsert edilmiş marketplace_categories satırı.
-        //   4) "Genel" — hiçbiri yoksa.
-        const treeHit = treeCache.map.get(np.externalCategoryId);
-        let categoryName: string | null = treeHit?.name ?? null;
-        let categoryFullPath: string | null = treeHit?.fullPath ?? null;
-        if (treeHit) stats.categoriesCachedFromTree += 1;
-        if (!categoryName) categoryName = np.externalCategoryName ?? null;
-        if (!categoryName) {
-          const existingMapping = await storage.getMarketplaceCategoryByExternal(
-            mp.id,
-            np.externalCategoryId,
-          );
-          categoryName = existingMapping?.name ?? "Genel";
-          categoryFullPath = categoryFullPath ?? existingMapping?.fullPath ?? null;
-        }
-        // cameFromTree=true: leaf adı snapshot'tan geldi → ensureSiteCategory
-        // stale auto-mapping'leri (ör. tüm ürünler "Saksı"ya pin'lenmiş) kendi
-        // kendine onarsın. Tree miss olduğunda payload adına güveniyoruz ama
-        // remap riski almıyoruz (admin override'larını kaybetmemek için).
-        const finalCatId = await ensureSiteCategory(
-          mp.id,
-          np.externalCategoryId,
-          categoryName,
-          catCache,
-          stats,
-          categoryFullPath,
-          treeHit !== undefined,
-        );
-        if (!finalCatId) continue;
-        const mpRow = await storage.getMarketplaceProductByExternal(mp.id, np.externalId);
-        await upsertProduct(mp, np, finalCatId, mpRow, stats, errors, imageUrlCache);
-      } catch (err) {
-        const status = err instanceof MarketplaceError ? err.statusCode : undefined;
-        errors.push({
-          context: `product ${np.externalId}`,
-          message: err instanceof Error ? err.message : String(err),
-          statusCode: status,
-          kind: classifyError(err, status),
-        });
-      } finally {
-        stats.processedTotal += 1;
-        processedSinceFlush += 1;
-        // 10 üründe bir canlı ilerlemeyi yayımla (sayfa içi de görünsün).
-        if (processedSinceFlush >= 10) {
-          await publishProgress(runId, stats);
-          processedSinceFlush = 0;
-        }
-      }
-    }
-    // Sayfa tamamlanınca son ilerleme snapshot'ı.
+    for (const np of resp.products) rawBuffer.push(np);
     await publishProgress(runId, stats);
     if (resp.nextCursor == null) {
       fullScanCompleted = true;
@@ -1043,8 +1043,103 @@ async function runFullSync(
     }
     cursor = resp.nextCursor;
     page += 1;
-    if (page > 1000) break; // sonsuz loop koruması; full scan kabul EDİLMEZ
+    if (page > 1000) break;
   }
+
+  // 2b. productMainId (externalGroupId) bazlı gruplama.
+  //    Aynı modelin farklı bedenleri/renkleri → tek NormalizedProduct, çok variant.
+  const groupedMap = new Map<string, NormalizedProduct>();
+  for (const np of rawBuffer) {
+    const groupKey = np.externalGroupId ?? np.externalId;
+    if (!groupedMap.has(groupKey)) {
+      // İlk SKU'yu temel al; externalId olarak groupKey kullan
+      groupedMap.set(groupKey, {
+        ...np,
+        externalId: groupKey,
+        variants: [...np.variants],
+        totalStock: np.totalStock,
+      });
+    } else {
+      const group = groupedMap.get(groupKey)!;
+      // Varyantları birleştir
+      group.variants.push(...np.variants);
+      // Stok topla
+      group.totalStock += np.totalStock;
+      // Herhangi bir beden aktifse ürün aktif
+      if (np.isActive) group.isActive = true;
+      // İlk videoyu al
+      if (!group.videoUrl && np.videoUrl) group.videoUrl = np.videoUrl;
+      // Görselleri URL bazında dedupe ederek birleştir
+      for (const img of np.images) {
+        if (!group.images.some((i) => i.url === img.url)) {
+          group.images.push(img);
+        }
+      }
+      // Nitelikleri birleştir
+      if (np.attributes) {
+        group.attributes = { ...(group.attributes ?? {}), ...np.attributes };
+      }
+      // En düşük fiyatı ana fiyat olarak kullan
+      if (np.basePrice < group.basePrice) group.basePrice = np.basePrice;
+    }
+  }
+
+  // expectedTotal'ı gerçek grup sayısına güncelle (SKU sayısı değil)
+  stats.expectedTotal = groupedMap.size;
+  await publishProgress(runId, stats);
+
+  // 2c. Grupları işle — her grup bir site ürünü
+  const catCache = new Map<string, string>();
+  const imageUrlCache = new Map<string, { relativePath: string; hash: string } | null>();
+  let processedSinceFlush = 0;
+
+  for (const [groupKey, np] of groupedMap) {
+    seen.add(groupKey);
+    stats.currentProductName = np.name;
+    try {
+      const treeHit = treeCache.map.get(np.externalCategoryId);
+      let categoryName: string | null = treeHit?.name ?? null;
+      let categoryFullPath: string | null = treeHit?.fullPath ?? null;
+      if (treeHit) stats.categoriesCachedFromTree += 1;
+      if (!categoryName) categoryName = np.externalCategoryName ?? null;
+      if (!categoryName) {
+        const existingMapping = await storage.getMarketplaceCategoryByExternal(
+          mp.id,
+          np.externalCategoryId,
+        );
+        categoryName = existingMapping?.name ?? "Genel";
+        categoryFullPath = categoryFullPath ?? existingMapping?.fullPath ?? null;
+      }
+      const finalCatId = await ensureSiteCategory(
+        mp.id,
+        np.externalCategoryId,
+        categoryName,
+        catCache,
+        stats,
+        categoryFullPath,
+        treeHit !== undefined,
+      );
+      if (!finalCatId) continue;
+      const mpRow = await storage.getMarketplaceProductByExternal(mp.id, groupKey);
+      await upsertProduct(mp, np, finalCatId, mpRow, stats, errors, imageUrlCache);
+    } catch (err) {
+      const status = err instanceof MarketplaceError ? err.statusCode : undefined;
+      errors.push({
+        context: `product ${groupKey}`,
+        message: err instanceof Error ? err.message : String(err),
+        statusCode: status,
+        kind: classifyError(err, status),
+      });
+    } finally {
+      stats.processedTotal += 1;
+      processedSinceFlush += 1;
+      if (processedSinceFlush >= 10) {
+        await publishProgress(runId, stats);
+        processedSinceFlush = 0;
+      }
+    }
+  }
+  await publishProgress(runId, stats);
   // Sync sonu — current* alanlarını temizle ki UI'da takılı kalmasın.
   delete stats.currentProductName;
   delete stats.currentPage;
