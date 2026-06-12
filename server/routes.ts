@@ -2137,7 +2137,7 @@ export async function registerRoutes(
 
       const parsedPayment = paymentCreateSchema.safeParse(req.body);
       if (!parsedPayment.success) return res.status(400).json({ error: firstZodMessage(parsedPayment.error) });
-      const { customerName, customerEmail, customerPhone, address, city, district, postalCode, country, couponCode, createAccount, accountPassword } = req.body;
+      const { customerName, customerEmail, customerPhone, address, city, district, postalCode, country, couponCode, createAccount, accountPassword } = parsedPayment.data;
       const selectedCountry = country || 'Türkiye';
 
       // Validate password if creating account

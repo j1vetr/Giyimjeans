@@ -327,18 +327,17 @@ export const influencerBulkSchema = z.object({
 // ─── Payment ─────────────────────────────────────────────────────────────────
 
 export const paymentCreateSchema = z.object({
-  cartItems: z.array(z.unknown()).optional(),
-  shippingAddress: z.object({
-    address: z.string().min(1),
-    city: z.string().min(1),
-    district: z.string().min(1),
-    postalCode: z.string().optional(),
-    country: z.string().optional(),
-  }),
-  customerName: z.string().min(1, "Ad Soyad zorunludur"),
+  customerName: z.string().min(1, "Ad Soyad zorunludur").max(200),
   customerEmail: z.string().email("Geçerli bir e-posta girin"),
-  customerPhone: z.string().min(10, "Telefon zorunludur"),
-  couponCode: z.string().optional().nullable(),
+  customerPhone: z.string().min(10, "Telefon zorunludur").max(30),
+  address: z.string().min(5, "Adres zorunludur").max(500),
+  city: z.string().min(1, "İl zorunludur").max(100),
+  district: z.string().min(1, "İlçe zorunludur").max(100),
+  postalCode: z.string().max(20).optional().nullable(),
+  country: z.string().max(100).optional().nullable(),
+  couponCode: z.string().max(50).optional().nullable(),
+  createAccount: z.boolean().optional().nullable(),
+  accountPassword: z.string().max(200).optional().nullable(),
 }).passthrough();
 
 // ─── Admin: WhatsApp test ─────────────────────────────────────────────────────
