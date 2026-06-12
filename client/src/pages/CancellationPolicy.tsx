@@ -184,7 +184,7 @@ export default function CancellationPolicy() {
                 <p>İade ve iptal işlemleri için destek ekibimize ulaşabilirsiniz:</p>
                 <ul>
                   <li><strong>E-posta:</strong> <a href="mailto:info@ecartejeans.com">info@ecartejeans.com</a></li>
-                  <li><strong>Telefon:</strong> <a href="tel:+905326956183">0532 695 61 83</a></li>
+                  <li><strong>Telefon:</strong> <a href="tel:+905312171130">0531 217 11 30</a></li>
                 </ul>
               </div>
             </div>

@@ -241,7 +241,7 @@ export default function About() {
                     <div>
                       <p className="text-sm text-black/55 mb-1">Adres</p>
                       <p className="font-medium text-black" data-testid="text-address">
-                        Yunus Emre, Barbaros Blv. 42 d, 34791 Sancaktepe / İstanbul
+                        Şeker Ahmet Paşa Sk. Maşallah Han No: 7 Mercan Fatih / İstanbul
                       </p>
                     </div>
                   </div>
@@ -252,7 +252,7 @@ export default function About() {
                     </div>
                     <div>
                       <p className="text-sm text-black/55 mb-1">Telefon</p>
-                      <a href="tel:+905326956183" className="font-medium text-black hover:text-polen-orange transition-colors" data-testid="link-phone">0532 695 61 83</a>
+                      <a href="tel:+905312171130" className="font-medium text-black hover:text-polen-orange transition-colors" data-testid="link-phone">0531 217 11 30</a>
                     </div>
                   </div>
 

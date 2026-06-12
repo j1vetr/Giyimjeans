@@ -78,8 +78,8 @@ export default function KVKK() {
                 <p><strong>Marka Giyim & Moda</strong></p>
                 <p><strong>Web Sitesi:</strong> <a href="https://www.ecartejeans.com">www.ecartejeans.com</a></p>
                 <p><strong>E-posta:</strong> <a href="mailto:info@ecartejeans.com">info@ecartejeans.com</a></p>
-                <p><strong>Telefon:</strong> <a href="tel:+905326956183">0532 695 61 83</a></p>
-                <p><strong>Adres:</strong> Yunus Emre, Barbaros Blv. 42 d, 34791 Sancaktepe / İstanbul</p>
+                <p><strong>Telefon:</strong> <a href="tel:+905312171130">0531 217 11 30</a></p>
+                <p><strong>Adres:</strong> Şeker Ahmet Paşa Sk. Maşallah Han No: 7 Mercan Fatih / İstanbul</p>
 
                 <h2>2) Kişisel Verilerin Toplanma Yöntemi</h2>
                 <p>
@@ -147,7 +147,7 @@ export default function KVKK() {
                 </p>
                 <ul>
                   <li><strong>E-posta:</strong> <a href="mailto:info@ecartejeans.com">info@ecartejeans.com</a></li>
-                  <li><strong>Adres:</strong> Yunus Emre, Barbaros Blv. 42 d, 34791 Sancaktepe / İstanbul</li>
+                  <li><strong>Adres:</strong> Şeker Ahmet Paşa Sk. Maşallah Han No: 7 Mercan Fatih / İstanbul</li>
                 </ul>
                 <p>
                   <strong>Başvuru sonucunuz en geç 30 gün</strong> içinde ücretsiz olarak tarafınıza bildirilir.

@@ -412,15 +412,15 @@ export default function PaymentSuccess() {
             </p>
             <div className="flex flex-col sm:flex-row gap-2.5">
               <a
-                href="tel:+905326956183"
+                href="tel:+905312171130"
                 className="flex-1 inline-flex items-center justify-center gap-2 h-11 border border-white/20 hover:border-polen-orange hover:text-polen-orange transition-colors text-[12px] tracking-[0.08em] uppercase font-semibold"
                 data-testid="link-help-phone"
               >
                 <Phone className="w-3.5 h-3.5" strokeWidth={2} />
-                0532 695 61 83
+                0531 217 11 30
               </a>
               <a
-                href="https://wa.me/905326956183"
+                href="https://wa.me/905312171130"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="flex-1 inline-flex items-center justify-center gap-2 h-11 bg-polen-orange text-black hover:bg-white transition-colors text-[12px] tracking-[0.08em] uppercase font-semibold"

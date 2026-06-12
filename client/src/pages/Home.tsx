@@ -575,7 +575,7 @@ function CtaScene() {
                 <ArrowRight className="w-4 h-4" />
               </Link>
               <a
-                href="https://wa.me/905326956183"
+                href="https://wa.me/905312171130"
                 target="_blank"
                 rel="noopener noreferrer"
                 data-testid="link-cta-whatsapp"
@@ -642,8 +642,8 @@ export default function Home() {
   return (
     <>
       <SEO
-        title="Giyim & Moda Koleksiyonu"
-        description="Marka — Türkiye'nin güncel giyim koleksiyonu. Kadın, erkek ve çocuk giyiminde yüzlerce marka ve binlerce model."
+        title="Premium Denim & Jean Koleksiyonu"
+        description="Ecarte Jeans — Premium denim ve jean koleksiyonu. Slim fit, regular fit ve wide leg modeller. Toptan ve bireysel sipariş imkânıyla Türkiye'nin kaliteli jean markası."
         url="/"
       />
       <Header />
@@ -653,7 +653,6 @@ export default function Home() {
           <LookbookScene />
           <CategoryScene categories={categories} products={products} />
           <ProductScene products={products} />
-          <CtaScene />
         </main>
       </MotionConfig>
       <Footer />

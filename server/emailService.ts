@@ -68,14 +68,14 @@ const BRAND = {
 };
 
 const CONTACT = {
-  phoneDisplay: '0532 695 61 83',
-  phoneTel: '+905326956183',
+  phoneDisplay: '0531 217 11 30',
+  phoneTel: '+905312171130',
   email: 'info@ecartejeans.com',
-  addressLine1: 'Yunus Emre, Barbaros Blv. 42 d',
-  addressLine2: '34791 Sancaktepe / İstanbul',
+  addressLine1: 'Şeker Ahmet Paşa Sk. Maşallah Han No: 7',
+  addressLine2: 'Mercan Fatih / İstanbul',
   site: 'ecartejeans.com',
   siteUrl: 'https://ecartejeans.com',
-  whatsapp: 'https://wa.me/905326956183',
+  whatsapp: 'https://wa.me/905312171130',
   instagram: 'https://www.instagram.com/ecartejeans/',
 };
 
@@ -127,7 +127,7 @@ function sectionTitle(text: string): string {
   return `<p style="margin:28px 0 10px 0;font-family:Helvetica,Arial,sans-serif;color:${BRAND.muted};font-size:11px;font-weight:700;letter-spacing:2px;text-transform:uppercase;">${text}</p>`;
 }
 
-const LOGO_URL = `${CONTACT.siteUrl}/email-logo.png`;
+const LOGO_URL = `${CONTACT.siteUrl}/ecarte-logo-dark.png`;
 
 function brandHeader(): string {
   // Görsel destekleyen istemcilerde logo, blok eden istemcilerde alt-text + kalın

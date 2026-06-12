@@ -73,8 +73,8 @@ export default function DistanceSalesAgreement() {
               <div className="prose prose-zinc max-w-none prose-headings:font-display prose-headings:tracking-wide prose-headings:text-black prose-h2:text-xl prose-h2:border-b prose-h2:border-black/10 prose-h2:pb-3 prose-h2:mb-4 prose-p:text-black/70 prose-li:text-black/70 prose-strong:text-black prose-a:text-polen-orange hover:prose-a:underline">
                 <h2>1) Taraflar</h2>
                 <p><strong>Satıcı:</strong> Marka Giyim & Moda</p>
-                <p><strong>Adres:</strong> Yunus Emre, Barbaros Blv. 42 d, 34791 Sancaktepe / İstanbul</p>
-                <p><strong>Telefon:</strong> <a href="tel:+905326956183">0532 695 61 83</a></p>
+                <p><strong>Adres:</strong> Şeker Ahmet Paşa Sk. Maşallah Han No: 7 Mercan Fatih / İstanbul</p>
+                <p><strong>Telefon:</strong> <a href="tel:+905312171130">0531 217 11 30</a></p>
                 <p><strong>E-posta:</strong> <a href="mailto:info@ecartejeans.com">info@ecartejeans.com</a></p>
                 <p><strong>Web Sitesi:</strong> <a href="https://www.ecartejeans.com">www.ecartejeans.com</a></p>
                 <p><strong>Alıcı:</strong> Polenstone.com.tr üzerinden sipariş veren müşteridir. Alıcının adı, soyadı, adresi ve iletişim bilgileri sipariş formunda yer alır.</p>
