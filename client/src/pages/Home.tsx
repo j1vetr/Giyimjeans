@@ -393,39 +393,40 @@ function LookbookScene() {
   return (
     <section
       ref={ref}
-      className="py-16 lg:py-24 bg-[hsl(var(--polen-cream))]"
+      className="py-16 lg:py-24 bg-[hsl(var(--polen-stone))]"
       data-testid="scene-lookbook"
     >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-5 lg:gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 lg:gap-4">
           {LOOKBOOK.map((item, i) => (
             <motion.div
               key={item.label}
-              initial={{ opacity: 0, y: 36 }}
-              animate={inView ? { opacity: 1, y: 0 } : {}}
-              transition={{ duration: 0.65, delay: i * 0.15, ease: [0.22, 1, 0.36, 1] }}
-              className="group relative overflow-hidden bg-white rounded-sm shadow-sm"
+              initial={{ opacity: 0, scale: 0.97 }}
+              animate={inView ? { opacity: 1, scale: 1 } : {}}
+              transition={{ duration: 0.7, delay: i * 0.13, ease: [0.22, 1, 0.36, 1] }}
+              className="group relative overflow-hidden cursor-pointer"
             >
               {/* Image */}
-              <div className="overflow-hidden">
-                <img
-                  src={item.src}
-                  alt={item.label}
-                  className="w-full object-cover transition-transform duration-700 group-hover:scale-[1.04]"
-                  loading="lazy"
-                />
-              </div>
+              <img
+                src={item.src}
+                alt={item.label}
+                className="w-full object-cover transition-transform duration-700 ease-out group-hover:scale-[1.05]"
+                loading="lazy"
+              />
 
-              {/* Label box — sits flush below image */}
-              <div className="border-t border-neutral-100 bg-white px-5 py-4 flex items-center justify-between">
-                <div>
-                  <p className="text-[10px] tracking-[0.22em] uppercase text-[hsl(var(--polen-orange))] font-display font-semibold mb-0.5">
-                    {item.label}
-                  </p>
-                  <p className="text-[13px] text-neutral-500 leading-snug">{item.sub}</p>
-                </div>
-                <div className="shrink-0 ml-4 w-8 h-8 rounded-full border border-neutral-200 flex items-center justify-center text-neutral-400 group-hover:bg-[hsl(var(--polen-orange))] group-hover:border-[hsl(var(--polen-orange))] group-hover:text-white transition-colors duration-300">
-                  <ArrowUpRight className="w-4 h-4" />
+              {/* Bottom gradient overlay — always visible, label slides up on hover */}
+              <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/10 to-transparent" />
+
+              {/* Label */}
+              <div className="absolute bottom-0 left-0 right-0 p-6 flex items-end justify-between">
+                <h3
+                  className="font-display text-white uppercase leading-none tracking-wide"
+                  style={{ fontSize: 'clamp(1.6rem, 3vw, 2.4rem)', fontWeight: 700 }}
+                >
+                  {item.label}
+                </h3>
+                <div className="shrink-0 w-10 h-10 border border-white/30 flex items-center justify-center text-white/60 group-hover:bg-white group-hover:text-black transition-all duration-300 rounded-sm ml-4">
+                  <ArrowUpRight className="w-5 h-5" />
                 </div>
               </div>
             </motion.div>
