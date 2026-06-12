@@ -56,7 +56,7 @@ function useHeaderOffset() {
 
 const heroPills = [
   { label: 'Erkek Jean', href: '/magaza?kategori=erkek-jean', Icon: User },
-  { label: 'Çocuk Jean', href: '/magaza?kategori=cocuk-jean', Icon: User },
+  { label: 'Slim Fit', href: '/magaza?kategori=slim-fit', Icon: User },
   { label: 'Yeni Sezon', href: '/magaza', Icon: Star },
 ];
 
@@ -160,7 +160,7 @@ function HeroContent({ animated = false }: { animated?: boolean }) {
         {/* Sub copy */}
         <p className="text-[13px] lg:text-[15px] leading-relaxed text-white/50 font-light mb-10 max-w-[480px] mx-auto">
           Her dikişte mükemmellik, her kesimde özgüven. Slim fit'ten wide-leg'e,
-          kadın ve erkek koleksiyonlarıyla deniminizi bulun.
+          erkek denim koleksiyonlarıyla tarzını belirle.
         </p>
 
         {/* Category pills */}
