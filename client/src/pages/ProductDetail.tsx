@@ -41,6 +41,7 @@ import {
   Star,
   Send,
   Check,
+  ChevronDown,
 } from 'lucide-react';
 
 import { Header } from '@/components/Header';
@@ -151,6 +152,7 @@ export default function ProductDetail() {
     ? wholesaleSeries.sizeDistribution.reduce((sum, d) => sum + (d.quantity || 0), 0)
     : 0;
   const [isAddingWholesale, setIsAddingWholesale] = useState(false);
+  const [wholesaleOpen, setWholesaleOpen] = useState(false);
 
   // Video slot: images.length → video (sanal index)
   const videoUrl = product?.videoUrl ?? null;
@@ -994,17 +996,29 @@ export default function ProductDetail() {
                   data-testid="panel-wholesale"
                 >
                   <div className="border border-polen-orange/30 bg-polen-orange/[0.04] rounded-lg overflow-hidden">
-                    <div className="flex items-center justify-between px-4 py-2.5 bg-polen-orange/10 border-b border-polen-orange/20">
+                    <button
+                      type="button"
+                      onClick={() => setWholesaleOpen(o => !o)}
+                      className="w-full flex items-center justify-between px-4 py-2.5 bg-polen-orange/10 border-b border-polen-orange/20 cursor-pointer select-none"
+                      data-testid="button-wholesale-toggle"
+                      aria-expanded={wholesaleOpen}
+                    >
                       <span className="text-[10px] font-semibold uppercase tracking-[0.2em] text-polen-orange-deep">
                         Toptan Satış
                       </span>
-                      {wholesaleSeries && (
-                        <span className="text-[11px] font-medium text-black/55">
-                          {wholesaleSeries.name} · {wholesalePiecesPerSeries} Adet/Seri
-                        </span>
-                      )}
-                    </div>
-                    <div className="px-4 py-4">
+                      <span className="flex items-center gap-2">
+                        {wholesaleSeries && !wholesaleOpen && (
+                          <span className="text-[11px] font-medium text-black/55">
+                            {wholesaleSeries.name} · {wholesalePiecesPerSeries} Adet/Seri
+                          </span>
+                        )}
+                        <ChevronDown
+                          className={`w-4 h-4 text-polen-orange-deep transition-transform duration-200 ${wholesaleOpen ? 'rotate-180' : ''}`}
+                          strokeWidth={2}
+                        />
+                      </span>
+                    </button>
+                    {wholesaleOpen && <div className="px-4 py-4">
                       <div className="flex items-baseline gap-2 mb-1">
                         <span
                           className="font-display text-2xl text-polen-orange-deep tabular-nums"
@@ -1071,7 +1085,7 @@ export default function ProductDetail() {
                       ) : (
                         <p className="text-[12px] text-black/55">Toptan seri bilgisi yükleniyor…</p>
                       )}
-                    </div>
+                    </div>}
                   </div>
                 </div>
               )}
