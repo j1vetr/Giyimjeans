@@ -46,6 +46,7 @@ import {
 import { Header } from '@/components/Header';
 import { Footer } from '@/components/Footer';
 import { SEO } from '@/components/SEO';
+import { SizeGuideModal } from '@/components/SizeGuideModal';
 import { ShippingCountdown } from '@/components/ShippingCountdown';
 import { ProductCard } from '@/components/ProductCard';
 
@@ -138,6 +139,7 @@ export default function ProductDetail() {
   const [zoomPos, setZoomPos] = useState({ x: 50, y: 50 });
   const [isZooming, setIsZooming] = useState(false);
   const [showMobileCta, setShowMobileCta] = useState(false);
+  const [sizeGuideOpen, setSizeGuideOpen] = useState(false);
 
   // Review form
   const [reviewRating, setReviewRating] = useState(5);
@@ -654,6 +656,12 @@ export default function ProductDetail() {
         )}
       </AnimatePresence>
 
+      <SizeGuideModal
+        isOpen={sizeGuideOpen}
+        onClose={() => setSizeGuideOpen(false)}
+        categoryId={product.categoryId ?? undefined}
+      />
+
       <main className="pt-20 lg:pt-12 pb-32 lg:pb-20">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           {/* Breadcrumb */}
@@ -988,6 +996,14 @@ export default function ProductDetail() {
                               </span>
                             )}
                           </span>
+                          <button
+                            type="button"
+                            onClick={() => setSizeGuideOpen(true)}
+                            className="text-[10px] text-black/40 hover:text-polen-orange underline underline-offset-2 transition-colors uppercase tracking-[0.12em]"
+                            data-testid="button-size-guide"
+                          >
+                            Beden Rehberi
+                          </button>
                         </div>
                         <div className="flex flex-wrap gap-2">
                           {sizes.map((size) => {
@@ -996,6 +1012,10 @@ export default function ProductDetail() {
                             const isAvailable = selectedColor
                               ? product.variants!.some(v => v.size === size && v.color === selectedColor && v.stock > 0 && v.isActive)
                               : product.variants!.some(v => v.size === size && v.stock > 0 && v.isActive);
+                            const stockForSize = selectedColor
+                              ? (product.variants!.find(v => v.size === size && v.color === selectedColor && v.isActive)?.stock ?? 0)
+                              : product.variants!.filter(v => v.size === size && v.isActive).reduce((s, v) => s + v.stock, 0);
+                            const isLowStock = isAvailable && stockForSize > 0 && stockForSize <= 5;
                             return (
                               <button
                                 key={size}
@@ -1011,7 +1031,7 @@ export default function ProductDetail() {
                                     }
                                   }
                                 }}
-                                className={`min-w-[44px] h-10 px-3 text-[12px] font-medium border transition-all ${
+                                className={`min-w-[44px] flex flex-col items-center justify-center px-3 py-1.5 text-[12px] font-medium border transition-all leading-none ${
                                   isSelected
                                     ? 'border-black bg-black text-white'
                                     : isAvailable
@@ -1022,6 +1042,11 @@ export default function ProductDetail() {
                                 data-testid={`button-size-${size}`}
                               >
                                 {size}
+                                {isLowStock && (
+                                  <span className={`text-[8px] mt-0.5 font-normal ${isSelected ? 'text-amber-300' : 'text-amber-500'}`}>
+                                    son {stockForSize}
+                                  </span>
+                                )}
                               </button>
                             );
                           })}
@@ -1056,6 +1081,11 @@ export default function ProductDetail() {
                                 type="button"
                                 onClick={() => {
                                   setSelectedColor(color);
+                                  // Sync gallery to the image corresponding to this color
+                                  const colorIdx = colors.indexOf(color);
+                                  if (images.length > 1 && colorIdx < images.length) {
+                                    setSelectedImage(colorIdx);
+                                  }
                                   // Keep current size only if a matching variant exists; otherwise pick best available size
                                   if (selectedSize) {
                                     const keepSize = product.variants!.some(v => v.color === color && v.size === selectedSize && v.isActive);

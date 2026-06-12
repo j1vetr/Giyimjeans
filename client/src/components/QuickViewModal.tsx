@@ -198,6 +198,10 @@ export function QuickViewModal({ product, isOpen, onClose }: QuickViewModalProps
                         const isAvailable = selectedColor
                           ? product.variants!.some(v => v.size === size && v.color === selectedColor && v.stock > 0 && v.isActive)
                           : product.variants!.some(v => v.size === size && v.stock > 0 && v.isActive);
+                        const stockForSize = selectedColor
+                          ? (product.variants!.find(v => v.size === size && v.color === selectedColor && v.isActive)?.stock ?? 0)
+                          : product.variants!.filter(v => v.size === size && v.isActive).reduce((s, v) => s + v.stock, 0);
+                        const isLowStock = isAvailable && stockForSize > 0 && stockForSize <= 5;
                         return (
                           <button
                             key={size}
@@ -213,7 +217,7 @@ export function QuickViewModal({ product, isOpen, onClose }: QuickViewModalProps
                               }
                             }}
                             disabled={!isAvailable}
-                            className={`min-w-[40px] h-9 px-3 text-[11px] font-medium border transition-all ${
+                            className={`min-w-[40px] flex flex-col items-center justify-center px-3 py-1.5 text-[11px] font-medium border transition-all leading-none ${
                               isSelected
                                 ? 'border-black bg-black text-white'
                                 : isAvailable
@@ -223,6 +227,11 @@ export function QuickViewModal({ product, isOpen, onClose }: QuickViewModalProps
                             data-testid={`qv-size-${size}`}
                           >
                             {size}
+                            {isLowStock && (
+                              <span className={`text-[8px] mt-0.5 font-normal ${isSelected ? 'text-amber-300' : 'text-amber-500'}`}>
+                                son {stockForSize}
+                              </span>
+                            )}
                           </button>
                         );
                       })}
@@ -254,6 +263,11 @@ export function QuickViewModal({ product, isOpen, onClose }: QuickViewModalProps
                             type="button"
                             onClick={() => {
                               setSelectedColor(color);
+                              // Sync gallery to the image corresponding to this color
+                              const colorIdx = colors.indexOf(color);
+                              if (product.images.length > 1 && colorIdx < product.images.length) {
+                                setCurrentImageIndex(colorIdx);
+                              }
                               if (selectedSize) {
                                 const keepSize = product.variants!.some(v => v.color === color && v.size === selectedSize && v.isActive);
                                 if (!keepSize) {
