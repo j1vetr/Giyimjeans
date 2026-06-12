@@ -1035,7 +1035,11 @@ async function runFullSync(
     if (typeof resp.total === "number" && resp.total >= 0) {
       stats.expectedTotal = resp.total;
     }
-    for (const np of resp.products) rawBuffer.push(np);
+    // Sadece aktif ürünleri tamponla: pasif/reddedilen/arşivlenen Trendyol
+    // ürünleri siteye hiç alınmaz (isActive=false olanlar tamamen atlanır).
+    for (const np of resp.products) {
+      if (np.isActive) rawBuffer.push(np);
+    }
     await publishProgress(runId, stats);
     if (resp.nextCursor == null) {
       fullScanCompleted = true;
