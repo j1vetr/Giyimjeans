@@ -15,7 +15,7 @@ interface Product {
   images: string[];
 }
 
-const FREE_SHIPPING_THRESHOLD = 2500;
+const FREE_SHIPPING_THRESHOLD = 500;
 
 export default function Cart() {
   const { items, isLoading, updateQuantity, removeItem, totalItems, subtotal } = useCart();
@@ -108,25 +108,25 @@ export default function Cart() {
                   <motion.div
                     initial={{ opacity: 0, y: -10 }}
                     animate={{ opacity: 1, y: 0 }}
-                    className="bg-amber-50 border border-amber-200/70 rounded-lg p-5"
+                    className="bg-[hsl(var(--polen-stone))] p-4"
                   >
                     <div className="flex items-center gap-3 mb-3">
-                      <div className="w-10 h-10 bg-amber-100 flex items-center justify-center rounded-full">
-                        <Truck className="w-5 h-5 text-amber-600" />
+                      <div className="w-9 h-9 bg-white/10 flex items-center justify-center shrink-0">
+                        <Truck className="w-4.5 h-4.5 text-white" />
                       </div>
-                      <div>
-                        <p className="font-medium text-black/80">Ücretsiz Kargoya Az Kaldı!</p>
-                        <p className="text-sm text-black/45">
-                          <span className="font-bold text-amber-600">{remainingForFreeShipping.toFixed(0)} TL</span> daha harcayın
+                      <div className="flex-1 min-w-0">
+                        <p className="font-semibold text-white text-sm">Ücretsiz Kargoya Az Kaldı!</p>
+                        <p className="text-xs text-white/60 mt-0.5">
+                          <span className="font-bold text-[hsl(var(--polen-orange))]">{remainingForFreeShipping.toFixed(0)} ₺</span> daha ekleyin
                         </p>
                       </div>
                     </div>
-                    <div className="h-2 bg-black/6 rounded-full overflow-hidden">
+                    <div className="h-1.5 bg-white/10 overflow-hidden">
                       <motion.div
                         initial={{ width: 0 }}
                         animate={{ width: `${shippingProgress}%` }}
                         transition={{ duration: 0.8, ease: 'easeOut' }}
-                        className="h-full bg-gradient-to-r from-amber-400 to-orange-500 rounded-full"
+                        className="h-full bg-[hsl(var(--polen-orange))]"
                       />
                     </div>
                   </motion.div>
@@ -136,16 +136,14 @@ export default function Cart() {
                   <motion.div
                     initial={{ opacity: 0, y: -10 }}
                     animate={{ opacity: 1, y: 0 }}
-                    className="bg-green-50 border border-green-200/70 rounded-lg p-4"
+                    className="bg-[hsl(var(--polen-stone))] p-4 flex items-center gap-3"
                   >
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 bg-green-100 flex items-center justify-center rounded-full">
-                        <Truck className="w-5 h-5 text-green-600" />
-                      </div>
-                      <div>
-                        <p className="font-medium text-green-700">Ücretsiz Kargo Kazandınız!</p>
-                        <p className="text-sm text-black/40">Siparişiniz ücretsiz kargo ile gönderilecek</p>
-                      </div>
+                    <div className="w-9 h-9 bg-[hsl(var(--polen-orange))]/20 flex items-center justify-center shrink-0">
+                      <Truck className="w-4.5 h-4.5 text-[hsl(var(--polen-orange))]" />
+                    </div>
+                    <div>
+                      <p className="font-semibold text-white text-sm">Ücretsiz Kargo Kazandınız!</p>
+                      <p className="text-xs text-white/50 mt-0.5">Siparişiniz ücretsiz kargo ile gönderilecek</p>
                     </div>
                   </motion.div>
                 )}
@@ -153,13 +151,13 @@ export default function Cart() {
                 <motion.div
                   initial={{ opacity: 0, y: -10 }}
                   animate={{ opacity: 1, y: 0 }}
-                  className="bg-stone-50 border border-black/6 rounded-lg p-4 space-y-1"
+                  className="bg-stone-50 border border-black/6 p-4 space-y-1"
                 >
                   <p className="text-xs text-black/45 text-center">
-                    <strong className="text-black/60">Türkiye içi kargo:</strong> 2.500 TL üzeri ücretsiz, altı 200 TL
+                    <strong className="text-black/60">Türkiye içi kargo:</strong> 500 ₺ üzeri ücretsiz, altı 200 ₺
                   </p>
                   <p className="text-xs text-black/45 text-center">
-                    <strong className="text-black/60">Uluslararası kargo:</strong> Sabit 2.500 TL (ödeme adımında hesaplanır)
+                    <strong className="text-black/60">Uluslararası kargo:</strong> Sabit 2.500 ₺ (ödeme adımında hesaplanır)
                   </p>
                 </motion.div>
 
@@ -319,17 +317,6 @@ export default function Cart() {
                     </motion.div>
                   </Link>
 
-                  {!hasWholesale && (
-                    <div
-                      className="mt-3 px-3 py-2.5 bg-polen-orange/10 border border-polen-orange/30 flex items-start gap-2"
-                      data-testid="info-bank-transfer-discount"
-                    >
-                      <span className="text-[15px] leading-none mt-0.5">🏦</span>
-                      <p className="text-[12px] text-black/75 leading-snug">
-                        <span className="font-semibold text-black">Havale ile %10 indirim</span> — ödeme adımında seçin.
-                      </p>
-                    </div>
-                  )}
 
                   <Link href="/">
                     <Button variant="ghost" className="w-full mt-3 text-sm text-black/35 hover:text-black hover:bg-transparent" data-testid="button-continue">

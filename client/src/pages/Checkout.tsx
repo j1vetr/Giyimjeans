@@ -13,11 +13,10 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { 
   User, Mail, Phone, MapPin, CreditCard, Truck, Shield, 
   RotateCcw, Check, ArrowRight, ShoppingBag, ChevronRight,
-  Package, Lock, ClipboardCheck, Edit3, AlertCircle, Loader2,
+  Package, Lock, Edit3, AlertCircle, Loader2,
   CheckCircle2, UserPlus, Tag, X, Instagram
 } from 'lucide-react';
 import { COUNTRIES } from '@/lib/countries';
-import { BANK_TRANSFER_INFO } from '@shared/bankInfo';
 
 interface Product {
   id: string;
@@ -41,7 +40,7 @@ interface UserAddress {
   isDefault: boolean;
 }
 
-const FREE_SHIPPING_THRESHOLD = 2500;
+const FREE_SHIPPING_THRESHOLD = 500;
 const INTERNATIONAL_SHIPPING_COST = 2500;
 const IRAQ_SHIPPING_COST = 5700;
 const DOMESTIC_SHIPPING_COST = 200;
@@ -66,18 +65,6 @@ export default function Checkout() {
   const [stepErrors, setStepErrors] = useState<Record<number, string[]>>({});
   const [savedOrderTotal, setSavedOrderTotal] = useState<number | null>(null);
   
-  // Payment method tab (card | bank_transfer)
-  const [paymentMethod, setPaymentMethod] = useState<'card' | 'bank_transfer'>('card');
-  const [copiedField, setCopiedField] = useState<string | null>(null);
-
-  const copyBankField = async (key: 'bank' | 'holder' | 'iban', value: string) => {
-    try {
-      await navigator.clipboard.writeText(value);
-      setCopiedField(key);
-      setTimeout(() => setCopiedField((curr) => (curr === key ? null : curr)), 1800);
-    } catch {}
-  };
-  const [bankTransferLoading, setBankTransferLoading] = useState(false);
 
   // iyzico Checkout Form State
   const [checkoutFormContent, setCheckoutFormContent] = useState<string | null>(null);
@@ -224,12 +211,7 @@ export default function Checkout() {
   
   const discount = calculateDiscount();
   const total = subtotal - discount + shippingCost;
-  const BANK_TRANSFER_DISCOUNT_RATE = 0.10;
-  // No bank-transfer 10% perk on wholesale (server omits it for wholesale orders).
-  const bankTransferDiscount = (paymentMethod === 'bank_transfer' && !hasWholesale)
-    ? Math.round(total * BANK_TRANSFER_DISCOUNT_RATE * 100) / 100
-    : 0;
-  const finalTotal = total - bankTransferDiscount;
+  const finalTotal = total;
 
   // Coupon validation handler
   const handleApplyCoupon = async () => {
@@ -332,9 +314,8 @@ export default function Checkout() {
   const handleNextStep = () => {
     if (validateStep(currentStep)) {
       if (currentStep === 2) {
-        // Move to payment step. If card tab is selected, kick off iyzico now.
         setCurrentStep(3);
-        if (paymentMethod === 'card' && !checkoutFormContent && !paymentPageUrl) {
+        if (!checkoutFormContent && !paymentPageUrl) {
           initiatePayment();
         }
       } else {
@@ -343,57 +324,13 @@ export default function Checkout() {
     }
   };
 
-  // Submit a bank transfer order (no iyzico). Backend creates a pending order
-  // and waits for admin to confirm the wire transfer.
-  const handleBankTransferSubmit = async () => {
-    if (items.length === 0) {
-      toast({ title: 'Hata', description: 'Sepetiniz boş', variant: 'destructive' });
-      return;
-    }
-    setBankTransferLoading(true);
-    setPaymentError(null);
-    try {
-      const res = await fetch('/api/payment/bank-transfer', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          customerName: formData.customerName,
-          customerEmail: formData.customerEmail,
-          customerPhone: formData.customerPhone,
-          address: formData.address,
-          city: formData.city,
-          district: formData.district,
-          postalCode: formData.postalCode,
-          country: formData.country,
-          couponCode: appliedCoupon?.code || null,
-          createAccount: !user && createAccount,
-          accountPassword: !user && createAccount ? accountPassword : null,
-        }),
-        credentials: 'include',
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Sipariş oluşturulamadı');
-      clearCart();
-      navigate(`/odeme-basarili?oid=${encodeURIComponent(data.orderNumber)}&method=bank_transfer`);
-    } catch (error: any) {
-      setPaymentError(error.message || 'Sipariş oluşturulamadı');
-      toast({
-        title: 'Hata',
-        description: error.message || 'Sipariş oluşturulamadı',
-        variant: 'destructive',
-      });
-    } finally {
-      setBankTransferLoading(false);
-    }
-  };
-
-  // When user switches back to card tab on step 3, ensure iyzico form is loaded.
+  // When entering step 3, ensure iyzico form is loaded.
   useEffect(() => {
-    if (currentStep === 3 && paymentMethod === 'card' && !checkoutFormContent && !paymentPageUrl && !paymentLoading) {
+    if (currentStep === 3 && !checkoutFormContent && !paymentPageUrl && !paymentLoading) {
       initiatePayment();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [paymentMethod, currentStep]);
+  }, [currentStep]);
 
   // Initiate iyzico Checkout Form
   const initiatePayment = async () => {
@@ -1144,45 +1081,6 @@ export default function Checkout() {
                         </h2>
                       </div>
 
-                      {/* Payment method tabs */}
-                      <div className="grid grid-cols-2 gap-0 mb-6 border border-black/12">
-                        <button
-                          type="button"
-                          onClick={() => setPaymentMethod('card')}
-                          className={`h-12 px-3 text-xs sm:text-sm font-bold tracking-wide transition-colors flex items-center justify-center gap-2 ${
-                            paymentMethod === 'card'
-                              ? 'bg-black text-white'
-                              : 'bg-white text-black/60 hover:bg-stone-50'
-                          }`}
-                          data-testid="tab-payment-card"
-                        >
-                          <CreditCard className="w-4 h-4" />
-                          KREDİ KARTI
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => setPaymentMethod('bank_transfer')}
-                          className={`h-12 px-3 text-xs sm:text-sm font-bold tracking-wide transition-colors flex items-center justify-center gap-2 relative ${
-                            paymentMethod === 'bank_transfer'
-                              ? 'bg-black text-white'
-                              : 'bg-white text-black/60 hover:bg-stone-50'
-                          }`}
-                          data-testid="tab-payment-bank-transfer"
-                        >
-                          <span className="text-base">🏦</span>
-                          HAVALE
-                          {!hasWholesale && (
-                            <span className={`text-[10px] font-bold px-1.5 py-0.5 ${
-                              paymentMethod === 'bank_transfer'
-                                ? 'bg-polen-orange text-black'
-                                : 'bg-polen-orange/15 text-polen-orange'
-                            }`}>
-                              -%10
-                            </span>
-                          )}
-                        </button>
-                      </div>
-
                       {paymentError && (
                         <div className="mb-4 p-3 bg-red-500/10 border border-red-500/20 rounded-lg">
                           <div className="flex items-start gap-2">
@@ -1192,121 +1090,7 @@ export default function Checkout() {
                         </div>
                       )}
 
-                      {paymentMethod === 'bank_transfer' ? (
-                        <div className="space-y-4" data-testid="bank-transfer-panel">
-                          <div className="bg-polen-orange/10 border border-polen-orange/30 p-4">
-                            <div className="flex items-start gap-3">
-                              <div className="w-9 h-9 bg-polen-orange/20 flex items-center justify-center shrink-0">
-                                <span className="text-lg">🏦</span>
-                              </div>
-                              <div>
-                                <p className="text-sm font-bold text-black">
-                                  {hasWholesale ? 'Havale ile ödeme' : 'Havale ile %10 indirim kazandınız!'}
-                                </p>
-                                <p className="text-xs text-black/65 mt-1 leading-snug">
-                                  Aşağıdaki banka bilgilerine ödemenizi yaptıktan sonra siparişiniz onaylanıp hazırlığa alınır.
-                                </p>
-                              </div>
-                            </div>
-                          </div>
-
-                          <div className="border border-black/10 p-4 space-y-3">
-                            <h3 className="font-display text-sm tracking-wider text-black/85">BANKA BİLGİLERİ</h3>
-                            <div className="space-y-2 text-sm">
-                              {[
-                                { key: 'bank' as const, label: 'Banka', value: BANK_TRANSFER_INFO.bankName, testId: 'bank-name' },
-                                { key: 'holder' as const, label: 'Hesap Sahibi', value: BANK_TRANSFER_INFO.accountHolder, testId: 'bank-holder' },
-                                { key: 'iban' as const, label: 'IBAN', value: BANK_TRANSFER_INFO.iban, testId: 'bank-iban', mono: true },
-                              ].map(({ key, label, value, testId, mono }) => (
-                                <div key={key} className="flex items-center justify-between gap-2">
-                                  <span className="text-black/55 shrink-0">{label}</span>
-                                  <div className="flex items-center gap-2 min-w-0">
-                                    <span
-                                      className={`text-black font-semibold text-right break-all ${mono ? 'font-mono text-[13px]' : 'font-medium'}`}
-                                      data-testid={`text-${testId}`}
-                                    >
-                                      {value}
-                                    </span>
-                                    <button
-                                      type="button"
-                                      onClick={() => copyBankField(key, value)}
-                                      className="p-1 text-black/45 hover:text-polen-orange hover:bg-black/[0.04] transition-colors rounded shrink-0"
-                                      aria-label={`${label} kopyala`}
-                                      data-testid={`button-copy-${testId}`}
-                                    >
-                                      {copiedField === key ? (
-                                        <Check className="w-3.5 h-3.5 text-polen-orange" strokeWidth={2.5} />
-                                      ) : (
-                                        <ClipboardCheck className="w-3.5 h-3.5" strokeWidth={2} />
-                                      )}
-                                    </button>
-                                  </div>
-                                </div>
-                              ))}
-                              {copiedField && (
-                                <p className="text-[11px] text-polen-orange font-medium" data-testid="text-copied-feedback">
-                                  Kopyalandı
-                                </p>
-                              )}
-                            </div>
-                          </div>
-
-                          <div className="bg-stone-50 border border-black/8 p-4 space-y-2">
-                            {!hasWholesale && (
-                              <>
-                                <div className="flex justify-between text-sm">
-                                  <span className="text-black/55">Sipariş Toplamı</span>
-                                  <span className="text-black/70 line-through">{total.toLocaleString('tr-TR')} ₺</span>
-                                </div>
-                                <div className="flex justify-between text-sm">
-                                  <span className="text-polen-orange font-medium">Havale İndirimi (%10)</span>
-                                  <span className="text-polen-orange font-medium" data-testid="text-bank-discount">
-                                    -{bankTransferDiscount.toLocaleString('tr-TR')} ₺
-                                  </span>
-                                </div>
-                                <div className="h-px bg-black/8" />
-                              </>
-                            )}
-                            <div className="flex justify-between items-end">
-                              <span className="font-bold text-black">Ödenecek Tutar</span>
-                              <span className="font-bold text-2xl text-black" data-testid="text-bank-final-total">
-                                {finalTotal.toLocaleString('tr-TR')} ₺
-                              </span>
-                            </div>
-                          </div>
-
-                          <p className="text-xs text-black/50 leading-relaxed">
-                            Stoklar onaylanana kadar rezerve edilmez. Ödemeniz banka hesabımıza geçtikten sonra siparişiniz onaylanır ve hazırlığa alınır.
-                          </p>
-
-                          <div className="flex gap-3 pt-2">
-                            <Button
-                              type="button"
-                              variant="outline"
-                              onClick={() => setCurrentStep(2)}
-                              className="flex-1 h-12 border-black/15 hover:bg-black/4 text-black rounded-none"
-                              data-testid="button-bank-back"
-                            >
-                              Geri
-                            </Button>
-                            <motion.div whileHover={{ scale: 1.01 }} whileTap={{ scale: 0.99 }} className="flex-[2]">
-                              <Button
-                                type="button"
-                                onClick={handleBankTransferSubmit}
-                                disabled={bankTransferLoading}
-                                className="w-full h-12 bg-black text-white hover:bg-black/85 font-bold tracking-wider rounded-none"
-                                data-testid="button-bank-confirm"
-                              >
-                                {bankTransferLoading ? (
-                                  <Loader2 className="w-4 h-4 animate-spin" />
-                                ) : (
-                                  <>SİPARİŞİ ONAYLA · {finalTotal.toLocaleString('tr-TR')} ₺</>
-                                )}
-                              </Button>
-                            </motion.div>
-                          </div>
-                        </div>
-                      ) : paymentPageUrl ? (
+                      {paymentPageUrl ? (
                         <div className="space-y-4">
                           <div className="bg-white border border-black/8 rounded-none overflow-hidden">
                             <iframe
@@ -1563,20 +1347,9 @@ export default function Checkout() {
                     </div>
                   )}
                   {shippingCost === 0 && (
-                    <div className="mt-2 p-3 bg-gradient-to-r from-green-500/10 to-emerald-500/10 border border-green-500/20 rounded-lg">
-                      <div className="flex items-center gap-2">
-                        <Truck className="w-4 h-4 text-green-400" />
-                        <p className="text-xs text-green-400 font-medium">Ücretsiz kargo kazandınız!</p>
-                      </div>
-                    </div>
-                  )}
-                  {paymentMethod === 'bank_transfer' && bankTransferDiscount > 0 && (
-                    <div className="flex justify-between text-polen-orange">
-                      <span className="flex items-center gap-1">
-                        <span>🏦</span>
-                        Havale İndirimi (%10)
-                      </span>
-                      <span data-testid="text-bank-transfer-discount">-{bankTransferDiscount.toLocaleString('tr-TR')} ₺</span>
+                    <div className="mt-2 p-2.5 bg-[hsl(var(--polen-stone))] flex items-center gap-2">
+                      <Truck className="w-4 h-4 text-[hsl(var(--polen-orange))] shrink-0" />
+                      <p className="text-xs text-white font-medium">Ücretsiz Kargo Kazandınız!</p>
                     </div>
                   )}
                   <div className="h-px bg-black/8" />
