@@ -27,7 +27,7 @@ import {
 } from './_ui/AdminUI';
 import { SIDEBAR_CATEGORIES } from './_shared/sidebarConfig';
 import type { Product, ProductDraft, Category } from './_shared/types';
-import toovLogo from '@assets/TOOV_1777332650369.png';
+const toovLogo = '/toov-logo.png';
 
 function toTurkishUpper(value: string): string {
   return value.toLocaleUpperCase('tr-TR');
