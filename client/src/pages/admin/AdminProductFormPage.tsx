@@ -695,13 +695,25 @@ export default function AdminProductFormPage() {
                   <div className="mt-4">
                     <label className="block text-[12px] font-medium text-neutral-700 mb-1">Video URL (opsiyonel)</label>
                     <input
-                      type="url"
+                      type="text"
                       placeholder="https://cdn.trendyol.com/... veya herhangi bir video linki"
                       value={formData.videoUrl}
                       onChange={(e) => setFormData((f) => ({ ...f, videoUrl: e.target.value }))}
                       className="w-full px-3 py-2 text-[13px] border border-neutral-200 rounded-md focus:outline-none focus:ring-1 focus:ring-neutral-900"
                       data-testid="input-product-video-url"
                     />
+                    {formData.videoUrl && formData.videoUrl.startsWith('/') && (
+                      <p className="mt-1 text-[11px] text-emerald-600 flex items-center gap-1">
+                        <span>✓</span>
+                        <span>Video sunucuya indirildi — kaydettiğinizde değişmez.</span>
+                      </p>
+                    )}
+                    {formData.videoUrl && formData.videoUrl.startsWith('http') && (
+                      <p className="mt-1 text-[11px] text-blue-600 flex items-center gap-1">
+                        <span>↓</span>
+                        <span>Kaydedilince video sunucuya indirilecek.</span>
+                      </p>
+                    )}
                     {formData.videoUrl && (
                       <div className="mt-3 aspect-video bg-black rounded-md overflow-hidden">
                         <video src={formData.videoUrl} controls className="w-full h-full object-contain" />
