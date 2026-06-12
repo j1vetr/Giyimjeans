@@ -28,6 +28,8 @@ import {
   confirmBankTransferSchema, rejectBankTransferSchema,
   adminLoginSchema, userLoginSchema, registerWriteSchema, forgotPasswordSchema, resetPasswordSchema,
   bankTransferOrderSchema, couponValidateSchema, maintenanceSchema,
+  adminAccountUpdateSchema, productReviewSchema, dbClearTableSchema,
+  menuRegenerateSchema, wholesalePdfSchema, cartAddSchema,
 } from "./validation";
 import { optimizeImage, optimizeImageBuffer, optimizeUploadedFiles } from "./imageOptimizer";
 import { 
@@ -665,11 +667,9 @@ export async function registerRoutes(
         return res.status(404).json({ error: "Yönetici bulunamadı" });
       }
 
-      const { currentPassword, newUsername, newPassword } = req.body || {};
-
-      if (typeof currentPassword !== 'string' || currentPassword.length === 0) {
-        return res.status(400).json({ error: "Mevcut şifre gerekli" });
-      }
+      const parsedAccount = adminAccountUpdateSchema.safeParse(req.body);
+      if (!parsedAccount.success) return res.status(400).json({ error: firstZodMessage(parsedAccount.error) });
+      const { currentPassword, newUsername, newPassword } = parsedAccount.data;
 
       const passwordOk = await bcrypt.compare(currentPassword, user.password);
       if (!passwordOk) {
@@ -1267,7 +1267,9 @@ export async function registerRoutes(
       const category = await storage.createCategory(validated);
       res.status(201).json(category);
     } catch (error) {
-      res.status(400).json({ error: "Invalid category data" });
+      if (error instanceof z.ZodError) return res.status(400).json({ error: firstZodMessage(error) });
+      console.error('Category creation error:', error);
+      res.status(500).json({ error: "Kategori oluşturulamadı" });
     }
   });
 
@@ -1402,8 +1404,9 @@ export async function registerRoutes(
       const productCategoryIds = await storage.getProductCategoryIds(product.id);
       res.status(201).json({ ...product, categoryIds: productCategoryIds });
     } catch (error) {
+      if (error instanceof z.ZodError) return res.status(400).json({ error: firstZodMessage(error) });
       console.error('Product creation error:', error);
-      res.status(400).json({ error: "Invalid product data" });
+      res.status(500).json({ error: "Ürün oluşturulamadı" });
     }
   });
 
@@ -1647,7 +1650,9 @@ export async function registerRoutes(
       const variant = await storage.createProductVariant(validated);
       res.status(201).json(variant);
     } catch (error) {
-      res.status(400).json({ error: "Invalid variant data" });
+      if (error instanceof z.ZodError) return res.status(400).json({ error: firstZodMessage(error) });
+      console.error('Variant creation error:', error);
+      res.status(500).json({ error: "Varyant oluşturulamadı" });
     }
   });
 
@@ -1688,7 +1693,9 @@ export async function registerRoutes(
   app.post("/api/cart", async (req: Request, res) => {
     try {
       const cartToken = getOrCreateCartToken(req, res);
-      const { productId, variantId: rawVariantId, quantity } = req.body;
+      const parsedCart = cartAddSchema.safeParse(req.body);
+      if (!parsedCart.success) return res.status(400).json({ error: firstZodMessage(parsedCart.error) });
+      const { productId, variantId: rawVariantId, quantity } = parsedCart.data;
 
       const product = await storage.getProduct(productId);
       if (!product) {
@@ -1880,11 +1887,9 @@ export async function registerRoutes(
       const payload = await getAuthPayload(req, res);
       const userId = payload?.type === 'user' ? payload.userId : null;
 
-      const { rating, title, content, guestName, guestEmail, captchaToken } = req.body || {};
-
-      if (typeof rating !== 'number' || !Number.isInteger(rating) || rating < 1 || rating > 5) {
-        return res.status(400).json({ error: "Lütfen 1 ile 5 arasında bir puan seçin." });
-      }
+      const parsedReview = productReviewSchema.safeParse(req.body);
+      if (!parsedReview.success) return res.status(400).json({ error: firstZodMessage(parsedReview.error) });
+      const { rating, title, content, guestName, guestEmail, captchaToken } = parsedReview.data;
 
       const cleanTitle = typeof title === 'string' ? title.trim().slice(0, 200) : '';
       const cleanContent = typeof content === 'string' ? content.trim().slice(0, 4000) : '';
@@ -5802,7 +5807,9 @@ Sitemap: ${baseUrl}/sitemap.xml
   app.post("/api/admin/database/clear/:table", requireAdmin, async (req: Request, res) => {
     try {
       const { table } = req.params;
-      const { confirmCode } = req.body;
+      const parsedClear = dbClearTableSchema.safeParse(req.body);
+      if (!parsedClear.success) return res.status(400).json({ error: firstZodMessage(parsedClear.error) });
+      const { confirmCode } = parsedClear.data;
       
       // Ürünler için ekstra güvenli onay kodu — yanlışlıkla katalog silinmesin
       const requiredCode = table === 'products' ? 'TUM_URUNLERI_SIL' : 'SIFIRLA';
@@ -5884,7 +5891,9 @@ Sitemap: ${baseUrl}/sitemap.xml
   // Clear all sales data (orders, order_items, pending_payments, coupon_usage)
   app.post("/api/admin/database/clear-all-sales", requireAdmin, async (req: Request, res) => {
     try {
-      const { confirmCode } = req.body;
+      const parsedClearSales = dbClearTableSchema.safeParse(req.body);
+      if (!parsedClearSales.success) return res.status(400).json({ error: firstZodMessage(parsedClearSales.error) });
+      const { confirmCode } = parsedClearSales.data;
       
       if (confirmCode !== 'TUM_SATISLARI_SIL') {
         return res.status(400).json({ error: "Onay kodu hatalı. 'TUM_SATISLARI_SIL' yazmalısınız." });
@@ -6724,7 +6733,9 @@ Sitemap: ${baseUrl}/sitemap.xml
   // Kullanıcının manuel eklediği menüler korunur.
   app.post("/api/admin/menu-items/regenerate-from-categories", requireAdmin, async (req, res) => {
     try {
-      const wipeAll = req.body?.wipeAll === true;
+      const parsedRegen = menuRegenerateSchema.safeParse(req.body ?? {});
+      if (!parsedRegen.success) return res.status(400).json({ error: firstZodMessage(parsedRegen.error) });
+      const wipeAll = parsedRegen.data.wipeAll === true;
       const categories = await storage.getCategories();
       const plan = buildGroupingPlan(categories);
 
@@ -6923,7 +6934,9 @@ ${items.join("\n")}
   // ==========================================================================
   app.post("/api/admin/wholesale/pdf", requireAdmin, async (req, res) => {
     try {
-      const { discountRate = 0, productIds, categoryId, categoryDiscounts, productDiscounts } = req.body;
+      const parsedWholesale = wholesalePdfSchema.safeParse(req.body ?? {});
+      if (!parsedWholesale.success) return res.status(400).json({ error: firstZodMessage(parsedWholesale.error) });
+      const { discountRate = 0, productIds, categoryId, categoryDiscounts, productDiscounts } = parsedWholesale.data;
       const generalRate = Math.max(0, Math.min(99, Number(discountRate) || 0));
 
       const catDiscountMap = new Map<string, number>();

@@ -405,3 +405,52 @@ export const confirmBankTransferSchema = z.object({
 export const rejectBankTransferSchema = z.object({
   reason: z.string().max(500).optional(),
 }).passthrough();
+
+// ─── Admin: account update ────────────────────────────────────────────────────
+
+export const adminAccountUpdateSchema = z.object({
+  currentPassword: z.string().min(1, "Mevcut şifre gerekli").max(200),
+  newUsername: z.string().min(3, "Kullanıcı adı en az 3 karakter olmalı").max(100).optional(),
+  newPassword: z.string().min(6, "Yeni şifre en az 6 karakter olmalı").max(200).optional(),
+});
+
+// ─── Product review ───────────────────────────────────────────────────────────
+
+export const productReviewSchema = z.object({
+  rating: z.number({ invalid_type_error: "Puan sayı olmalı" }).int().min(1, "Puan en az 1 olmalı").max(5, "Puan en fazla 5 olmalı"),
+  title: z.string().max(200).optional().nullable(),
+  content: z.string().max(4000).optional().nullable(),
+  guestName: z.string().max(100).optional().nullable(),
+  guestEmail: z.string().email("Geçerli bir e-posta girin").max(200).optional().nullable(),
+  captchaToken: z.string().max(2000).optional().nullable(),
+});
+
+// ─── Admin: database clear ────────────────────────────────────────────────────
+
+export const dbClearTableSchema = z.object({
+  confirmCode: z.string().min(1, "Onay kodu gerekli").max(100),
+});
+
+// ─── Admin: menu regenerate ───────────────────────────────────────────────────
+
+export const menuRegenerateSchema = z.object({
+  wipeAll: z.boolean().optional(),
+}).passthrough();
+
+// ─── Cart add ────────────────────────────────────────────────────────────────
+
+export const cartAddSchema = z.object({
+  productId: z.string().min(1, "Ürün ID zorunludur").max(100),
+  variantId: z.string().max(100).optional().nullable(),
+  quantity: z.number({ invalid_type_error: "Miktar sayı olmalı" }).int().min(1, "Miktar en az 1 olmalı").max(999),
+});
+
+// ─── Admin: wholesale PDF ─────────────────────────────────────────────────────
+
+export const wholesalePdfSchema = z.object({
+  discountRate: z.number().min(0).max(99).optional(),
+  productIds: z.array(z.string()).optional().nullable(),
+  categoryId: z.string().max(100).optional().nullable(),
+  categoryDiscounts: z.record(z.string(), z.number().min(0).max(99)).optional().nullable(),
+  productDiscounts: z.record(z.string(), z.number().min(0).max(99)).optional().nullable(),
+}).passthrough();
