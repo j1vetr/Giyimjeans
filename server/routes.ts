@@ -11,7 +11,8 @@ import PDFDocument from "pdfkit";
 import sharp from "sharp";
 import { cache, CACHE_KEYS, CACHE_TTL } from "./cache";
 import { eq, desc, sql } from "drizzle-orm";
-import { insertAdminUserSchema, insertCategorySchema, insertProductSchema, insertProductVariantSchema, insertCartItemSchema, insertOrderSchema, insertOrderItemSchema, insertUserSchema, couponRedemptions, orders, coupons, products, stockAdjustments, productCategories, productVariants } from "@shared/schema";
+import { insertAdminUserSchema, insertCategorySchema, insertProductSchema, insertProductVariantSchema, insertCartItemSchema, insertOrderSchema, insertOrderItemSchema, insertUserSchema, couponRedemptions, orders, orderItems as orderItemsTable, coupons, products, stockAdjustments, productCategories, productVariants } from "@shared/schema";
+import { authLimiter, registerLimiter, passwordResetLimiter, trackingLimiter, couponLimiter } from "./rateLimit";
 import { optimizeImage, optimizeImageBuffer, optimizeUploadedFiles } from "./imageOptimizer";
 import { 
   sendWelcomeEmail, 
@@ -579,9 +580,12 @@ export async function registerRoutes(
   });
 
   // Admin Authentication with JWT
-  app.post("/api/admin/login", async (req: Request, res) => {
+  app.post("/api/admin/login", authLimiter, async (req: Request, res) => {
     try {
       const { username, password } = req.body;
+      if (!username || !password) {
+        return res.status(400).json({ error: "Kullanıcı adı ve şifre gerekli" });
+      }
       const user = await storage.getAdminUserByUsername(username);
       
       if (!user || !(await bcrypt.compare(password, user.password))) {
@@ -860,9 +864,25 @@ export async function registerRoutes(
   });
 
   // User Authentication
-  app.post("/api/auth/register", async (req: Request, res) => {
+  const registerSchema = z.object({
+    email: z.string().email("Geçerli bir e-posta girin"),
+    password: z.string().min(6, "Şifre en az 6 karakter olmalı"),
+    firstName: z.string().optional(),
+    lastName: z.string().optional(),
+    phone: z.string().optional(),
+    address: z.string().optional(),
+    city: z.string().optional(),
+    district: z.string().optional(),
+    postalCode: z.string().optional(),
+  });
+
+  app.post("/api/auth/register", registerLimiter, async (req: Request, res) => {
     try {
-      const { email, password, firstName, lastName, phone, address, city, district, postalCode } = req.body;
+      const parsed = registerSchema.safeParse(req.body);
+      if (!parsed.success) {
+        return res.status(400).json({ error: parsed.error.errors[0]?.message || "Geçersiz istek" });
+      }
+      const { email, password, firstName, lastName, phone, address, city, district, postalCode } = parsed.data;
       
       const existingUser = await storage.getUserByEmail(email);
       if (existingUser) {
@@ -922,9 +942,12 @@ export async function registerRoutes(
     }
   });
 
-  app.post("/api/auth/login", async (req: Request, res) => {
+  app.post("/api/auth/login", authLimiter, async (req: Request, res) => {
     try {
       const { email, password } = req.body;
+      if (!email || !password) {
+        return res.status(400).json({ error: "E-posta ve şifre gerekli" });
+      }
       const user = await storage.getUserByEmail(email);
       
       if (!user || !(await bcrypt.compare(password, user.password))) {
@@ -1159,7 +1182,7 @@ export async function registerRoutes(
   });
 
   // Public Order Tracking API
-  app.get("/api/orders/track", async (req: Request, res) => {
+  app.get("/api/orders/track", trackingLimiter, async (req: Request, res) => {
     try {
       const { orderNumber, email } = req.query;
       
@@ -2483,43 +2506,47 @@ export async function registerRoutes(
         }
       }
 
-      const order = await storage.createOrder({
-        orderNumber,
-        customerName,
-        customerEmail,
-        customerPhone,
-        shippingAddress: { address, city, district, postalCode: postalCode || '', country: selectedCountry },
-        subtotal: serverSubtotal.toFixed(2),
-        shippingCost: shippingCost.toFixed(2),
-        discountAmount: totalDiscount.toFixed(2),
-        couponCode: validatedCoupon?.code || null,
-        total: serverTotal.toFixed(2),
-        status: 'pending',
-        paymentMethod: 'bank_transfer',
-        paymentStatus: 'awaiting_transfer',
-      });
+      // Atomic: order row + items in one transaction (stock NOT reduced — confirmed by admin later)
+      const order = await db.transaction(async (tx) => {
+        const [newOrder] = await tx.insert(orders).values({
+          orderNumber,
+          customerName,
+          customerEmail,
+          customerPhone,
+          shippingAddress: { address, city, district, postalCode: postalCode || '', country: selectedCountry },
+          subtotal: serverSubtotal.toFixed(2),
+          shippingCost: shippingCost.toFixed(2),
+          discountAmount: totalDiscount.toFixed(2),
+          couponCode: validatedCoupon?.code || null,
+          total: serverTotal.toFixed(2),
+          status: 'pending',
+          paymentMethod: 'bank_transfer',
+          paymentStatus: 'awaiting_transfer',
+        }).returning();
 
-      // Create order items but DO NOT reduce stock yet — admin must confirm transfer first.
-      for (const item of cartItemsForOrder) {
-        await storage.createOrderItem({
-          orderId: order.id,
-          productId: item.productId,
-          variantId: item.variantId,
-          productName: item.productName,
-          variantDetails: item.variantDetails,
-          price: item.price,
-          quantity: item.quantity,
-          subtotal: (parseFloat(item.price) * item.quantity).toFixed(2),
-        });
-      }
+        for (const item of cartItemsForOrder) {
+          await tx.insert(orderItemsTable).values({
+            orderId: newOrder.id,
+            productId: item.productId,
+            variantId: item.variantId,
+            productName: item.productName,
+            variantDetails: item.variantDetails,
+            price: item.price,
+            quantity: item.quantity,
+            subtotal: (parseFloat(item.price) * item.quantity).toFixed(2),
+          });
+        }
+
+        return newOrder;
+      });
 
       // Clear cart so user doesn't accidentally re-checkout
       await storage.clearCart(cartToken);
 
       // Notifications (best-effort)
-      const orderItems = await storage.getOrderItems(order.id);
-      sendBankTransferPendingEmail(order, orderItems).catch(err => console.error('[Email] Bank transfer pending email failed:', err));
-      sendAdminOrderNotificationEmail(order, orderItems).catch(err => console.error('[Email] Admin notification (bank transfer) failed:', err));
+      const bankOrderItems = await storage.getOrderItems(order.id);
+      sendBankTransferPendingEmail(order, bankOrderItems).catch(err => console.error('[Email] Bank transfer pending email failed:', err));
+      sendAdminOrderNotificationEmail(order, bankOrderItems).catch(err => console.error('[Email] Admin notification (bank transfer) failed:', err));
       sendBankTransferPendingToCustomer(order).catch(err => console.error('[WhatsApp] Bank transfer pending (customer) failed:', err));
       sendBankTransferPendingToAdmin(order).catch(err => console.error('[WhatsApp] Bank transfer pending (admin) failed:', err));
 
@@ -2623,85 +2650,97 @@ export async function registerRoutes(
         // Payment successful - create the actual order
         const orderNumber = merchantOid;
 
-        // Create order
-        const order = await storage.createOrder({
-          orderNumber,
-          customerName: pendingPayment.customerName,
-          customerEmail: pendingPayment.customerEmail,
-          customerPhone: pendingPayment.customerPhone,
-          shippingAddress: pendingPayment.shippingAddress,
-          subtotal: pendingPayment.subtotal,
-          shippingCost: pendingPayment.shippingCost,
-          discountAmount: pendingPayment.discountAmount || '0',
-          couponCode: pendingPayment.couponCode,
-          total: pendingPayment.total,
-          status: 'confirmed',
-          paymentMethod: 'iyzico',
-          paymentStatus: 'paid',
-        });
-
-        // Create order items and reduce stock
+        // Pre-fetch variant stock data + coupon before transaction to minimise lock time
+        type PendingItem = (typeof pendingPayment.cartItems)[number];
+        type ItemWithVariant = { item: PendingItem; variantStock: number | null };
+        const itemsWithVariants: ItemWithVariant[] = [];
         for (const item of pendingPayment.cartItems) {
-          await storage.createOrderItem({
-            orderId: order.id,
-            productId: item.productId,
-            variantId: item.variantId,
-            productName: item.productName,
-            variantDetails: item.variantDetails,
-            price: item.price,
-            quantity: item.quantity,
-            subtotal: (parseFloat(item.price) * item.quantity).toFixed(2),
-          });
-
-          // Reduce stock for the variant
           if (item.variantId) {
-            const variant = await storage.getProductVariant(item.variantId);
-            if (variant) {
-              const newStock = Math.max(0, variant.stock - item.quantity);
-              await storage.updateProductVariant(item.variantId, { stock: newStock });
-              
-              await storage.createStockAdjustment({
+            const v = await storage.getProductVariant(item.variantId);
+            itemsWithVariants.push({ item, variantStock: v ? v.stock : null });
+          } else {
+            itemsWithVariants.push({ item, variantStock: null });
+          }
+        }
+        const iyzicoCoupon = pendingPayment.couponCode
+          ? await storage.getCouponByCode(pendingPayment.couponCode)
+          : null;
+
+        // Atomic: order + items + stock + coupon — all succeed or all roll back.
+        // Payment was already captured; if this transaction fails the order shows as
+        // 'failed' and admins can reconcile via iyzico dashboard (logged below).
+        const order = await db.transaction(async (tx) => {
+          const [newOrder] = await tx.insert(orders).values({
+            orderNumber,
+            customerName: pendingPayment.customerName,
+            customerEmail: pendingPayment.customerEmail,
+            customerPhone: pendingPayment.customerPhone,
+            shippingAddress: pendingPayment.shippingAddress,
+            subtotal: pendingPayment.subtotal,
+            shippingCost: pendingPayment.shippingCost,
+            discountAmount: pendingPayment.discountAmount || '0',
+            couponCode: pendingPayment.couponCode,
+            total: pendingPayment.total,
+            status: 'confirmed',
+            paymentMethod: 'iyzico',
+            paymentStatus: 'paid',
+          }).returning();
+
+          for (const { item, variantStock } of itemsWithVariants) {
+            await tx.insert(orderItemsTable).values({
+              orderId: newOrder.id,
+              productId: item.productId,
+              variantId: item.variantId,
+              productName: item.productName,
+              variantDetails: item.variantDetails,
+              price: item.price,
+              quantity: item.quantity,
+              subtotal: (parseFloat(item.price) * item.quantity).toFixed(2),
+            });
+
+            if (item.variantId && variantStock !== null) {
+              const newStock = Math.max(0, variantStock - item.quantity);
+              await tx.update(productVariants).set({ stock: newStock }).where(eq(productVariants.id, item.variantId));
+              await tx.insert(stockAdjustments).values({
                 variantId: item.variantId,
-                previousStock: variant.stock,
-                newStock: newStock,
+                previousStock: variantStock,
+                newStock,
                 adjustmentType: 'sale',
                 reason: `Sipariş: ${orderNumber}`,
               });
             }
           }
-        }
 
-        // Handle coupon redemption
-        if (pendingPayment.couponCode) {
-          const coupon = await storage.getCouponByCode(pendingPayment.couponCode);
-          if (coupon) {
-            await storage.redeemCoupon(coupon.id, order.id, null, parseFloat(pendingPayment.discountAmount || '0'));
-            
-            // Update influencer commission if applicable
-            if (coupon.isInfluencerCode) {
+          if (iyzicoCoupon) {
+            await tx.insert(couponRedemptions).values({
+              couponId: iyzicoCoupon.id,
+              orderId: newOrder.id,
+              userId: null,
+              discountAmount: String(parseFloat(pendingPayment.discountAmount || '0')),
+            });
+            await tx.execute(sql`UPDATE coupons SET usage_count = usage_count + 1, updated_at = NOW() WHERE id = ${iyzicoCoupon.id}`);
+
+            if (iyzicoCoupon.isInfluencerCode) {
               let commission = 0;
               const orderTotal = parseFloat(pendingPayment.total);
-              
-              switch (coupon.commissionType) {
-                case 'percentage':
-                  commission = (orderTotal * parseFloat(coupon.commissionValue || '0')) / 100;
-                  break;
-                case 'per_use':
-                  commission = parseFloat(coupon.commissionValue || '0');
-                  break;
+              switch (iyzicoCoupon.commissionType) {
+                case 'percentage': commission = (orderTotal * parseFloat(iyzicoCoupon.commissionValue || '0')) / 100; break;
+                case 'per_use': commission = parseFloat(iyzicoCoupon.commissionValue || '0'); break;
               }
-              
               if (commission > 0) {
-                const currentCommission = parseFloat(coupon.totalCommissionEarned || '0');
-                await storage.updateCoupon(coupon.id, {
+                const currentCommission = parseFloat(iyzicoCoupon.totalCommissionEarned || '0');
+                await tx.update(coupons).set({
                   totalCommissionEarned: (currentCommission + commission).toFixed(2),
-                });
+                  updatedAt: new Date(),
+                }).where(eq(coupons.id, iyzicoCoupon.id));
               }
             }
           }
-        }
 
-        // Clear cart
+          return newOrder;
+        });
+
+        // Clear cart (outside tx — non-critical)
         await storage.clearCart(pendingPayment.sessionId);
 
         // Update pending payment status
@@ -2709,9 +2748,9 @@ export async function registerRoutes(
         terminalized = true;
 
         // Send confirmation emails
-        const orderItems = await storage.getOrderItems(order.id);
-        sendOrderConfirmationEmail(order, orderItems).catch(err => console.error('[Email] Order confirmation failed:', err));
-        sendAdminOrderNotificationEmail(order, orderItems).catch(err => console.error('[Email] Admin notification failed:', err));
+        const iyzicoOrderItems = await storage.getOrderItems(order.id);
+        sendOrderConfirmationEmail(order, iyzicoOrderItems).catch(err => console.error('[Email] Order confirmation failed:', err));
+        sendAdminOrderNotificationEmail(order, iyzicoOrderItems).catch(err => console.error('[Email] Admin notification failed:', err));
 
         // Send WhatsApp notifications (best-effort, never blocks order flow)
         sendOrderReceivedToCustomer(order).catch(err => console.error('[WhatsApp] Order received (customer) failed:', err));
@@ -2719,7 +2758,7 @@ export async function registerRoutes(
 
         // Fetch variant SKUs for invoice
         const variantSkus = new Map<string, string>();
-        for (const item of orderItems) {
+        for (const item of iyzicoOrderItems) {
           if (item.variantId) {
             const variant = await storage.getProductVariant(item.variantId);
             if (variant?.sku) {
@@ -3100,85 +3139,89 @@ export async function registerRoutes(
         total: serverTotal.toFixed(2),
       });
 
-      const order = await storage.createOrder(validated);
-      
-      // Record coupon redemption and update influencer commission
-      if (validatedCoupon) {
-        await storage.redeemCoupon(validatedCoupon.id, order.id, userId, discountAmount);
-        
-        // If it's an influencer code, update their commission
-        if (validatedCoupon.isInfluencerCode) {
-          let commission = 0;
-          
-          switch (validatedCoupon.commissionType) {
-            case 'percentage':
-              // Commission based on order total (after discount and shipping)
-              commission = (serverTotal * parseFloat(validatedCoupon.commissionValue || '0')) / 100;
-              break;
-            case 'per_use':
-              commission = parseFloat(validatedCoupon.commissionValue || '0');
-              break;
-            case 'fixed_total':
-              // Fixed total is a one-time payment, tracked separately
-              break;
-          }
-          
-          if (commission > 0) {
-            const currentCommission = parseFloat(validatedCoupon.totalCommissionEarned || '0');
-            await storage.updateCoupon(validatedCoupon.id, {
-              totalCommissionEarned: (currentCommission + commission).toFixed(2),
-            });
-          }
-        }
-      }
-
-      // Create order items and reduce stock
+      // Pre-fetch variant + product data before transaction to minimise lock time
+      type CartItemWithData = {
+        cartItem: typeof cartItems[number];
+        variant: Awaited<ReturnType<typeof storage.getProductVariant>>;
+        product: NonNullable<Awaited<ReturnType<typeof storage.getProduct>>>;
+      };
+      const cartItemsWithData: CartItemWithData[] = [];
       for (const cartItem of cartItems) {
-        const variant = cartItem.variantId 
-          ? await storage.getProductVariant(cartItem.variantId)
-          : null;
-        // Use variant's productId if available to ensure consistency
+        const variant = cartItem.variantId ? (await storage.getProductVariant(cartItem.variantId) ?? undefined) : undefined;
         const actualProductId = variant?.productId || cartItem.productId;
         const product = await storage.getProduct(actualProductId);
+        if (product) cartItemsWithData.push({ cartItem, variant, product });
+      }
 
-        if (product) {
-          await storage.createOrderItem({
-            orderId: order.id,
+      // Atomic: order + items + stock + coupon — all succeed or all roll back
+      const order = await db.transaction(async (tx) => {
+        const [newOrder] = await tx.insert(orders).values({
+          ...validated,
+          shippingAddress: validated.shippingAddress as { address: string; city: string; district: string; postalCode: string; country?: string },
+        }).returning();
+
+        for (const { cartItem, variant, product } of cartItemsWithData) {
+          await tx.insert(orderItemsTable).values({
+            orderId: newOrder.id,
             productId: product.id,
             variantId: variant?.id,
             productName: product.name,
             variantDetails: variant ? `${variant.size || ''} ${variant.color || ''}`.trim() : null,
             price: product.basePrice,
             quantity: cartItem.quantity,
-            subtotal: ((parseFloat(product.basePrice) * cartItem.quantity).toFixed(2)),
+            subtotal: (parseFloat(product.basePrice) * cartItem.quantity).toFixed(2),
           });
 
-          // Reduce stock for the variant
-          if (variant && variant.id) {
+          if (variant?.id) {
             const newStock = Math.max(0, variant.stock - cartItem.quantity);
-            await storage.updateProductVariant(variant.id, { stock: newStock });
-            
-            // Log stock adjustment
-            await storage.createStockAdjustment({
+            await tx.update(productVariants).set({ stock: newStock }).where(eq(productVariants.id, variant.id));
+            await tx.insert(stockAdjustments).values({
               variantId: variant.id,
               previousStock: variant.stock,
-              newStock: newStock,
+              newStock,
               adjustmentType: 'sale',
               reason: `Sipariş: ${orderNumber}`,
             });
           }
         }
-      }
 
-      // Clear cart
+        if (validatedCoupon) {
+          await tx.insert(couponRedemptions).values({
+            couponId: validatedCoupon.id,
+            orderId: newOrder.id,
+            userId,
+            discountAmount: String(discountAmount),
+          });
+          await tx.execute(sql`UPDATE coupons SET usage_count = usage_count + 1, updated_at = NOW() WHERE id = ${validatedCoupon.id}`);
+
+          if (validatedCoupon.isInfluencerCode) {
+            let commission = 0;
+            switch (validatedCoupon.commissionType) {
+              case 'percentage': commission = (serverTotal * parseFloat(validatedCoupon.commissionValue || '0')) / 100; break;
+              case 'per_use': commission = parseFloat(validatedCoupon.commissionValue || '0'); break;
+            }
+            if (commission > 0) {
+              const currentCommission = parseFloat(validatedCoupon.totalCommissionEarned || '0');
+              await tx.update(coupons).set({
+                totalCommissionEarned: (currentCommission + commission).toFixed(2),
+                updatedAt: new Date(),
+              }).where(eq(coupons.id, validatedCoupon.id));
+            }
+          }
+        }
+
+        return newOrder;
+      });
+
+      // Clear cart (outside tx — non-critical)
       await storage.clearCart(cartToken);
       
       // Get order items for email
-      const orderItems = await storage.getOrderItems(order.id);
+      const orderItemsList = await storage.getOrderItems(order.id);
       
       // Send order confirmation emails (don't wait)
-      sendOrderConfirmationEmail(order, orderItems).catch(err => console.error('[Email] Order confirmation failed:', err));
-      sendAdminOrderNotificationEmail(order, orderItems).catch(err => console.error('[Email] Admin notification failed:', err));
+      sendOrderConfirmationEmail(order, orderItemsList).catch(err => console.error('[Email] Order confirmation failed:', err));
+      sendAdminOrderNotificationEmail(order, orderItemsList).catch(err => console.error('[Email] Admin notification failed:', err));
 
       // Send WhatsApp notifications (best-effort, never blocks order flow)
       sendOrderReceivedToCustomer(order).catch(err => console.error('[WhatsApp] Order received (customer) failed:', err));
@@ -3187,7 +3230,7 @@ export async function registerRoutes(
       res.status(201).json(order);
     } catch (error) {
       console.error('Order creation error:', error);
-      res.status(400).json({ error: "Failed to create order" });
+      res.status(400).json({ error: "Sipariş oluşturulamadı" });
     }
   });
 
@@ -3880,12 +3923,18 @@ export async function registerRoutes(
   });
 
   // Public coupon validation
-  app.post("/api/coupons/validate", async (req: Request, res) => {
+  app.post("/api/coupons/validate", couponLimiter, async (req: Request, res) => {
     try {
       const { code, orderTotal } = req.body;
+      if (!code || typeof code !== 'string' || code.trim().length === 0) {
+        return res.status(400).json({ error: "Kupon kodu gerekli" });
+      }
+      if (orderTotal === undefined || orderTotal === null || isNaN(Number(orderTotal))) {
+        return res.status(400).json({ error: "Sipariş tutarı gerekli" });
+      }
       const payload = await getAuthPayload(req, res);
       const userId = payload?.type === 'user' ? payload.userId ?? null : null;
-      const result = await storage.validateCoupon(code, orderTotal, userId || undefined);
+      const result = await storage.validateCoupon(code.trim().toUpperCase(), Number(orderTotal), userId || undefined);
       res.json(result);
     } catch (error) {
       res.status(500).json({ error: "Failed to validate coupon" });
@@ -5457,9 +5506,12 @@ window.addEventListener('load', function() {
   });
 
   // Password Reset Routes
-  app.post("/api/auth/forgot-password", async (req, res) => {
+  app.post("/api/auth/forgot-password", passwordResetLimiter, async (req, res) => {
     try {
       const { email } = req.body;
+      if (!email || typeof email !== 'string' || !email.includes('@')) {
+        return res.status(400).json({ error: "Geçerli bir e-posta girin" });
+      }
       const user = await storage.getUserByEmail(email);
       
       if (!user) {
@@ -5481,7 +5533,7 @@ window.addEventListener('load', function() {
     }
   });
 
-  app.post("/api/auth/reset-password", async (req, res) => {
+  app.post("/api/auth/reset-password", passwordResetLimiter, async (req, res) => {
     try {
       const { token, newPassword } = req.body;
       
