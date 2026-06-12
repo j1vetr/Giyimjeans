@@ -174,7 +174,7 @@ function HeroContent({ animated = false }: { animated?: boolean }) {
         </div>
 
         {/* CTAs */}
-        <div className="grid grid-cols-2 sm:flex sm:flex-wrap sm:justify-center items-center gap-3 w-full sm:w-auto">
+        <div className="flex flex-col sm:flex-row sm:flex-wrap sm:justify-center items-center gap-3 w-full sm:w-auto">
           <Link
             href="/magaza"
             data-testid="link-hero-cta"
