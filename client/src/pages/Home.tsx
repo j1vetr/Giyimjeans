@@ -36,6 +36,20 @@ function useMounted() {
   return m;
 }
 
+function useHeaderOffset() {
+  const [offset, setOffset] = useState(96);
+  useEffect(() => {
+    const header = document.querySelector('[data-testid="header"]') as HTMLElement;
+    if (!header) return;
+    const update = () => setOffset(header.getBoundingClientRect().bottom);
+    update();
+    const ro = new ResizeObserver(update);
+    ro.observe(header);
+    return () => ro.disconnect();
+  }, []);
+  return offset;
+}
+
 // ─────────────────────────────────────────────
 // SCENE 01 — HERO (typographic editorial)
 // ─────────────────────────────────────────────
@@ -69,10 +83,11 @@ function HeroVideo() {
 }
 
 function HeroSceneStatic() {
+  const offset = useHeaderOffset();
   return (
     <section
       className="relative bg-[hsl(var(--polen-stone))] text-white overflow-hidden"
-      style={{ minHeight: 'calc(100svh - 96px)' }}
+      style={{ height: `calc(100dvh - ${offset}px)` }}
       aria-label="Ecarte Jeans denim koleksiyonu"
       data-testid="scene-hero"
     >
@@ -86,6 +101,7 @@ function HeroSceneStatic() {
 
 function HeroSceneInner() {
   const heroRef = useRef<HTMLDivElement>(null);
+  const offset = useHeaderOffset();
   const { scrollYProgress } = useScroll({ target: heroRef, offset: ['start start', 'end start'] });
   const y = useTransform(scrollYProgress, [0, 1], ['0%', '12%']);
   const opacity = useTransform(scrollYProgress, [0, 0.8], [1, 0]);
@@ -94,7 +110,7 @@ function HeroSceneInner() {
     <section
       ref={heroRef}
       className="relative bg-[hsl(var(--polen-stone))] text-white overflow-hidden"
-      style={{ minHeight: 'calc(100svh - 96px)' }}
+      style={{ height: `calc(100dvh - ${offset}px)` }}
       data-testid="scene-hero"
     >
       {/* Parallax video wrapper */}
