@@ -13,7 +13,7 @@ import {
   MotionConfig,
   AnimatePresence,
 } from 'framer-motion';
-import { ArrowUpRight, ArrowRight, Play, Star, User } from 'lucide-react';
+import { ArrowUpRight, ArrowRight, Star, User } from 'lucide-react';
 import { useProducts, type Product } from '@/hooks/useProducts';
 import { useQuery } from '@tanstack/react-query';
 
@@ -91,7 +91,9 @@ function HeroSceneStatic() {
       data-testid="scene-hero"
     >
       <HeroVideo />
-      <div className="absolute inset-0 bg-gradient-to-r from-black/80 via-black/50 to-black/10" />
+      <div className="absolute inset-0 bg-black/45" />
+      <div className="absolute inset-0 bg-gradient-to-r from-black/70 via-black/30 to-transparent" />
+      <div className="absolute inset-0 bg-gradient-to-b from-black/60 via-transparent to-black/30" />
       <HeroContent />
     </section>
   );
@@ -113,7 +115,9 @@ function HeroSceneInner() {
       <motion.div style={{ y }} className="absolute inset-0 w-full h-full">
         <HeroVideo />
       </motion.div>
-      <div className="absolute inset-0 bg-gradient-to-r from-black/80 via-black/50 to-black/10" />
+      <div className="absolute inset-0 bg-black/45" />
+      <div className="absolute inset-0 bg-gradient-to-r from-black/70 via-black/30 to-transparent" />
+      <div className="absolute inset-0 bg-gradient-to-b from-black/60 via-transparent to-black/30" />
       <motion.div style={{ opacity }} className="relative h-full w-full">
         <HeroContent animated />
       </motion.div>
@@ -183,45 +187,13 @@ function HeroContent({ animated = false }: { animated?: boolean }) {
           >
             Toptan Satış
           </Link>
-          <Link
-            href="/hakkimizda"
-            data-testid="link-hero-about"
-            className="inline-flex items-center gap-2 text-[11px] tracking-[0.18em] uppercase text-white/50 hover:text-white transition-colors"
-          >
-            Hakkımızda <ArrowUpRight className="w-3.5 h-3.5" />
-          </Link>
         </div>
       </W>
 
       {/* Bottom info bar */}
-      <div className="absolute bottom-0 left-0 right-0 flex items-center justify-between px-8 lg:px-16 py-4 border-t border-white/10">
-        {/* Play */}
-        <div className="flex items-center gap-3 text-white/50">
-          <div className="w-9 h-9 rounded-full border border-white/25 flex items-center justify-center">
-            <Play className="w-3.5 h-3.5 fill-white/50 ml-0.5" />
-          </div>
-          <div className="hidden sm:block">
-            <div className="text-[9px] font-mono tracking-[0.22em] uppercase text-white/60">2026 Collection</div>
-            <div className="text-[9px] font-mono tracking-[0.22em] uppercase text-white/35">Loop Video</div>
-          </div>
-        </div>
-
-        {/* Slide dots */}
-        <div className="flex items-center gap-1.5" aria-hidden>
-          {[0, 1, 2, 3, 4, 5].map(i => (
-            <span
-              key={i}
-              className={`block rounded-full transition-all ${i === 2 ? 'w-6 h-[3px] bg-[hsl(var(--polen-orange))]' : 'w-3 h-[3px] bg-white/25'}`}
-            />
-          ))}
-        </div>
-
-        {/* Motto + logo */}
-        <div className="flex items-center gap-3">
-          <span className="hidden sm:block text-[9px] font-mono tracking-[0.22em] uppercase text-white/40">
-            Kalite&nbsp;·&nbsp;Konfor&nbsp;·&nbsp;Tarz
-          </span>
-          <img src="/ecarte-logo-white.png" alt="" aria-hidden className="h-6 w-auto opacity-40" style={{ mixBlendMode: 'screen' }} />
+      <div className="absolute bottom-0 left-0 right-0 flex items-center px-8 lg:px-16 py-4 border-t border-white/10">
+        <div className="text-[9px] font-mono tracking-[0.22em] uppercase text-white/40">
+          2026 Collection&nbsp;·&nbsp;Loop Video
         </div>
       </div>
     </div>
