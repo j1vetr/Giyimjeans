@@ -128,8 +128,19 @@ export function Footer() {
           </div>
         </div>
 
+        {/* Payment logos */}
+        <div className="mt-10 lg:mt-14 pt-6 border-t border-white/[0.07]">
+          <p className="text-[10px] font-mono tracking-[0.22em] uppercase text-white/25 mb-4">Güvenli Ödeme</p>
+          <img
+            src="/logo-band-white.png"
+            alt="iyzico ile Öde — Mastercard, Visa, American Express, Troy"
+            className="h-7 w-auto object-contain opacity-55"
+            loading="lazy"
+          />
+        </div>
+
         {/* Bottom bar */}
-        <div className="mt-12 lg:mt-16 pt-6 border-t border-white/[0.07] flex flex-col sm:flex-row items-center justify-between gap-4">
+        <div className="mt-8 pt-6 border-t border-white/[0.07] flex flex-col sm:flex-row items-center justify-between gap-4">
           <p className="text-[12px] text-white/30">
             © 2026 Ecarte Jeans. Tüm Hakları Saklıdır.
           </p>

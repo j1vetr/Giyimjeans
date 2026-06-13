@@ -3,26 +3,26 @@ import { Footer } from '@/components/Footer';
 import { SEO } from '@/components/SEO';
 import { Link } from 'wouter';
 import { motion } from 'framer-motion';
-import { ChevronRight, Instagram, Gem, Mountain, Hammer, Leaf, Award, Users, Truck, ShieldCheck, Phone, Mail, MapPin } from 'lucide-react';
+import { ChevronRight, Instagram, Shirt, Repeat2, Award, Users, Truck, ShieldCheck, Phone, Mail, MapPin } from 'lucide-react';
 
 const values = [
-  { icon: Mountain, label: 'Doğallık' },
-  { icon: Gem, label: 'Zarafet' },
-  { icon: Hammer, label: 'Ustalık' },
-  { icon: Leaf, label: 'Sürdürülebilirlik' },
+  { icon: Shirt, label: 'Premium Denim' },
+  { icon: Award, label: 'Kalite' },
+  { icon: Repeat2, label: 'Toptan & Bireysel' },
+  { icon: Users, label: 'Müşteri Odaklı' },
 ];
 
 const stats = [
-  { number: '10.000+', label: 'Ürün Çeşidi' },
+  { number: '500+', label: 'Ürün Çeşidi' },
   { number: '%100', label: 'Güvenli Ödeme' },
-  { number: '10+', label: 'Yıl Deneyim' },
+  { number: '25+', label: 'Yıl Deneyim' },
   { number: '81', label: 'İl Teslimat' },
 ];
 
 const features = [
-  { icon: Award, title: 'Premium Kalite', desc: 'Özenle seçilmiş, kalite denetiminden geçirilmiş ürünler' },
-  { icon: Users, title: 'Uzman Destek', desc: 'Stil danışmanlığı ve müşteri hizmetleriyle yanınızdayız' },
-  { icon: Truck, title: 'Hızlı Teslimat', desc: '81 ile özenli paketleme ve hızlı kargo' },
+  { icon: Award, title: 'Premium Kalite', desc: 'Özenle üretilmiş, kalite kontrolünden geçirilmiş denim ürünler' },
+  { icon: Users, title: 'Toptan Satış', desc: 'Bayi ve toptan alıcılara özel fiyat ve koleksiyon seçenekleri' },
+  { icon: Truck, title: 'Hızlı Teslimat', desc: '81 ile özenli paketleme ve hızlı kargo imkânı' },
   { icon: ShieldCheck, title: 'Kolay İade', desc: '30 gün ücretsiz iade hakkı, zahmetsiz süreç' },
 ];
 
@@ -56,16 +56,16 @@ export default function About() {
                 transition={{ duration: 0.6 }}
               >
                 <span className="text-xs tracking-[0.3em] uppercase text-polen-orange mb-4 block font-semibold">
-                  Türkiye'nin Online Giyim Mağazası
+                  Türkiye'nin Premium Denim Markası
                 </span>
                 <h1 className="font-display text-4xl sm:text-5xl lg:text-6xl tracking-wider mb-6 text-black leading-tight">
-                  MARKA <span className="text-polen-orange">GİYİM</span><br />
-                  <span className="text-black/45 text-2xl sm:text-3xl lg:text-4xl">Giyim & Moda</span>
+                  ECARTE <span className="text-polen-orange">JEANS</span><br />
+                  <span className="text-black/45 text-2xl sm:text-3xl lg:text-4xl">Denim & Moda</span>
                 </h1>
                 <p className="text-lg text-black/65 leading-relaxed mb-8">
-                  Kadın, erkek ve çocuk giyiminde yüzlerce marka ve binlerce modeli
-                  tek platformda buluşturuyoruz. Trendyol ile senkronize güncel
-                  koleksiyonumuzla stilinizi özgürce ifade edin.
+                  Kadın, erkek ve çocuk için özenle tasarlanmış premium denim koleksiyonumuzu
+                  bireysel ve toptan olarak sunuyoruz. 25 yılı aşkın deneyimimizle
+                  kaliteyi ve stili bir arada yaşatıyoruz.
                 </p>
 
                 <div className="flex flex-wrap gap-3">
@@ -118,8 +118,8 @@ export default function About() {
               viewport={{ once: true }}
               className="text-center mb-12"
             >
-              <span className="text-xs tracking-[0.3em] uppercase text-polen-orange mb-4 block font-semibold">Neden Marka?</span>
-              <h2 className="font-display text-3xl sm:text-4xl tracking-wider text-black">FARK YARATAN ÖZELLİKLER</h2>
+              <span className="text-xs tracking-[0.3em] uppercase text-polen-orange mb-4 block font-semibold">Neden Ecarte Jeans?</span>
+              <h2 className="font-display text-3xl sm:text-4xl tracking-wider text-black">FARK Yaratan Özellikler</h2>
             </motion.div>
 
             <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -154,7 +154,7 @@ export default function About() {
               className="text-center mb-12"
             >
               <span className="text-xs tracking-[0.3em] uppercase text-polen-orange mb-4 block font-semibold">Hikâyemiz</span>
-              <h2 className="font-display text-3xl sm:text-4xl tracking-wider text-black mb-4">VİZYON & MİSYON</h2>
+              <h2 className="font-display text-3xl sm:text-4xl tracking-wider text-black mb-4">Vizyon & Misyon</h2>
             </motion.div>
 
             <div className="grid md:grid-cols-2 gap-8">
@@ -165,13 +165,14 @@ export default function About() {
                 className="bg-white border border-black/[0.08] rounded-2xl p-8 shadow-[0_2px_24px_-12px_rgba(0,0,0,0.08)]"
               >
                 <div className="w-12 h-12 rounded-xl bg-polen-orange/10 flex items-center justify-center mb-5">
-                  <Mountain className="w-6 h-6 text-polen-orange" strokeWidth={1.75} />
+                  <Shirt className="w-6 h-6 text-polen-orange" strokeWidth={1.75} />
                 </div>
-                <h3 className="font-display text-2xl tracking-wide mb-4 text-black">VİZYONUMUZ</h3>
+                <h3 className="font-display text-2xl tracking-wide mb-4 text-black">Vizyonumuz</h3>
                 <p className="text-black/65 leading-relaxed">
-                  Türkiye'nin her köşesine ulaşan giyim ve moda platformu olmak.
-                  Her bütçeye uygun, her zevke hitap eden koleksiyonlarla
-                  online alışverişi keyifli ve güvenli kılmak.
+                  Türkiye'nin her köşesine ulaşan, bireysel ve toptan müşterilerine
+                  kaliteli denim ürünler sunan güvenilir bir marka olmak.
+                  Her bedene, her stile hitap eden koleksiyonlarla alışverişi
+                  keyifli ve güvenli kılmak.
                 </p>
               </motion.div>
 
@@ -182,13 +183,13 @@ export default function About() {
                 className="bg-white border border-black/[0.08] rounded-2xl p-8 shadow-[0_2px_24px_-12px_rgba(0,0,0,0.08)]"
               >
                 <div className="w-12 h-12 rounded-xl bg-polen-orange/10 flex items-center justify-center mb-5">
-                  <Hammer className="w-6 h-6 text-polen-orange" strokeWidth={1.75} />
+                  <Award className="w-6 h-6 text-polen-orange" strokeWidth={1.75} />
                 </div>
-                <h3 className="font-display text-2xl tracking-wide mb-4 text-black">MİSYONUMUZ</h3>
+                <h3 className="font-display text-2xl tracking-wide mb-4 text-black">Misyonumuz</h3>
                 <p className="text-black/65 leading-relaxed">
-                  Güncel trendleri hızla müşterilerimizle buluşturmak. Her siparişi
-                  kişiye özel bir deneyim olarak ele alıp, kalite ve hızdan ödün
-                  vermeden teslim etmek.
+                  Premium denim kalitesini uygun fiyatla buluşturmak. Her siparişi
+                  kişiye özel bir deneyim olarak ele alıp, kaliteden ve hızdan
+                  ödün vermeden kapınıza teslim etmek.
                 </p>
               </motion.div>
             </div>
@@ -208,20 +209,20 @@ export default function About() {
                 <div className="w-16 h-16 rounded-2xl bg-polen-orange/10 flex items-center justify-center mx-auto mb-6">
                   <Instagram className="w-8 h-8 text-polen-orange" strokeWidth={1.75} />
                 </div>
-                <h3 className="font-display text-2xl tracking-wider mb-4 text-black">BİZİ TAKİP EDİN</h3>
+                <h3 className="font-display text-2xl tracking-wider mb-4 text-black">Bizi Takip Edin</h3>
                 <p className="text-black/65 mb-6">
                   Yeni sezon koleksiyonları, stil önerileri ve kampanyalar için
                   Instagram'da bizi takip edin.
                 </p>
                 <a
-                  href="https://www.instagram.com/polenstone"
+                  href="https://www.instagram.com/ecartejeans"
                   target="_blank"
                   rel="noopener noreferrer"
                   className="inline-flex items-center gap-3 bg-polen-orange text-white font-bold py-4 px-8 rounded-full hover:bg-[hsl(var(--polen-orange-deep))] transition-colors"
                   data-testid="link-instagram"
                 >
                   <Instagram className="w-5 h-5" />
-                  @polenstone
+                  @ecartejeans
                 </a>
               </motion.div>
 
@@ -232,7 +233,7 @@ export default function About() {
                 transition={{ delay: 0.1 }}
                 className="bg-white border border-black/[0.08] rounded-3xl p-8 lg:p-10 shadow-[0_2px_24px_-12px_rgba(0,0,0,0.08)]"
               >
-                <h3 className="font-display text-2xl tracking-wider mb-8 text-black">İLETİŞİM BİLGİLERİ</h3>
+                <h3 className="font-display text-2xl tracking-wider mb-8 text-black">İletişim Bilgileri</h3>
                 <div className="space-y-6">
                   <div className="flex items-start gap-4">
                     <div className="w-10 h-10 rounded-lg bg-polen-orange/10 flex items-center justify-center shrink-0">

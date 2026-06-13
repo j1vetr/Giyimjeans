@@ -325,9 +325,6 @@ export function Header() {
               <Link href="/magaza" className={navLinkCls(location === '/magaza')} data-testid="link-nav-magaza">
                 Mağaza
               </Link>
-              <Link href="/hakkimizda" className={navLinkCls(location === '/hakkimizda')} data-testid="link-nav-about">
-                Hakkımızda
-              </Link>
             </nav>
 
             {/* Right icons */}
