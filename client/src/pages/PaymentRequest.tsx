@@ -372,7 +372,7 @@ export default function PaymentRequest() {
                 <Button
                   onClick={handlePay}
                   disabled={payLoading}
-                  className="w-full h-13 py-3.5 bg-polen-orange text-black hover:bg-[hsl(var(--polen-orange-deep))] hover:text-white font-semibold tracking-[0.1em] uppercase text-[12.5px] rounded-none flex items-center justify-center gap-2"
+                  className="w-full h-13 py-3.5 bg-polen-orange text-white hover:bg-[hsl(var(--polen-orange-deep))] font-semibold tracking-[0.1em] uppercase text-[12.5px] rounded-none flex items-center justify-center gap-2"
                   data-testid="button-pay"
                 >
                   {payLoading ? (
@@ -386,7 +386,7 @@ export default function PaymentRequest() {
                 </Button>
                 <div className="mt-4 flex items-center justify-center gap-2 text-black/50 text-xs">
                   <Lock className="w-3.5 h-3.5" />
-                  <span>Ödemeniz iyzico güvencesiyle korunur</span>
+                  <span className="uppercase tracking-[0.08em]">Ödemeniz iyzico güvencesiyle korunur</span>
                 </div>
               </>
             )}
