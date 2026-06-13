@@ -15,15 +15,7 @@ import {
 } from 'framer-motion';
 import { ArrowUpRight, ArrowRight, Star, User } from 'lucide-react';
 import { useProducts, type Product } from '@/hooks/useProducts';
-import { useQuery } from '@tanstack/react-query';
 
-interface CategoryData {
-  id: string;
-  name: string;
-  slug: string;
-  displayOrder: number;
-  image?: string | null;
-}
 
 function formatPrice(p: string | number) {
   const n = typeof p === 'string' ? parseFloat(p || '0') : p;
@@ -198,121 +190,7 @@ function HeroContent({ animated = false }: { animated?: boolean }) {
 }
 
 // ─────────────────────────────────────────────
-// SCENE 02 — CATEGORIES (bold 2x2 grid)
-// ─────────────────────────────────────────────
-
-function CategoryScene({ categories, products }: { categories: CategoryData[]; products: Product[] }) {
-  const fashionCats = categories
-    .filter(c => (c.displayOrder ?? 0) >= 100)
-    .slice(0, 4);
-
-  if (fashionCats.length === 0) return null;
-
-  // Find first product image per category (used as tile background if no category image)
-  const catImgMap = useMemo(() => {
-    const map: Record<string, string> = {};
-    fashionCats.forEach(cat => {
-      if (cat.image) { map[cat.id] = cat.image; return; }
-      const prod = products.find(p =>
-        Array.isArray((p as any).categoryIds)
-          ? (p as any).categoryIds.includes(cat.id)
-          : (p as any).categoryId === cat.id
-      );
-      if (prod?.images?.[0]) map[cat.id] = prod.images[0];
-    });
-    return map;
-  }, [fashionCats, products]);
-
-  return (
-    <section
-      className="bg-white py-16 lg:py-24 px-5 lg:px-10"
-      data-testid="scene-categories"
-      aria-label="Kategoriler"
-    >
-      <div className="max-w-[1400px] mx-auto">
-        {/* Section header */}
-        <div className="flex items-end justify-between mb-8 lg:mb-12 gap-4">
-          <div>
-            <span className="block text-[10px] font-mono tracking-[0.30em] uppercase text-black/35 mb-3">— Koleksiyonlar</span>
-            <h2
-              className="font-display uppercase text-black leading-[0.94]"
-              style={{ fontSize: 'clamp(24px, 3.5vw, 48px)', letterSpacing: '-0.02em' }}
-            >
-              Kategori Keşfi
-            </h2>
-          </div>
-          <Link
-            href="/magaza"
-            className="shrink-0 inline-flex items-center gap-2 text-[11px] font-mono tracking-[0.22em] uppercase text-black/50 hover:text-black transition-colors"
-            data-testid="link-categories-all"
-          >
-            Tümü <ArrowUpRight className="w-3 h-3" />
-          </Link>
-        </div>
-
-        {/* Grid: 2 cols on mobile, 4 on lg */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 lg:gap-4">
-          {fashionCats.map((cat, i) => {
-            const bg = catImgMap[cat.id];
-            return (
-              <Link
-                key={cat.id}
-                href={`/kategori/${cat.slug}`}
-                data-testid={`link-category-tile-${cat.slug}`}
-                className="group relative overflow-hidden aspect-[3/4] block"
-              >
-                {/* Background */}
-                {bg ? (
-                  <img
-                    src={bg}
-                    alt={cat.name}
-                    loading="lazy"
-                    className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 ease-out group-hover:scale-105"
-                  />
-                ) : (
-                  <div
-                    className="absolute inset-0"
-                    style={{
-                      background: [
-                        'linear-gradient(135deg,#1a1a2e 0%,#16213e 100%)',
-                        'linear-gradient(135deg,#0f0c29 0%,#302b63 100%)',
-                        'linear-gradient(135deg,#141e30 0%,#243b55 100%)',
-                        'linear-gradient(135deg,#200122 0%,#6f0000 100%)',
-                      ][i % 4]
-                    }}
-                  />
-                )}
-
-                {/* Overlay */}
-                <div className="absolute inset-0 bg-black/30 group-hover:bg-black/20 transition-colors duration-300" />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/10 to-transparent" />
-
-                {/* Content */}
-                <div className="absolute bottom-0 left-0 right-0 p-5 lg:p-6">
-                  <div className="text-[9px] font-mono tracking-[0.24em] uppercase text-white/50 mb-1.5">
-                    Koleksiyon
-                  </div>
-                  <div
-                    className="font-display uppercase text-white leading-none"
-                    style={{ fontSize: 'clamp(16px, 2.2vw, 26px)' }}
-                  >
-                    {cat.name}
-                  </div>
-                  <div className="mt-3 inline-flex items-center gap-1.5 text-[10px] tracking-[0.20em] uppercase text-white/60 group-hover:text-white transition-colors">
-                    Keşfet <ArrowUpRight className="w-3 h-3 translate-y-[-1px] group-hover:translate-x-0.5 group-hover:-translate-y-[2px] transition-transform" />
-                  </div>
-                </div>
-              </Link>
-            );
-          })}
-        </div>
-      </div>
-    </section>
-  );
-}
-
-// ─────────────────────────────────────────────
-// SCENE 03 — FEATURED PRODUCTS (clean grid)
+// SCENE 02 — FEATURED PRODUCTS (clean grid)
 // ─────────────────────────────────────────────
 
 function ProductScene({ products }: { products: Product[] }) {
@@ -620,15 +498,6 @@ function CtaScene() {
 export default function Home() {
   const { data: productsData } = useProducts({});
   const products = productsData?.products ?? [];
-  const { data: categories = [] } = useQuery<CategoryData[]>({
-    queryKey: ['categories'],
-    queryFn: async () => {
-      const res = await fetch('/api/categories');
-      if (!res.ok) return [];
-      return res.json();
-    },
-    staleTime: 60000,
-  });
 
   return (
     <>
@@ -642,7 +511,6 @@ export default function Home() {
         <main>
           <HeroScene />
           <LookbookScene />
-          <CategoryScene categories={categories} products={products} />
           <ProductScene products={products} />
         </main>
       </MotionConfig>
