@@ -146,7 +146,7 @@ export default function PaymentSuccess() {
             </h1>
             <p className="text-sm text-black/60 mb-7">{error}</p>
             <Link href="/">
-              <Button className="h-12 px-7 bg-polen-orange text-black hover:bg-[hsl(var(--polen-orange-deep))] hover:text-white font-semibold tracking-[0.1em] uppercase text-[12px] rounded-none">
+              <Button className="h-12 px-7 bg-polen-orange text-white hover:bg-[hsl(var(--polen-orange-deep))] font-semibold tracking-[0.1em] uppercase text-[12px] rounded-none">
                 Ana Sayfaya Dön
               </Button>
             </Link>
