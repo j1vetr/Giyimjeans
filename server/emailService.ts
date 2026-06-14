@@ -318,7 +318,7 @@ function welcomeEmailTemplate(userName: string): string {
 
 type OrderItemForEmail = OrderItem & { productImage?: string | null };
 
-function orderConfirmationTemplate(order: Order, items: OrderItemForEmail[], siteUrl: string = CONTACT.siteUrl): string {
+function orderConfirmationTemplate(order: Order, items: OrderItemForEmail[], siteUrl: string = CONTACT.siteUrl, isWholesale = false): string {
   const itemRows = items.map(item => {
     const img = item.productImage;
     const thumbCell = img
@@ -342,9 +342,20 @@ function orderConfirmationTemplate(order: Order, items: OrderItemForEmail[], sit
   const trackingUrl = `${siteUrl}/siparis-takip?no=${encodeURIComponent(order.orderNumber)}`;
   const orderDate = formatTRDateTime(order.createdAt);
 
+  const wholesaleBadge = isWholesale
+    ? `<table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="background-color:${BRAND.primary};margin:0 0 18px 0;">
+        <tr>
+          <td style="padding:12px 18px;font-family:Helvetica,Arial,sans-serif;color:#ffffff;font-size:13px;font-weight:700;">
+            🏭 Bu sipariş toptan satış kapsamında oluşturulmuştur.
+          </td>
+        </tr>
+      </table>`
+    : '';
+
   return wrapTemplate(`
     ${H1('Siparişiniz Alındı.')}
     ${Lede(`Teşekkürler ${escapeHtml(order.customerName)} — siparişiniz başarıyla oluşturuldu. Hazırlanmaya başlandığında size yine yazacağız.`)}
+    ${wholesaleBadge}
 
     ${infoCard(`
       <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%">
@@ -482,7 +493,7 @@ function shippingNotificationTemplate(order: Order): string {
   `, { preheader: `#${order.orderNumber} kargoda — takip: ${order.trackingNumber || 'yakında'}`, title: 'Kargoya Verildi' });
 }
 
-function bankTransferPendingTemplate(order: Order, items: OrderItemForEmail[], siteUrl: string = CONTACT.siteUrl): string {
+function bankTransferPendingTemplate(order: Order, items: OrderItemForEmail[], siteUrl: string = CONTACT.siteUrl, isWholesale = false): string {
   const itemRows = items.map(item => {
     const img = item.productImage;
     const thumbCell = img
@@ -505,9 +516,20 @@ function bankTransferPendingTemplate(order: Order, items: OrderItemForEmail[], s
   const trackingUrl = `${siteUrl}/siparis-takip?no=${encodeURIComponent(order.orderNumber)}`;
   const orderDate = formatTRDateTime(order.createdAt);
 
+  const wholesaleBadge = isWholesale
+    ? `<table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="background-color:${BRAND.primary};margin:0 0 18px 0;">
+        <tr>
+          <td style="padding:12px 18px;font-family:Helvetica,Arial,sans-serif;color:#ffffff;font-size:13px;font-weight:700;">
+            🏭 Bu sipariş toptan satış kapsamında oluşturulmuştur.
+          </td>
+        </tr>
+      </table>`
+    : '';
+
   return wrapTemplate(`
     ${H1('Havalenizi Bekliyoruz.')}
     ${Lede(`Teşekkürler ${escapeHtml(order.customerName)} — siparişiniz oluşturuldu. Aşağıdaki ${BANK_TRANSFER_INFO.bankName} hesabımıza ödemenizi gönderdiğinizde sipariş hazırlığa alınacak.`)}
+    ${wholesaleBadge}
 
     ${infoCard(`
       <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%">
@@ -524,14 +546,14 @@ function bankTransferPendingTemplate(order: Order, items: OrderItemForEmail[], s
       </table>
     `)}
 
-    <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="background-color:${BRAND.primary};margin:18px 0;">
+    ${!isWholesale ? `<table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="background-color:${BRAND.primary};margin:18px 0;">
       <tr>
         <td align="center" style="padding:18px 24px;font-family:Helvetica,Arial,sans-serif;color:${BRAND.ink};font-size:14px;font-weight:600;line-height:1.5;">
           🏦 <strong>Havale ile %10 indirim uygulandı.</strong><br/>
           <span style="font-size:13px;font-weight:500;">Ödenecek tutar: <strong>${escapeHtml(order.total)}&nbsp;₺</strong></span>
         </td>
       </tr>
-    </table>
+    </table>` : ''}
 
     ${sectionTitle('Banka Bilgileri')}
     ${infoCard(`
@@ -588,7 +610,7 @@ function bankTransferPendingTemplate(order: Order, items: OrderItemForEmail[], s
   `, { preheader: `#${order.orderNumber} — Havale onayı bekleniyor (${order.total} ₺)`, title: 'Havalenizi Bekliyoruz' });
 }
 
-function adminOrderNotificationTemplate(order: Order, items: OrderItem[]): string {
+function adminOrderNotificationTemplate(order: Order, items: OrderItem[], isWholesale = false): string {
   const itemRows = items.map(item => `
     <tr>
       <td style="padding:10px 12px;border-bottom:1px solid ${BRAND.borderSoft};color:${BRAND.ink};font-size:13px;">${escapeHtml(item.productName)}</td>
@@ -601,7 +623,19 @@ function adminOrderNotificationTemplate(order: Order, items: OrderItem[]): strin
   const shippingAddress = order.shippingAddress as { address: string; city: string; district: string; postalCode: string; country?: string };
   const dateStr = formatTRDateTime(order.createdAt);
 
+  const wholesaleBanner = isWholesale
+    ? `<table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="background-color:${BRAND.primary};border:2px solid ${BRAND.primaryDeep};margin:0 0 18px 0;">
+        <tr>
+          <td style="padding:14px 18px;font-family:Helvetica,Arial,sans-serif;color:#ffffff;font-size:14px;font-weight:700;">
+            🏭 TOPTAN SİPARİŞ<br/>
+            <span style="font-size:12px;font-weight:500;">Bu sipariş toptan satış kapsamındadır. Lütfen toptan fiyatları ve miktarları kontrol edin.</span>
+          </td>
+        </tr>
+      </table>`
+    : '';
+
   return wrapTemplate(`
+    ${wholesaleBanner}
     ${H1('Yeni Sipariş Alındı.')}
     ${Lede('Aşağıda siparişin detayları yer alıyor. Hazırlığa hemen başlayabilirsiniz.')}
 
@@ -798,6 +832,8 @@ export async function sendOrderConfirmationEmail(order: Order, items: OrderItem[
     const settings = await storage.getSiteSettings();
     const fromEmail = settings.smtp_user || 'no-reply@ecartejeans.com';
 
+    const isWholesale = items.some(i => (i as any).itemType === 'wholesale');
+
     // Ürün görsellerini products tablosundan zenginleştir (thumbnail için)
     const enrichedItems: OrderItemForEmail[] = await Promise.all(
       items.map(async (item) => {
@@ -812,11 +848,12 @@ export async function sendOrderConfirmationEmail(order: Order, items: OrderItem[
       })
     );
 
+    const subjectPrefix = isWholesale ? '[TOPTAN] ' : '';
     await transporter.sendMail({
       from: `"Ecarte Jeans" <${fromEmail}>`,
       to: order.customerEmail,
-      subject: `Siparişiniz Alındı - #${order.orderNumber}`,
-      html: orderConfirmationTemplate(order, enrichedItems),
+      subject: `${subjectPrefix}Siparişiniz Alındı - #${order.orderNumber}`,
+      html: orderConfirmationTemplate(order, enrichedItems, CONTACT.siteUrl, isWholesale),
     });
     
     console.log(`[Email] Order confirmation sent to ${order.customerEmail}`);
@@ -893,27 +930,16 @@ export async function sendAdminOrderNotificationEmail(order: Order, items: Order
       return { success: false, error: 'Admin e-posta adresi ayarlanmamış' };
     }
 
+    const isWholesale = items.some(i => (i as any).itemType === 'wholesale');
     const isBankTransfer = order.paymentMethod === 'bank_transfer';
-    const subjectPrefix = isBankTransfer ? '[HAVALE - Onay Bekliyor] ' : '';
-    const bankTransferAlert = isBankTransfer
-      ? `<table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="background-color:#fff3cd;border:2px solid #fdb51d;margin:0 0 18px 0;">
-          <tr>
-            <td style="padding:14px 18px;font-family:Helvetica,Arial,sans-serif;color:#1a1612;font-size:14px;font-weight:700;">
-              ⚠️ ÖDEME YÖNTEMİ: HAVALE — Onay Bekliyor<br/>
-              <span style="font-size:12px;font-weight:500;color:#52483a;">Hesap hareketlerini kontrol edip admin panelinden onaylayın.</span>
-            </td>
-          </tr>
-        </table>`
-      : '';
 
-    let html = adminOrderNotificationTemplate(order, items);
-    if (bankTransferAlert) {
-      html = html.replace('${content}', '');
-      html = html.replace(
-        /(<td class="px-mobile"[^>]*>)\s*/,
-        `$1${bankTransferAlert}`
-      );
-    }
+    const subjectTags = [
+      isWholesale ? '[TOPTAN]' : '',
+      isBankTransfer ? '[HAVALE - Onay Bekliyor]' : '',
+    ].filter(Boolean).join(' ');
+    const subjectPrefix = subjectTags ? `${subjectTags} ` : '';
+
+    const html = adminOrderNotificationTemplate(order, items, isWholesale);
 
     await transporter.sendMail({
       from: `"Ecarte Jeans" <${fromEmail}>`,
@@ -922,7 +948,7 @@ export async function sendAdminOrderNotificationEmail(order: Order, items: Order
       html,
     });
     
-    console.log(`[Email] Admin notification sent to ${adminEmail}${isBankTransfer ? ' (BANK_TRANSFER)' : ''}`);
+    console.log(`[Email] Admin notification sent to ${adminEmail}${isBankTransfer ? ' (BANK_TRANSFER)' : ''}${isWholesale ? ' (TOPTAN)' : ''}`);
     return { success: true };
   } catch (error: any) {
     console.error('[Email] Failed to send admin notification:', error);
@@ -1145,14 +1171,16 @@ export async function sendBankTransferPendingEmail(order: Order, items: OrderIte
       })
     );
 
+    const isWholesale = items.some(i => (i as any).itemType === 'wholesale');
+    const subjectPrefix = isWholesale ? '[TOPTAN] ' : '';
     await transporter.sendMail({
       from: `"Ecarte Jeans" <${fromEmail}>`,
       to: order.customerEmail,
-      subject: `Havalenizi Bekliyoruz - #${order.orderNumber}`,
-      html: bankTransferPendingTemplate(order, enrichedItems),
+      subject: `${subjectPrefix}Havalenizi Bekliyoruz - #${order.orderNumber}`,
+      html: bankTransferPendingTemplate(order, enrichedItems, CONTACT.siteUrl, isWholesale),
     });
 
-    console.log(`[Email] Bank transfer pending email sent to ${order.customerEmail}`);
+    console.log(`[Email] Bank transfer pending email sent to ${order.customerEmail}${isWholesale ? ' (TOPTAN)' : ''}`);
     return { success: true };
   } catch (error: any) {
     console.error('[Email] Failed to send bank transfer pending email:', error);
