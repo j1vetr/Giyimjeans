@@ -19,6 +19,7 @@ export type WhatsAppEvent =
   | 'order_cancelled_admin'
   | 'order_bank_transfer_pending_customer'
   | 'order_bank_transfer_admin'
+  | 'payment_request_paid_admin'
   | 'review_pending_admin';
 
 export const WHATSAPP_EVENT_LABELS: Record<WhatsAppEvent, string> = {
@@ -31,6 +32,7 @@ export const WHATSAPP_EVENT_LABELS: Record<WhatsAppEvent, string> = {
   order_cancelled_admin: 'Sipariş iptal edildi (yöneticiye)',
   order_bank_transfer_pending_customer: 'Havale ödeme alındı – onay bekleniyor (müşteriye)',
   order_bank_transfer_admin: 'Havale ile ödeme – kontrol et (yöneticiye)',
+  payment_request_paid_admin: 'Ödeme linki ödendi (yöneticiye)',
   review_pending_admin: 'Yeni yorum onay bekliyor (yöneticiye)',
 };
 
@@ -69,6 +71,7 @@ const PREVIOUS_DEFAULT_TEMPLATES: Record<WhatsAppEvent, string[]> = {
   order_bank_transfer_admin: [
     '⚠️ *HAVALE İLE ÖDEME — KONTROL ET*\n\nMüşteri havale yöntemiyle yeni bir sipariş oluşturdu.\n\nSipariş No: {{siparisNo}}\nMüşteri: {{musteriAdi}}\nTelefon: {{musteriTelefon}}\nTutar: {{toplam}} TL\n\nHesap hareketlerini kontrol edip admin panelinden onaylayabilirsin.',
   ],
+  payment_request_paid_admin: [],
   review_pending_admin: [
     '💬 *YENİ YORUM ONAY BEKLİYOR*\n\nÜrün: *{{urunAdi}}*\nYazan: {{yorumYazari}} {{misafirEtiketi}}\nPuan: {{yildizlar}} ({{puan}}/5)\n{{baslikSatiri}}{{icerikSatiri}}\nAdmin panelinden onaylamak için: {{adminPanelUrl}}',
   ],
@@ -78,7 +81,7 @@ export const DEFAULT_TEMPLATES: Record<WhatsAppEvent, string> = {
   order_received_customer:
     `🎉 *SİPARİŞİNİZ ALINDI*\n${DIVIDER}\n\nMerhaba {{musteriAdi}} 👋\n\nBizi tercih ettiğiniz için teşekkürler! Siparişiniz başarıyla oluşturuldu ve hazırlık sırasına alındı.\n\n📦 *Sipariş No:* {{siparisNo}}\n🛒 *Ürün Sayısı:* {{urunSayisi}}\n💰 *Toplam:* {{toplam}} ₺\n💳 *Ödeme:* {{odemeYontemi}}\n🕐 *Tarih:* {{siparisTarihSaat}}\n\n🔍 Siparişinizi takip edin:\n{{siparisTakipLink}}\n\nHazırlığa başladığımızda yine haberdar edeceğiz. ✨\n\n— {{siteAdi}}`,
   order_received_admin:
-    `🛍️ *YENİ SİPARİŞ*\n${DIVIDER}\n\n📦 *Sipariş No:* {{siparisNo}}\n👤 *Müşteri:* {{musteriAdi}}\n📞 *Telefon:* {{musteriTelefon}}\n📧 *E-posta:* {{musteriEposta}}\n🛒 *Ürün:* {{urunSayisi}} kalem\n💰 *Tutar:* {{toplam}} ₺\n💳 *Ödeme:* {{odemeYontemi}}\n🕐 *Tarih:* {{siparisTarihSaat}}\n\n🔧 Yönetim paneli:\n{{adminPanelUrl}}`,
+    `🛍️ *YENİ SİPARİŞ*\n${DIVIDER}\n{{toptanEtiketi}}\n📦 *Sipariş No:* {{siparisNo}}\n👤 *Müşteri:* {{musteriAdi}}\n📞 *Telefon:* {{musteriTelefon}}\n📧 *E-posta:* {{musteriEposta}}\n🛒 *Ürün:* {{urunSayisi}} kalem\n💰 *Tutar:* {{toplam}} ₺\n💳 *Ödeme:* {{odemeYontemi}}\n🕐 *Tarih:* {{siparisTarihSaat}}\n\n🔧 Yönetim paneli:\n{{adminPanelUrl}}`,
   order_preparing_customer:
     `📦 *SİPARİŞİNİZ HAZIRLANIYOR*\n${DIVIDER}\n\nMerhaba {{musteriAdi}} 👋\n\n*{{siparisNo}}* numaralı siparişiniz atölyemizde özenle hazırlanıyor. 🛠️\n\nKargoya verildiğinde takip numarası ile birlikte size tekrar yazacağız. 🚚\n\n🔍 Sipariş takibi:\n{{siparisTakipLink}}\n\n— {{siteAdi}}`,
   order_shipped_customer:
@@ -88,11 +91,13 @@ export const DEFAULT_TEMPLATES: Record<WhatsAppEvent, string> = {
   order_cancelled_customer:
     `ℹ️ *SİPARİŞ İPTALİ*\n${DIVIDER}\n\nMerhaba {{musteriAdi}} 👋\n\n*{{siparisNo}}* numaralı siparişiniz iptal edilmiştir.\n\n💳 *Tutar:* {{toplam}} ₺\n🕐 *Tarih:* {{siparisTarihSaat}}\n\nÖdemeniz alındıysa iade süreci en kısa sürede başlatılacaktır. Sorularınız için bize yazabilirsiniz. 💬\n\n— {{siteAdi}}`,
   order_cancelled_admin:
-    `❌ *SİPARİŞ İPTAL EDİLDİ*\n${DIVIDER}\n\n📦 *Sipariş No:* {{siparisNo}}\n👤 *Müşteri:* {{musteriAdi}}\n📞 *Telefon:* {{musteriTelefon}}\n💰 *Tutar:* {{toplam}} ₺\n💳 *Ödeme:* {{odemeYontemi}}\n🕐 *Tarih:* {{siparisTarihSaat}}\n\n🔧 Yönetim paneli:\n{{adminPanelUrl}}`,
+    `❌ *SİPARİŞ İPTAL EDİLDİ*\n${DIVIDER}\n{{toptanEtiketi}}\n📦 *Sipariş No:* {{siparisNo}}\n👤 *Müşteri:* {{musteriAdi}}\n📞 *Telefon:* {{musteriTelefon}}\n💰 *Tutar:* {{toplam}} ₺\n💳 *Ödeme:* {{odemeYontemi}}\n🕐 *Tarih:* {{siparisTarihSaat}}\n\n🔧 Yönetim paneli:\n{{adminPanelUrl}}`,
   order_bank_transfer_pending_customer:
     `🏦 *HAVALE ONAYI BEKLENİYOR*\n${DIVIDER}\n\nMerhaba {{musteriAdi}} 👋\n\n*{{siparisNo}}* numaralı siparişiniz oluşturuldu. Aşağıdaki hesaba ödemenizi gönderdiğinizde siparişiniz hazırlığa alınacak. ✅\n\n💰 *Tutar:* {{toplam}} ₺\n🛒 *Ürün Sayısı:* {{urunSayisi}}\n🕐 *Tarih:* {{siparisTarihSaat}}\n\n📋 *Banka Bilgileri*\n🏦 Banka: ${BANK_TRANSFER_INFO.bankName}\n🔢 IBAN: \`${BANK_TRANSFER_INFO.iban}\`\n👤 Ad Soyad: ${BANK_TRANSFER_INFO.accountHolder}\n📝 Açıklama: {{siparisNo}}\n\n💡 Açıklamaya sipariş numaranızı yazmayı unutmayın.\n\n🔍 Sipariş takibi:\n{{siparisTakipLink}}\n\n— {{siteAdi}}`,
   order_bank_transfer_admin:
-    `⚠️ *HAVALE ÖDEME — KONTROL ET*\n${DIVIDER}\n\nMüşteri havale yöntemiyle yeni bir sipariş oluşturdu. Hesap hareketlerini kontrol edip onaylayın. 🔍\n\n📦 *Sipariş No:* {{siparisNo}}\n👤 *Müşteri:* {{musteriAdi}}\n📞 *Telefon:* {{musteriTelefon}}\n📧 *E-posta:* {{musteriEposta}}\n💰 *Tutar:* {{toplam}} ₺\n🛒 *Ürün:* {{urunSayisi}} kalem\n🕐 *Tarih:* {{siparisTarihSaat}}\n\n🔧 Yönetim paneli:\n{{adminPanelUrl}}`,
+    `⚠️ *HAVALE ÖDEME — KONTROL ET*\n${DIVIDER}\n{{toptanEtiketi}}\nMüşteri havale yöntemiyle yeni bir sipariş oluşturdu. Hesap hareketlerini kontrol edip onaylayın. 🔍\n\n📦 *Sipariş No:* {{siparisNo}}\n👤 *Müşteri:* {{musteriAdi}}\n📞 *Telefon:* {{musteriTelefon}}\n📧 *E-posta:* {{musteriEposta}}\n💰 *Tutar:* {{toplam}} ₺\n🛒 *Ürün:* {{urunSayisi}} kalem\n🕐 *Tarih:* {{siparisTarihSaat}}\n\n🔧 Yönetim paneli:\n{{adminPanelUrl}}`,
+  payment_request_paid_admin:
+    `💳 *ÖDEME LİNKİ ÖDENDİ*\n${DIVIDER}\n\n💰 *Tutar:* {{tutar}} ₺\n👤 *Müşteri:* {{musteriAdi}}\n📞 *Telefon:* {{musteriTelefon}}\n📝 *Açıklama:* {{aciklama}}\n🕐 *Tarih:* {{tarih}}\n\n🔧 Yönetim paneli:\n{{adminPanelUrl}}`,
   review_pending_admin:
     `💬 *YENİ YORUM — ONAY BEKLİYOR*\n${DIVIDER}\n\n🪨 *Ürün:* {{urunAdi}}\n👤 *Yazan:* {{yorumYazari}} {{misafirEtiketi}}\n⭐ *Puan:* {{yildizlar}} ({{puan}}/5)\n{{baslikSatiri}}{{icerikSatiri}}\n🔧 Onaylamak için:\n{{adminPanelUrl}}`,
 };
@@ -222,9 +227,11 @@ async function resolveSiteUrl(): Promise<string> {
 async function orderVars(order: Order, config: WhatsAppConfig): Promise<Record<string, string>> {
   // urunSayisi = sipariş kalem sayısı (line item count, NOT toplam adet).
   let urunSayisi = 0;
+  let isWholesale = false;
   try {
     const items = await storage.getOrderItems(order.id);
     urunSayisi = items.length;
+    isWholesale = items.some((item: any) => item.itemType === 'wholesale');
   } catch (err) {
     console.error('[WhatsApp] orderVars items lookup failed:', err);
   }
@@ -252,6 +259,7 @@ async function orderVars(order: Order, config: WhatsAppConfig): Promise<Record<s
     siparisTakipLink,
     adminPanelUrl,
     siteAdi: config.siteName,
+    toptanEtiketi: isWholesale ? '🏭 *TOPTAN SİPARİŞ*\n' : '',
   };
 }
 
@@ -353,6 +361,36 @@ export async function sendPaymentRequestPaidToCustomer(reqRow: PaymentRequest): 
 }
 export async function sendBankTransferPendingToAdmin(order: Order) {
   return sendEventToAdmin(order, 'order_bank_transfer_admin');
+}
+
+export async function sendPaymentRequestPaidToAdmin(reqRow: PaymentRequest): Promise<WhatsAppResult> {
+  const config = await getConfig();
+  if (!config) return { success: false, skipped: true, error: 'WhatsApp servisi kapalı' };
+  if (!config.events['payment_request_paid_admin']) {
+    console.log('[WhatsApp] event payment_request_paid_admin disabled, skipping');
+    return { success: false, skipped: true, error: 'Bu olay için bildirim kapalı' };
+  }
+  if (!config.adminPhone) {
+    console.log('[WhatsApp] admin phone not configured, skipping event=payment_request_paid_admin');
+    return { success: false, skipped: true, error: 'Yönetici telefonu yapılandırılmamış' };
+  }
+
+  const siteUrl = await resolveSiteUrl();
+  const amount = Number(reqRow.amount).toLocaleString('tr-TR', { minimumFractionDigits: 2 });
+  const paidStr = formatTRDateTime(reqRow.paidAt ?? new Date());
+
+  const vars: Record<string, string> = {
+    tutar: amount,
+    musteriAdi: reqRow.customerName?.trim() || 'Belirtilmedi',
+    musteriTelefon: reqRow.customerPhone || '-',
+    aciklama: reqRow.description || '-',
+    tarih: paidStr,
+    adminPanelUrl: `${siteUrl}/toov-admin`,
+    siteAdi: config.siteName,
+  };
+
+  const message = renderTemplate(config.templates['payment_request_paid_admin'], vars);
+  return sendRaw(config, config.adminPhone, message, 'payment_request_paid_admin');
 }
 
 export interface ReviewPendingPayload {
@@ -470,4 +508,5 @@ export const WHATSAPP_TEMPLATE_VARIABLES = [
   'siparisTakipLink',
   'adminPanelUrl',
   'siteAdi',
+  'toptanEtiketi',
 ];

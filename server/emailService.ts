@@ -145,12 +145,7 @@ function brandHeader(): string {
           </td>
         </tr>
         <tr>
-          <td align="center" style="padding-top:12px;font-family:'Helvetica Neue',Helvetica,Arial,sans-serif;color:${BRAND.ink};font-size:18px;font-weight:800;letter-spacing:5px;line-height:1;">
-            <a href="${CONTACT.siteUrl}" style="color:${BRAND.ink};text-decoration:none;">ECARTE<span style="color:${BRAND.primary};">·</span>JEANS</a>
-          </td>
-        </tr>
-        <tr>
-          <td align="center" style="padding-top:6px;font-family:Helvetica,Arial,sans-serif;color:${BRAND.muted};font-size:10px;font-weight:600;letter-spacing:3px;text-transform:uppercase;">
+          <td align="center" style="padding-top:10px;font-family:Helvetica,Arial,sans-serif;color:${BRAND.muted};font-size:10px;font-weight:600;letter-spacing:3px;text-transform:uppercase;">
             Premium Denim
           </td>
         </tr>
@@ -179,7 +174,7 @@ function brandFooter(opts?: { unsubscribeEmail?: string }): string {
       <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%">
         <tr>
           <td align="center" style="font-size:14px;font-weight:700;letter-spacing:3px;color:#ffffff;padding-bottom:4px;">
-            ECARTE<span style="color:${BRAND.primary};">·</span>JEANS
+            ECARTE JEANS
           </td>
         </tr>
         <tr>
@@ -348,7 +343,7 @@ function orderConfirmationTemplate(order: Order, items: OrderItemForEmail[], sit
   const orderDate = formatTRDateTime(order.createdAt);
 
   return wrapTemplate(`
-    ${H1('Siparişiniz alındı.')}
+    ${H1('Siparişiniz Alındı.')}
     ${Lede(`Teşekkürler ${escapeHtml(order.customerName)} — siparişiniz başarıyla oluşturuldu. Hazırlanmaya başlandığında size yine yazacağız.`)}
 
     ${infoCard(`
@@ -407,7 +402,7 @@ function orderConfirmationTemplate(order: Order, items: OrderItemForEmail[], sit
 
 function preparingNotificationTemplate(order: Order): string {
   return wrapTemplate(`
-    ${H1('Siparişiniz hazırlanıyor.')}
+    ${H1('Siparişiniz Hazırlanıyor.')}
     ${Lede('Güzel haber — siparişiniz şu anda atölyemizde özenle hazırlanıyor. Kargoya verildiğinde takip numaranızı paylaşacağız.')}
 
     ${infoCard(`
@@ -447,7 +442,7 @@ function shippingNotificationTemplate(order: Order): string {
   const orderDate = formatTRDateTime(order.createdAt);
 
   return wrapTemplate(`
-    ${H1('Kargoya verildi.')}
+    ${H1('Kargoya Verildi.')}
     ${Lede('Siparişiniz paketlendi ve kargoya teslim edildi. Aşağıdaki takip numarası ile her aşamayı izleyebilirsiniz.')}
 
     <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="background-color:${BRAND.ink};margin:18px 0;">
@@ -511,7 +506,7 @@ function bankTransferPendingTemplate(order: Order, items: OrderItemForEmail[], s
   const orderDate = formatTRDateTime(order.createdAt);
 
   return wrapTemplate(`
-    ${H1('Havalenizi bekliyoruz.')}
+    ${H1('Havalenizi Bekliyoruz.')}
     ${Lede(`Teşekkürler ${escapeHtml(order.customerName)} — siparişiniz oluşturuldu. Aşağıdaki ${BANK_TRANSFER_INFO.bankName} hesabımıza ödemenizi gönderdiğinizde sipariş hazırlığa alınacak.`)}
 
     ${infoCard(`
@@ -607,7 +602,7 @@ function adminOrderNotificationTemplate(order: Order, items: OrderItem[]): strin
   const dateStr = formatTRDateTime(order.createdAt);
 
   return wrapTemplate(`
-    ${H1('Yeni sipariş alındı.')}
+    ${H1('Yeni Sipariş Alındı.')}
     ${Lede('Aşağıda siparişin detayları yer alıyor. Hazırlığa hemen başlayabilirsiniz.')}
 
     ${infoCard(`
@@ -659,7 +654,7 @@ function adminOrderNotificationTemplate(order: Order, items: OrderItem[]): strin
 
 function passwordResetTemplate(userName: string, resetLink: string): string {
   return wrapTemplate(`
-    ${H1('Şifre sıfırlama talebi.')}
+    ${H1('Şifre Sıfırlama Talebi.')}
     ${P(`Merhaba ${escapeHtml(userName)},`)}
     ${Lede('Hesabınız için bir şifre sıfırlama talebi aldık. Aşağıdaki butona tıklayarak yeni şifrenizi belirleyebilirsiniz.')}
 
@@ -691,7 +686,7 @@ function reviewRequestTemplate(userName: string, orderNumber: string, products: 
   `).join('');
 
   return wrapTemplate(`
-    ${H1('Deneyiminizi paylaşır mısınız?')}
+    ${H1('Deneyiminizi Paylaşır Mısınız?')}
     ${P(`Merhaba ${escapeHtml(userName)},`)}
     ${Lede(`#${escapeHtml(orderNumber)} numaralı siparişiniz teslim edildi. Birkaç dakikanızı ayırıp ürünleri değerlendirirseniz hem bize yön verir hem de yeni müşterilere yardımcı olursunuz.`)}
 
@@ -728,7 +723,7 @@ function abandonedCartTemplate(userName: string, cartItems: CartItem[], cartTota
   const remaining = Math.max(0, 2500 - cartTotal);
 
   return wrapTemplate(`
-    ${H1('Sepetiniz sizi bekliyor.')}
+    ${H1('Sepetiniz Sizi Bekliyor.')}
     ${P(`Merhaba ${escapeHtml(userName)},`)}
     ${Lede('Beğendiğiniz ürünleri sepete eklediniz ama henüz tamamlamadınız. Stoklar sınırlı — favorilerinizi kaçırmayın.')}
 
@@ -968,7 +963,7 @@ export async function sendAdminReviewNotificationEmail(
     const adminUrl = `${CONTACT.siteUrl}/toov-admin?tab=reviews`;
 
     const html = wrapTemplate(`
-      ${H1('Yeni yorum onay bekliyor.')}
+      ${H1('Yeni Yorum Onay Bekliyor.')}
       ${Lede(`<strong>${escapeHtml(payload.productName)}</strong> için yeni bir değerlendirme geldi. Yayınlanmadan önce admin panelinden onaylamanız gerekiyor.`)}
 
       ${infoCard(`
@@ -1050,7 +1045,7 @@ export async function sendGuestReviewApprovedEmail(
     const productUrl = `${CONTACT.siteUrl}/urun/${payload.productSlug}`;
 
     const html = wrapTemplate(`
-      ${H1('Yorumunuz yayında.')}
+      ${H1('Yorumunuz Yayında.')}
       ${Lede(`Merhaba ${escapeHtml(payload.guestName)}, <strong>${escapeHtml(payload.productName)}</strong> ürünü için yazdığınız değerlendirme onaylandı ve şimdi ürün sayfasında yayında. Düşünceleriniz için teşekkür ederiz.`)}
 
       ${infoCard(`
@@ -1098,7 +1093,7 @@ export async function sendGuestReviewRejectedEmail(
     const fromEmail = settings.smtp_user || 'no-reply@ecartejeans.com';
 
     const html = wrapTemplate(`
-      ${H1('Yorumunuz onaylanmadı.')}
+      ${H1('Yorumunuz Onaylanmadı.')}
       ${Lede(`Merhaba ${escapeHtml(payload.guestName)}, <strong>${escapeHtml(payload.productName)}</strong> ürünü için gönderdiğiniz değerlendirme aşağıdaki gerekçeyle yayınlanmadı. Yeni bir yorum göndermekten çekinmeyin.`)}
 
       ${infoCard(`
@@ -1170,7 +1165,7 @@ function paymentRequestPaidTemplate(reqRow: PaymentRequest): string {
   const amount = Number(reqRow.amount).toLocaleString('tr-TR', { minimumFractionDigits: 2 });
   const paidStr = formatTRDateTime(reqRow.paidAt ?? new Date());
   return wrapTemplate(`
-    ${H1('Ödemeniz alındı.')}
+    ${H1('Ödemeniz Alındı.')}
     ${P(`Merhaba ${escapeHtml(name)},`)}
     ${Lede('Kredi kartı ödemeniz başarıyla tahsil edildi. Detaylar aşağıdadır.')}
 
@@ -1287,7 +1282,7 @@ export async function sendTestEmail(toEmail: string): Promise<EmailResult> {
       to: toEmail,
       subject: 'Ecarte Jeans - Test E-postası',
       html: wrapTemplate(`
-        ${H1('Test e-postası.')}
+        ${H1('Test E-Postası.')}
         ${Lede('Bu bir test e-postasıdır. SMTP ayarlarınız başarıyla yapılandırıldı.')}
         ${infoCard(`
           <div style="font-family:Helvetica,Arial,sans-serif;color:${BRAND.ink};font-size:14px;font-weight:600;">
@@ -1355,7 +1350,7 @@ function quoteEmailTemplate(data: QuoteEmailData): string {
   const recipient = escapeHtml(data.contactPerson || data.dealerName);
 
   return wrapTemplate(`
-    ${H1('Teklifiniz hazır.')}
+    ${H1('Teklifiniz Hazır.')}
     ${P(`Sayın ${recipient},`)}
     ${Lede('Size özel hazırladığımız teklifi e-postanın ekinde PDF olarak bulabilirsiniz. Aşağıda özet bilgileri yer alıyor.')}
 

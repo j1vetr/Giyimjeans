@@ -63,6 +63,7 @@ import {
   sendBankTransferPendingToCustomer,
   sendBankTransferPendingToAdmin,
   sendPaymentRequestPaidToCustomer,
+  sendPaymentRequestPaidToAdmin,
   sendTestWhatsApp,
   sendReviewPendingToAdmin,
 } from "./whatsappService";
@@ -3223,7 +3224,8 @@ export async function registerRoutes(
       // freshly-set paidAt; both notifications fall back gracefully if unconfigured.
       if (settledRow) {
         sendPaymentRequestPaidEmail(settledRow).catch(err => console.error('[Email] Payment request paid email failed:', err));
-        sendPaymentRequestPaidToCustomer(settledRow).catch(err => console.error('[WhatsApp] Payment request paid failed:', err));
+        sendPaymentRequestPaidToCustomer(settledRow).catch(err => console.error('[WhatsApp] Payment request paid (customer) failed:', err));
+        sendPaymentRequestPaidToAdmin(settledRow).catch(err => console.error('[WhatsApp] Payment request paid (admin) failed:', err));
       }
       return sendRedirect(`/odeme/${reqRow.token}?durum=basarili`);
     } catch (error) {
